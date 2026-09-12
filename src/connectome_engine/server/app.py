@@ -62,6 +62,12 @@ def initialize_default_brain() -> None:
         n_nodes = 500
         adj = sp.random(n_nodes, n_nodes, density=0.04, format="csr", dtype=np.float32)
 
+        # 64% Excitatory (ACh), 36% Inhibitory (GABA/Glu)
+        exc_neurons = np.arange(0, 320, dtype=np.int32)
+        inh_neurons = np.arange(320, 500, dtype=np.int32)
+        polarity = np.ones(n_nodes, dtype=np.int8)
+        polarity[320:] = -1
+
         circuits = IndexedCircuits(
             r1_r6_photoreceptors=np.arange(0, 80, dtype=np.int32),
             r8_photoreceptors=np.arange(80, 120, dtype=np.int32),
@@ -79,6 +85,9 @@ def initialize_default_brain() -> None:
             dnp09_forward=np.arange(424, 432, dtype=np.int32),
             mdn_moonwalker=np.arange(432, 434, dtype=np.int32),
             giant_fiber_escape=np.arange(434, 436, dtype=np.int32),
+            excitatory_neurons=exc_neurons,
+            inhibitory_neurons=inh_neurons,
+            polarity=polarity,
         )
 
         GLOBAL_BRAIN = ConnectomeBrain(n_nodes, adj, circuits)

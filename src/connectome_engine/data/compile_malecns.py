@@ -141,10 +141,12 @@ def compile_connectome():
         "dnp09_forward": np.flatnonzero(types.isin(["DNp09", "MN9"])).tolist(),
         "mdn_moonwalker": np.flatnonzero(types.eq("MDN") | types.str.startswith("MDN")).tolist(),
         "giant_fiber_escape": np.flatnonzero(types.isin(["DNp01", "GF"]) | types.str.startswith("Giant_Fiber")).tolist(),
+        "excitatory_neurons": np.flatnonzero(signs > 0).tolist(),
+        "inhibitory_neurons": np.flatnonzero(signs < 0).tolist(),
     }
 
     for name, indices in circuits.items():
-        print(f"      - {name:25s}: {len(indices):4d} identified neurons")
+        print(f"      - {name:25s}: {len(indices):6d} identified neurons")
 
     # Save outputs
     print(f"\n[*] Saving compiled graph to {OUTPUT_NPZ}...")
@@ -155,6 +157,7 @@ def compile_connectome():
         data=adj_matrix.data,
         shape=adj_matrix.shape,
         neuron_ids=neuron_ids,
+        polarity=signs.astype(np.int8),
     )
 
     print(f"[*] Saving circuits manifest to {CIRCUITS_JSON}...")

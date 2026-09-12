@@ -1,7 +1,7 @@
 """Biological circuit definitions and cell-type indexing for Drosophila connectomes."""
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -40,6 +40,11 @@ class IndexedCircuits:
     mdn_moonwalker: np.ndarray          # Backward reverse retreat
     giant_fiber_escape: np.ndarray      # Bilateral emergency jump/flight escape
 
+    # Biological Neurotransmitter Polarity (Dale's Principle)
+    excitatory_neurons: np.ndarray = field(default_factory=lambda: np.empty(0, dtype=np.int32))
+    inhibitory_neurons: np.ndarray = field(default_factory=lambda: np.empty(0, dtype=np.int32))
+    polarity: Optional[np.ndarray] = None
+
 
 def map_transmitter_signs(transmitters: pd.Series) -> Tuple[np.ndarray, np.ndarray]:
     """Map biological neurotransmitter identities to synaptic signs.
@@ -70,7 +75,11 @@ def map_transmitter_signs(transmitters: pd.Series) -> Tuple[np.ndarray, np.ndarr
     return signs, uncertain
 
 
-def extract_circuits(annotations_df: pd.DataFrame, ids: np.ndarray) -> IndexedCircuits:
+def extract_circuits(
+    annotations_df: pd.DataFrame,
+    ids: np.ndarray,
+    transmitters_df: Optional[pd.DataFrame] = None,
+) -> IndexedCircuits:
     """Extract and validate all functional circuits from annotations dataframe."""
     df = annotations_df.copy()
     if "bodyId" in df.columns:
@@ -107,6 +116,17 @@ def extract_circuits(annotations_df: pd.DataFrame, ids: np.ndarray) -> IndexedCi
     mdn = np.flatnonzero(types.eq("MDN") | types.str.startswith("MDN")).astype(np.int32)
     gf = np.flatnonzero(types.isin(["DNp01", "GF"]) | types.str.startswith("Giant_Fiber")).astype(np.int32)
 
+    # Polarity
+    exc_neurons = np.empty(0, dtype=np.int32)
+    inh_neurons = np.empty(0, dtype=np.int32)
+    polarity = None
+    if transmitters_df is not None and "consensus_nt" in transmitters_df.columns:
+        trans_series = df_aligned.index.map(transmitters_df["consensus_nt"]).fillna("")
+        signs, _ = map_transmitter_signs(trans_series)
+        exc_neurons = np.flatnonzero(signs > 0).astype(np.int32)
+        inh_neurons = np.flatnonzero(signs < 0).astype(np.int32)
+        polarity = signs.astype(np.int8)
+
     return IndexedCircuits(
         r1_r6_photoreceptors=r1_r6,
         r8_photoreceptors=r8,
@@ -124,6 +144,9 @@ def extract_circuits(annotations_df: pd.DataFrame, ids: np.ndarray) -> IndexedCi
         dnp09_forward=dnp09,
         mdn_moonwalker=mdn,
         giant_fiber_escape=gf,
+        excitatory_neurons=exc_neurons,
+        inhibitory_neurons=inh_neurons,
+        polarity=polarity,
     )
 
 
@@ -148,11 +171,26 @@ def load_malecns_v1_connectome(
         data = npz["data"]
         shape = tuple(npz["shape"])
         neuron_ids = npz["neuron_ids"]
+        polarity = npz["polarity"] if "polarity" in npz else None
 
     adj = sp.csr_matrix((data, indices, indptr), shape=shape, dtype=np.float32)
 
     with open(manifest_path, "r") as f:
         c_dict = json.load(f)
+
+    if polarity is not None:
+        exc_neurons = np.flatnonzero(polarity > 0).astype(np.int32)
+        inh_neurons = np.flatnonzero(polarity < 0).astype(np.int32)
+    elif "excitatory_neurons" in c_dict:
+        exc_neurons = np.array(c_dict["excitatory_neurons"], dtype=np.int32)
+        inh_neurons = np.array(c_dict["inhibitory_neurons"], dtype=np.int32)
+        polarity = np.zeros(shape[0], dtype=np.int8)
+        polarity[exc_neurons] = 1
+        polarity[inh_neurons] = -1
+    else:
+        exc_neurons = np.arange(shape[0], dtype=np.int32)
+        inh_neurons = np.empty(0, dtype=np.int32)
+        polarity = np.ones(shape[0], dtype=np.int8)
 
     circuits = IndexedCircuits(
         r1_r6_photoreceptors=np.array(c_dict["r1_r6_photoreceptors"], dtype=np.int32),
@@ -171,6 +209,9 @@ def load_malecns_v1_connectome(
         dnp09_forward=np.array(c_dict["dnp09_forward"], dtype=np.int32),
         mdn_moonwalker=np.array(c_dict["mdn_moonwalker"], dtype=np.int32),
         giant_fiber_escape=np.array(c_dict["giant_fiber_escape"], dtype=np.int32),
+        excitatory_neurons=exc_neurons,
+        inhibitory_neurons=inh_neurons,
+        polarity=polarity,
     )
 
     return shape[0], adj, circuits, neuron_ids
