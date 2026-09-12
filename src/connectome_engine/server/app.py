@@ -3,6 +3,8 @@
 import asyncio
 import base64
 import io
+import traceback
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Dict, Any, Optional
 import numpy as np
@@ -11,7 +13,7 @@ from PIL import Image
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from .state import ServerStateManager
@@ -19,16 +21,9 @@ from ..brain import ConnectomeBrain
 from ..data.circuits import IndexedCircuits, load_malecns_v1_connectome
 import scipy.sparse as sp
 
-app = FastAPI(title="Connectome Telemetry Engine", version="0.1.0")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
+# ---------------------------------------------------------------------------
+# Module-level globals
+# ---------------------------------------------------------------------------
 STATE_MANAGER = ServerStateManager()
 
 candidate_frontend = Path(__file__).resolve().parents[3] / "frontend"
@@ -37,14 +32,20 @@ if not candidate_frontend.exists():
 FRONTEND_DIR = candidate_frontend
 
 # Active WebSocket connections
-CONNECTED_SOCKETS = set()
+CONNECTED_SOCKETS: set = set()
 
-# Global Brain Instance (initialized on startup)
+# Global Brain Instance (initialized at import time)
 GLOBAL_BRAIN: Optional[ConnectomeBrain] = None
-IS_PROCESSING_FRAME = False
+
+# Async lock – prevents concurrent frame processing across coroutines.
+# Initialized in the lifespan handler so it belongs to the correct event loop.
+_FRAME_LOCK: Optional[asyncio.Lock] = None
 
 
-def initialize_default_brain():
+# ---------------------------------------------------------------------------
+# Brain initialisation (synchronous, runs at import / module startup)
+# ---------------------------------------------------------------------------
+def initialize_default_brain() -> None:
     """Initialize the connectome brain with the official 166.7K Janelia MaleCNS v1.0 dataset."""
     global GLOBAL_BRAIN
     data_dir = Path(__file__).resolve().parents[3] / "data" / "malecns_v1"
@@ -85,6 +86,33 @@ def initialize_default_brain():
 initialize_default_brain()
 
 
+# ---------------------------------------------------------------------------
+# FastAPI lifespan – creates the asyncio.Lock in the correct event loop
+# ---------------------------------------------------------------------------
+@asynccontextmanager
+async def _lifespan(application: "FastAPI"):
+    global _FRAME_LOCK
+    _FRAME_LOCK = asyncio.Lock()
+    yield
+
+
+# ---------------------------------------------------------------------------
+# FastAPI app
+# ---------------------------------------------------------------------------
+app = FastAPI(title="Connectome Telemetry Engine", version="0.1.0", lifespan=_lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# ---------------------------------------------------------------------------
+# Pydantic request models
+# ---------------------------------------------------------------------------
 class WireheadRequest(BaseModel):
     current_mv: float = 20.0
 
@@ -94,6 +122,9 @@ class FrameSubmissionRequest(BaseModel):
     duration_ms: float = 50.0
 
 
+# ---------------------------------------------------------------------------
+# Frame processing (runs in a thread via asyncio.to_thread)
+# ---------------------------------------------------------------------------
 def _process_frame(image_base64: str, duration_ms: float = 50.0) -> Dict[str, Any]:
     """Process an incoming retinal frame, step the biophysical brain, and update state."""
     global GLOBAL_BRAIN
@@ -115,6 +146,9 @@ def _process_frame(image_base64: str, duration_ms: float = 50.0) -> Dict[str, An
     return STATE_MANAGER.get_snapshot()
 
 
+# ---------------------------------------------------------------------------
+# REST endpoints
+# ---------------------------------------------------------------------------
 @app.post("/api/wirehead")
 async def trigger_wirehead(req: WireheadRequest):
     """Trigger immediate artificial dopamine surge (+20 mV default)."""
@@ -146,47 +180,74 @@ async def get_telemetry():
     return STATE_MANAGER.get_snapshot()
 
 
+# ---------------------------------------------------------------------------
+# WebSocket endpoint
+# ---------------------------------------------------------------------------
 @app.websocket("/ws/telemetry")
 async def websocket_telemetry(websocket: WebSocket):
     """Real-time bi-directional telemetry and command stream."""
     await websocket.accept()
     CONNECTED_SOCKETS.add(websocket)
     try:
-        # Send initial snapshot
+        # Send initial snapshot immediately on connect
         await websocket.send_json(STATE_MANAGER.get_snapshot())
+
         while True:
-            # Keep connection alive and receive incoming client commands
-            data = await websocket.receive_json()
+            # Receive client command with a timeout so we can send keep-alive pings
+            # when the observation loop is paused or slow.
+            try:
+                data = await asyncio.wait_for(websocket.receive_json(), timeout=10.0)
+            except asyncio.TimeoutError:
+                # No message in 10 s → send a lightweight ping to keep the connection alive
+                try:
+                    await websocket.send_json({"ping": True})
+                except Exception:
+                    break  # socket is genuinely dead
+                continue
+
             cmd = data.get("command")
+
             if cmd == "wirehead":
                 boost = float(data.get("current_mv", 20.0))
                 STATE_MANAGER.trigger_wirehead(boost)
+
             elif cmd == "observe":
-                global IS_PROCESSING_FRAME
                 img_b64 = data.get("image_base64", "")
                 dur = float(data.get("duration_ms", 50.0))
-                if img_b64 and not IS_PROCESSING_FRAME:
-                    IS_PROCESSING_FRAME = True
-                    try:
-                        snapshot = await asyncio.to_thread(_process_frame, img_b64, dur)
-                        for ws in list(CONNECTED_SOCKETS):
-                            try:
-                                await ws.send_json(snapshot)
-                            except Exception:
-                                CONNECTED_SOCKETS.discard(ws)
-                    finally:
-                        IS_PROCESSING_FRAME = False
+                # Use asyncio.Lock to prevent concurrent frame processing;
+                # drop the frame gracefully if the previous one is still running.
+                if img_b64 and _FRAME_LOCK is not None and not _FRAME_LOCK.locked():
+                    async with _FRAME_LOCK:
+                        try:
+                            snapshot = await asyncio.to_thread(_process_frame, img_b64, dur)
+                            for ws in list(CONNECTED_SOCKETS):
+                                try:
+                                    await ws.send_json(snapshot)
+                                except Exception:
+                                    CONNECTED_SOCKETS.discard(ws)
+                        except Exception as exc:
+                            # Log the real error so it appears in the uvicorn console
+                            print(f"[WS] Frame processing error: {exc}")
+                            traceback.print_exc()
+
             elif cmd == "pause":
                 STATE_MANAGER.is_paused = True
+
             elif cmd == "resume":
                 STATE_MANAGER.is_paused = False
+
     except WebSocketDisconnect:
-        CONNECTED_SOCKETS.discard(websocket)
-    except Exception:
+        pass  # clean client-initiated close – nothing to log
+    except Exception as exc:
+        print(f"[WS] Unexpected WebSocket error: {exc}")
+        traceback.print_exc()
+    finally:
         CONNECTED_SOCKETS.discard(websocket)
 
 
-# Mount static frontend files if directory exists
+# ---------------------------------------------------------------------------
+# Static file serving
+# ---------------------------------------------------------------------------
 if FRONTEND_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 

@@ -2108,6 +2108,8 @@ class ConnectomeApp {
       this.ws.onmessage = event => {
         try {
           const snapshot = JSON.parse(event.data);
+          // Ignore server keep-alive pings
+          if (snapshot && snapshot.ping) return;
           this._handleTelemetrySnapshot(snapshot);
         } catch (err) {
           console.error('[Connectome WS] Parse error:', err);

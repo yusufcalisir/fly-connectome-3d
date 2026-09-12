@@ -125,17 +125,25 @@ class ConnectomeBrain:
         # 2. Advance Biophysical SNN
         snn_telemetry = self.snn.step_chunk(chunk_ms=duration_ms)
 
-        # 3. Read Circuit Spikes
-        active_set = set(snn_telemetry.spiking_neuron_indices)
+        # 3. Read Circuit Spikes — use numpy for O(n) instead of O(n*m) Python loops
+        if snn_telemetry.total_spikes > 0:
+            spiking_arr = np.array(list(snn_telemetry.spiking_neuron_indices), dtype=np.int32)
+        else:
+            spiking_arr = np.empty(0, dtype=np.int32)
 
-        pam11_spk = sum(1 for idx in self.circuits.pam11_dopamine_reward if idx in active_set)
-        threat_spk = sum(1 for idx in self.circuits.looming_threat_lc4 if idx in active_set)
-        kc_spk = sum(1 for idx in self.circuits.kenyon_cells if idx in active_set)
-        dna02_l_spk = sum(1 for idx in self.circuits.dna02_left if idx in active_set)
-        dna02_r_spk = sum(1 for idx in self.circuits.dna02_right if idx in active_set)
-        dnp09_spk = sum(1 for idx in self.circuits.dnp09_forward if idx in active_set)
-        mdn_spk = sum(1 for idx in self.circuits.mdn_moonwalker if idx in active_set)
-        gf_spk = sum(1 for idx in self.circuits.giant_fiber_escape if idx in active_set)
+        def _count_hits(circuit_idx: np.ndarray) -> int:
+            if len(circuit_idx) == 0 or len(spiking_arr) == 0:
+                return 0
+            return int(np.isin(circuit_idx, spiking_arr).sum())
+
+        pam11_spk = _count_hits(self.circuits.pam11_dopamine_reward)
+        threat_spk = _count_hits(self.circuits.looming_threat_lc4)
+        kc_spk = _count_hits(self.circuits.kenyon_cells)
+        dna02_l_spk = _count_hits(self.circuits.dna02_left)
+        dna02_r_spk = _count_hits(self.circuits.dna02_right)
+        dnp09_spk = _count_hits(self.circuits.dnp09_forward)
+        mdn_spk = _count_hits(self.circuits.mdn_moonwalker)
+        gf_spk = _count_hits(self.circuits.giant_fiber_escape)
 
         # 4. Step Hormonal Kinetics
         hormone_telemetry = self.hormones.update(
@@ -158,8 +166,8 @@ class ConnectomeBrain:
             giant_fiber_spikes=gf_spk,
         )
 
-        # Landmark raster
-        active_landmarks = [int(idx) for idx in self.landmark_indices if idx in active_set]
+        # Landmark raster — vectorized
+        active_landmarks = self.landmark_indices[np.isin(self.landmark_indices, spiking_arr)].tolist()
 
         return CompleteObservationTelemetry(
             sim_time_ms=snn_telemetry.simulated_time_ms,
