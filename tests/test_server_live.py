@@ -78,9 +78,14 @@ def test_websocket_telemetry_connection(client):
 
 
 def test_favicon_endpoint(client):
-    """Verify favicon.ico returns 204 No Content instead of 404."""
-    res = client.get("/favicon.ico")
-    assert res.status_code == 204
+    """Verify favicon.ico and favicon.svg return 200 OK with SVG content."""
+    res_ico = client.get("/favicon.ico")
+    assert res_ico.status_code == 200
+    assert "svg" in res_ico.headers.get("content-type", "")
+
+    res_svg = client.get("/favicon.svg")
+    assert res_svg.status_code == 200
+    assert "svg" in res_svg.headers.get("content-type", "")
 
 
 def test_websocket_disconnect_graceful(client):

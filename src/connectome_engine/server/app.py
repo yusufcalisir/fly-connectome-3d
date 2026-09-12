@@ -276,8 +276,12 @@ async def websocket_telemetry(websocket: WebSocket):
 # Static file serving & favicon
 # ---------------------------------------------------------------------------
 @app.get("/favicon.ico")
+@app.get("/favicon.svg")
 async def favicon():
-    """Return 204 No Content for favicon to prevent 404 logs."""
+    """Return logo.svg for browser tab favicon."""
+    fav = FRONTEND_DIR / "logo.svg"
+    if fav.exists():
+        return FileResponse(str(fav), media_type="image/svg+xml")
     return Response(status_code=204)
 
 
