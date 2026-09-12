@@ -341,16 +341,6 @@ uv run pytest tests/ -v
 
 ---
 
-## 📚 References & Citations
-
-1. **FlyWire Consortium (2024)**. *Whole-brain connectome of Drosophila melanogaster*. Nature, 634, 124–138.
-2. **Takemura, S. et al. (2023)**. *A connectome of the male Drosophila ventral nerve cord and brain (MaleCNS v1.0)*. bioRxiv.
-3. **Schretter, C. E. et al. (2020)**. *A dopamine-modulated neural circuit for backward locomotion in Drosophila*. Nature, 586(7830), 554–559.
-4. **Seelig, J. D., & Jayaraman, V. (2015)**. *Neural dynamics for landmark orientation and angular path integration in Drosophila*. Nature, 521(7551), 186–191.
-5. **Card, G., & Dickinson, M. H. (2008)**. *Visually mediated motor planning in the escape response of Drosophila*. PNAS, 105(26), 9119–9124.
-
----
-
 ## 📄 License
 
 Distributed under the **MIT License**. Open-source computational neuroscience and biocomputing exploration.
