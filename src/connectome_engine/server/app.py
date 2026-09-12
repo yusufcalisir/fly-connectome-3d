@@ -3,10 +3,18 @@
 import asyncio
 import base64
 import io
+import sys
 import traceback
 from contextlib import asynccontextmanager, nullcontext
 from pathlib import Path
 from typing import Any, Dict, Optional
+
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 import numpy as np
 import scipy.sparse as sp
@@ -246,7 +254,7 @@ async def websocket_telemetry(websocket: WebSocket):
     await websocket.accept()
     CONNECTED_SOCKETS.add(websocket)
     client_info = f"{websocket.client.host}:{websocket.client.port}" if websocket.client else "web client"
-    print(f"[WS] 🟢 Cockpit connected ({client_info}) - real-time telemetry streaming active.", flush=True)
+    print(f"[WS] [+] Cockpit connected ({client_info}) - real-time telemetry streaming active.", flush=True)
     try:
         # Send initial snapshot immediately on connect
         if websocket.application_state == WebSocketState.CONNECTED:
@@ -286,7 +294,28 @@ async def websocket_telemetry(websocket: WebSocket):
             if cmd == "wirehead":
                 boost = float(data.get("current_mv", 20.0))
                 STATE_MANAGER.trigger_wirehead(boost)
-                print(f"[Neural Surge] ⚡ Wirehead reward pulse: +{boost:.1f} mV", flush=True)
+                print(f"[Neural Surge] [*] Wirehead reward pulse: +{boost:.1f} mV", flush=True)
+
+            elif cmd == "stimulus_preset":
+                preset = data.get("preset", "unknown")
+                name = data.get("name", preset)
+                valence = data.get("valence", "NEUTRAL")
+                print(f"[Stimulus Arena] [*] Selected preset: {name} | Valence: {valence}", flush=True)
+
+            elif cmd == "target_position":
+                pos = str(data.get("position", "center")).upper()
+                print(f"[Phototaxis] [*] Target position shifted to: {pos} | Asymmetric retinal illumination active", flush=True)
+
+            elif cmd == "threat_trigger":
+                print("[Threat Alert] [!] LC4 looming pulse triggered | Rapid visual shadow -> Giant Fiber escape jump", flush=True)
+
+            elif cmd == "leg_swipe":
+                print("[Motor Circuit] [*] DNp09 descending command -> T1 prothoracic leg sweep activated", flush=True)
+
+            elif cmd == "custom_photo":
+                fname = data.get("name", "Custom Photo")
+                valence = data.get("valence", "CUSTOM")
+                print(f"[Stimulus Arena] [*] Custom image mapped to retina: {fname} | Spectral: {valence}", flush=True)
 
             elif cmd == "observe":
                 img_b64 = data.get("image_base64", "")
@@ -322,7 +351,7 @@ async def websocket_telemetry(websocket: WebSocket):
         traceback.print_exc()
     finally:
         CONNECTED_SOCKETS.discard(websocket)
-        print("[WS] 🔴 Cockpit disconnected.", flush=True)
+        print("[WS] [-] Cockpit disconnected.", flush=True)
 
 
 # ---------------------------------------------------------------------------

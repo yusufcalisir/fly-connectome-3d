@@ -102,6 +102,13 @@ def test_websocket_telemetry_connection(client):
         # Send wirehead command
         ws.send_json({"command": "wirehead", "current_mv": 20.0})
 
+        # Send stimulus commands
+        ws.send_json({"command": "stimulus_preset", "preset": "fruit", "name": "Sugar Fruit", "valence": "APPETITIVE"})
+        ws.send_json({"command": "target_position", "position": "left"})
+        ws.send_json({"command": "threat_trigger"})
+        ws.send_json({"command": "leg_swipe"})
+        ws.send_json({"command": "custom_photo", "name": "test.jpg", "valence": "CUSTOM"})
+
 
 def test_favicon_endpoint(client):
     """Verify favicon.ico and favicon.svg return 200 OK with SVG content."""

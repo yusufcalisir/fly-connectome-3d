@@ -2321,6 +2321,12 @@ class ConnectomeApp {
     }
   }
 
+  sendWsCommand(payload) {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(payload));
+    }
+  }
+
   _initDomBindings() {
     document.querySelectorAll('.stim-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -2328,7 +2334,18 @@ class ConnectomeApp {
         document.querySelectorAll('.stim-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         const preset = btn.getAttribute('data-preset');
-        if (preset) this.stimulus.setPreset(preset);
+        if (preset) {
+          this.stimulus.setPreset(preset);
+          const info = this.stimulus.presetsInfo[preset];
+          const name = info?.title?.en || preset;
+          const valence = info?.tag?.en || 'NEUTRAL';
+          this.sendWsCommand({
+            command: 'stimulus_preset',
+            preset,
+            name,
+            valence,
+          });
+        }
       });
     });
 
@@ -2337,7 +2354,13 @@ class ConnectomeApp {
         document.querySelectorAll('.pos-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         const pos = btn.getAttribute('data-pos');
-        if (pos) this.stimulus.setPosition(pos);
+        if (pos) {
+          this.stimulus.setPosition(pos);
+          this.sendWsCommand({
+            command: 'target_position',
+            position: pos,
+          });
+        }
       });
     });
 
@@ -2352,6 +2375,9 @@ class ConnectomeApp {
     if (threatBtn) {
       threatBtn.addEventListener('click', () => {
         this.stimulus.triggerLoomingPulse();
+        this.sendWsCommand({
+          command: 'threat_trigger',
+        });
       });
     }
 
@@ -2359,6 +2385,9 @@ class ConnectomeApp {
     if (swipeBtn) {
       swipeBtn.addEventListener('click', () => {
         this.chamber.triggerLegSwipe();
+        this.sendWsCommand({
+          command: 'leg_swipe',
+        });
       });
     }
   }
@@ -2410,6 +2439,12 @@ class ConnectomeApp {
         if (uploadBtn) uploadBtn.classList.add('active');
 
         this.stimulus.loadCustomImage(img, file.name);
+        const valence = this.stimulus.customImageValence?.tag?.en || 'CUSTOM';
+        this.sendWsCommand({
+          command: 'custom_photo',
+          name: file.name,
+          valence,
+        });
       };
       img.src = event.target.result;
     };
