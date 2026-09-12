@@ -231,11 +231,11 @@ FlyConnectome 3D implements a synchronized **dual Three.js WebGL viewport archit
 
 ```
                                   ┌────────────────────────────────────────────────────────┐
-                                  │      60 Hz Bidirectional Telemetry (WebSocket)        │
+                                  │       60 Hz Bidirectional Telemetry (WebSocket)        │
                                   └───────────┬────────────────────────────────┬───────────┘
                                               │                                │
                        ┌──────────────────────▼───────┐        ┌───────────────▼──────────────────────┐
-                       │   Viewport 1: Rig & Treadmill │        │   Viewport 2: Cockpit CNS 3D View    │
+                       │  Viewport 1: Rig & Treadmill │        │   Viewport 2: Cockpit CNS 3D View    │
                        │   (#three-container)         │        │   (#cns-brain-canvas)                │
                        ├──────────────────────────────┤        ├──────────────────────────────────────┤
                        │ • Anatomical Fly Rig         │        │ • Isolated MaleCNS v1.0 Point Cloud  │
