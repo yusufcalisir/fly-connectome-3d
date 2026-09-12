@@ -65,6 +65,9 @@ const TRANSLATIONS = {
     badge_biophysics: 'MaleCNS v1.0 Biophysics',
     chart_scale_frames: '120 frames',
     chart_scale_landmarks: '64 landmarks',
+    nav_3d: '3D View',
+    nav_stimulus: 'Stimulus',
+    nav_cockpit: 'Cockpit',
   },
   tr: {
     header_engine: 'MOTOR:',
@@ -107,6 +110,9 @@ const TRANSLATIONS = {
     label_plasticity: 'Öğrenilmiş Çağrışım Kayması (KC ──► MBON):',
     chart_scale_frames: '120 kare',
     chart_scale_landmarks: '64 referans',
+    nav_3d: '3D Görünüm',
+    nav_stimulus: 'Uyaran',
+    nav_cockpit: 'Kokpit',
   },
 };
 
@@ -1723,9 +1729,37 @@ class ConnectomeApp {
 
     this._initLanguageSwitcher();
     this._initDomBindings();
+    this._initMobileNavigation();
     this._initCustomPhotoUpload();
     this._initWebSocket();
     this._startObservationLoop();
+  }
+
+  _initMobileNavigation() {
+    const navBtns = document.querySelectorAll('.mobile-nav-btn');
+    const grid = document.querySelector('.cockpit-grid');
+    if (!navBtns.length || !grid) return;
+
+    // Default mobile active tab is the 3D observation viewport
+    grid.setAttribute('data-mobile-tab', 'viewport');
+
+    navBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.getAttribute('data-tab');
+        if (!tab) return;
+
+        navBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        grid.setAttribute('data-mobile-tab', tab);
+
+        // When switching back to 3D Viewport on mobile, trigger Three.js resize event
+        if (tab === 'viewport') {
+          setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+          }, 80);
+        }
+      });
+    });
   }
 
   _initLanguageSwitcher() {

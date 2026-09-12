@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>FlyConnectome 3D - Neural Observation & Telemetry Cockpit</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,8 +33,8 @@
     </div>
   </header>
 
-  <!-- Main Grid Layout -->
-  <main class="cockpit-grid">
+  <!-- Main Cockpit Grid -->
+  <main class="cockpit-grid" data-mobile-tab="viewport">
     <!-- LEFT PANEL: Stimulus Feed & Phone Control -->
     <aside class="panel left-panel glass">
       <div class="panel-header">
@@ -205,6 +205,22 @@
       </div>
     </aside>
   </main>
+
+  <!-- Floating Mobile Navigation Bar (Active on screens <= 1024px) -->
+  <nav class="mobile-nav-bar" id="mobile-nav-bar" aria-label="Mobile Navigation">
+    <button class="mobile-nav-btn active" data-tab="viewport" id="tab-btn-viewport">
+      <span class="nav-icon">🎮</span>
+      <span class="nav-label" data-i18n="nav_3d">3D View</span>
+    </button>
+    <button class="mobile-nav-btn" data-tab="stimulus" id="tab-btn-stimulus">
+      <span class="nav-icon">🍉</span>
+      <span class="nav-label" data-i18n="nav_stimulus">Stimulus</span>
+    </button>
+    <button class="mobile-nav-btn" data-tab="cockpit" id="tab-btn-cockpit">
+      <span class="nav-icon">🧬</span>
+      <span class="nav-label" data-i18n="nav_cockpit">Cockpit</span>
+    </button>
+  </nav>
 
   <script src="/static/main.js"></script>
 </body>

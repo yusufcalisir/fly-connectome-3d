@@ -553,6 +553,7 @@ body {
   padding: 6px;
   border-radius: 20px;
   backdrop-filter: blur(10px);
+  z-index: 25;
 }
 
 .view-toggle-btn {
@@ -648,4 +649,266 @@ body {
   color: var(--c-neural-violet);
   font-size: 11px;
   font-weight: 600;
+}
+
+/* ==========================================================================
+   MOBILE & TABLET RESPONSIVE SYSTEM
+   ========================================================================== */
+
+/* Mobile Navigation Bar - Hidden on Desktop */
+.mobile-nav-bar {
+  display: none;
+}
+
+/* Tablet Screens (1025px to 1280px) */
+@media (max-width: 1280px) {
+  .cockpit-grid {
+    grid-template-columns: 290px 1fr 320px;
+  }
+  .app-header {
+    padding: 0 16px;
+  }
+  .stat-pill {
+    padding: 3px 8px;
+    font-size: 11px;
+  }
+}
+
+/* Tablets Portrait & Mobile Devices (<= 1024px) */
+@media (max-width: 1024px) {
+  body {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .app-header {
+    height: 52px;
+    padding: 0 14px;
+  }
+
+  .brand h1 {
+    font-size: 16px;
+    letter-spacing: 1px;
+  }
+
+  .badge {
+    display: none;
+  }
+
+  /* Main Viewport Container */
+  .cockpit-grid {
+    flex: 0 0 calc(100dvh - 52px - 60px);
+    display: block;
+    position: relative;
+    width: 100vw;
+    height: calc(100vh - 52px - 60px);
+    height: calc(100dvh - 52px - 60px);
+    max-height: calc(100dvh - 52px - 60px);
+    overflow: hidden;
+  }
+
+  /* Responsive Tab-Based Display */
+  .center-viewport,
+  .left-panel,
+  .right-panel {
+    display: none !important;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+
+  .cockpit-grid[data-mobile-tab="viewport"] .center-viewport {
+    display: block !important;
+  }
+
+  .cockpit-grid[data-mobile-tab="stimulus"] .left-panel {
+    display: flex !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px;
+    padding-bottom: 32px;
+    border-right: none;
+    border-left: none;
+  }
+
+  .cockpit-grid[data-mobile-tab="cockpit"] .right-panel {
+    display: flex !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px;
+    padding-bottom: 32px;
+    border-right: none;
+    border-left: none;
+  }
+
+  /* Floating Bottom Navigation Bar */
+  .mobile-nav-bar {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: rgba(8, 12, 20, 0.94);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border-glass-bright);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.6);
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    align-items: center;
+    justify-content: space-around;
+  }
+
+  .mobile-nav-btn {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .mobile-nav-btn .nav-icon {
+    font-size: 18px;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .mobile-nav-btn .nav-label {
+    font-size: 11px;
+    font-weight: 700;
+    font-family: var(--font-display);
+    letter-spacing: 0.4px;
+  }
+
+  .mobile-nav-btn:hover {
+    color: var(--text-muted);
+  }
+
+  .mobile-nav-btn.active {
+    color: #00f0ff;
+  }
+
+  .mobile-nav-btn.active .nav-icon {
+    transform: translateY(-2px) scale(1.15);
+    filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.7));
+  }
+
+  /* Viewport Controls on Mobile */
+  .viewport-controls {
+    bottom: 14px;
+    z-index: 50;
+    padding: 5px 8px;
+    border-radius: 18px;
+    max-width: calc(100vw - 24px);
+  }
+
+  .view-toggle-btn {
+    padding: 6px 10px;
+    font-size: 10px;
+  }
+
+  .viewport-hud {
+    top: 10px;
+    right: 10px;
+    transform: scale(0.88);
+    transform-origin: top right;
+  }
+
+  /* Two-column button matrix for stimulus on tablets */
+  .stimulus-controls .button-matrix {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+}
+
+/* Mobile Phones (<= 640px) */
+@media (max-width: 640px) {
+  .header-status .stat-pill:nth-child(2),
+  .header-status .stat-pill:nth-child(3) {
+    display: none;
+  }
+
+  .app-header {
+    padding: 0 10px;
+  }
+
+  .brand h1 {
+    font-size: 14px;
+  }
+
+  .stat-pill {
+    padding: 2px 8px;
+    font-size: 10px;
+  }
+
+  .stimulus-card {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .screen-preview-container {
+    width: 64px;
+    height: 114px;
+  }
+
+  .stimulus-info h3 {
+    font-size: 13px;
+  }
+
+  .stimulus-controls .button-matrix {
+    grid-template-columns: 1fr;
+  }
+
+  .action-bar {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 4px;
+  }
+
+  .btn {
+    padding: 7px 4px;
+    gap: 4px;
+  }
+
+  .btn-text strong {
+    font-size: 9px;
+  }
+
+  .btn-text small {
+    font-size: 7px;
+  }
+
+  .btn-icon {
+    font-size: 13px;
+  }
+
+  .view-toggle-btn {
+    padding: 5px 8px;
+    font-size: 9px;
+  }
+}
+
+/* Ultra-Compact Phones (<= 360px) */
+@media (max-width: 360px) {
+  .action-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .brand h1 span {
+    display: none;
+  }
 }
