@@ -5,8 +5,10 @@ and smart healthcheck polling mechanisms.
 ZERO MOCK, ZERO RANDOM NUMBERS.
 """
 
-from pathlib import Path
 import subprocess
+import sys
+from pathlib import Path
+
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -53,6 +55,7 @@ def test_start_bat_capabilities_contract():
     assert 'title "' not in content, "start.bat window title should not have literal quotes"
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="cmd.exe batch execution requires Windows")
 def test_start_bat_test_subcommand_execution():
     """Verify that 'start.bat test' executes pytest cleanly through Windows cmd."""
     cmd = ["cmd.exe", "/c", "start.bat", "test", "tests/test_vnc_kinematics_frontend.py"]

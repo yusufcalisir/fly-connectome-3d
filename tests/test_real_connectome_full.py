@@ -39,6 +39,14 @@ def test_malecns_v1_topology_integrity():
     assert len(circuits.dna02_right) == 1, "Expected bilateral DNa02 Right"
     assert len(circuits.giant_fiber_escape) == 2, "Expected bilateral Giant Fiber cells"
 
+    # Verify 6 VNC leg motor pools (381 pure biological leg motor neurons)
+    assert len(circuits.vnc_t1_left) == 68, "Expected 68 T1L motor neurons"
+    assert len(circuits.vnc_t1_right) == 67, "Expected 67 T1R motor neurons"
+    assert len(circuits.vnc_t2_left) == 58, "Expected 58 T2L motor neurons"
+    assert len(circuits.vnc_t2_right) == 58, "Expected 58 T2R motor neurons"
+    assert len(circuits.vnc_t3_left) == 66, "Expected 66 T3L motor neurons"
+    assert len(circuits.vnc_t3_right) == 64, "Expected 64 T3R motor neurons"
+
 
 def test_real_connectome_lif_dopamine_propagation():
     """Verify real LIF spike propagation through the 25.6M synaptic matrix upon PAM11 stimulation."""

@@ -126,7 +126,10 @@ jobs:
 
       - name: Run real-connectome tests
         run: |
-          uv run pytest tests/test_real_connectome_full.py \
+          uv run pytest \
+            tests/test_real_connectome_full.py \
+            tests/test_vnc_leg_circuits.py \
+            tests/test_vnc_leg_biophysics.py \
             -v \
             --tb=short \
             --timeout=300 \

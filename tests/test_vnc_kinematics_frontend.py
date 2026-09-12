@@ -6,8 +6,6 @@ ZERO MOCK, ZERO RANDOM NUMBERS.
 """
 
 from pathlib import Path
-import re
-import pytest
 
 FRONTEND_DIR = Path(__file__).resolve().parents[1] / "frontend"
 
