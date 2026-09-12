@@ -6,21 +6,21 @@ import io
 import traceback
 from contextlib import asynccontextmanager, nullcontext
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
 import numpy as np
-from PIL import Image
-
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+import scipy.sparse as sp
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, Response
-from starlette.websockets import WebSocketState
+from fastapi.staticfiles import StaticFiles
+from PIL import Image
 from pydantic import BaseModel
+from starlette.websockets import WebSocketState
 
-from .state import ServerStateManager
 from ..brain import ConnectomeBrain
 from ..data.circuits import IndexedCircuits, load_malecns_v1_connectome
-import scipy.sparse as sp
+from .state import ServerStateManager
 
 # ---------------------------------------------------------------------------
 # Module-level globals

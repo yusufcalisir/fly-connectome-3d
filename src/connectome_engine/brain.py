@@ -1,16 +1,16 @@
 """Central unified Brain Engine orchestrating sensory inputs, SNN dynamics, hormones, and motor decoding."""
 
-from dataclasses import dataclass, asdict
-from typing import Dict, Any, Optional
+from dataclasses import dataclass
+
 import numpy as np
 import scipy.sparse as sp
 
 from .config import CONFIG, BiophysicalConstants
 from .data.circuits import IndexedCircuits
-from .simulation.lif_kernel import SpikingConnectomeEngine, SNNTelemetry
-from .simulation.hormones import HormoneDynamicsEngine, HormoneTelemetry
-from .simulation.visual_transduction import VisualTransductionEngine, VisualTransductionTelemetry
-from .simulation.motor_decoder import MotorBehavioralDecoder, MotorTelemetry
+from .simulation.hormones import HormoneDynamicsEngine
+from .simulation.lif_kernel import SpikingConnectomeEngine
+from .simulation.motor_decoder import MotorBehavioralDecoder
+from .simulation.visual_transduction import VisualTransductionEngine
 
 
 @dataclass

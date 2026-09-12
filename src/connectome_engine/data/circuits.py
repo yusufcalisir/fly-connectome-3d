@@ -3,7 +3,8 @@
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import Optional, Tuple
+
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
@@ -74,7 +75,7 @@ def extract_circuits(annotations_df: pd.DataFrame, ids: np.ndarray) -> IndexedCi
     df = annotations_df.copy()
     if "bodyId" in df.columns:
         df = df.set_index("bodyId")
-    
+
     # Reindex to match the exact order of the graph nodes
     df_aligned = df.reindex(ids)
     types = df_aligned["type"].fillna("").astype(str)

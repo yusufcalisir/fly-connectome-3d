@@ -5,10 +5,9 @@ sparse CSR graph and exact biological circuit index map.
 """
 
 import json
-import sys
 import time
 from pathlib import Path
-from typing import Dict, Any, Tuple
+
 import numpy as np
 import pandas as pd
 import pyarrow.feather as feather

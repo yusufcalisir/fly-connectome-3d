@@ -8,23 +8,20 @@ These tests guard against regressions that would break the real-time constraint:
   - StateManager concurrency (thread-safe push + get)
 """
 
-import threading
-import time
 import base64
 import io
-import pytest
-import numpy as np
-import scipy.sparse as sp
-from PIL import Image
-from fastapi.testclient import TestClient
+import threading
 
-from connectome_engine.simulation.lif_kernel import SpikingConnectomeEngine
-from connectome_engine.config import CONFIG
-from connectome_engine.server.state import ServerStateManager
+import numpy as np
+import pytest
+import scipy.sparse as sp
+from fastapi.testclient import TestClient
+from PIL import Image
+
 from connectome_engine.brain import ConnectomeBrain
 from connectome_engine.data.circuits import IndexedCircuits
 from connectome_engine.server.app import app
-
+from connectome_engine.server.state import ServerStateManager
 
 # ── Helpers ───────────────────────────────────────────────────────────────
 

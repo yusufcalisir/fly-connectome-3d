@@ -2,9 +2,10 @@
 
 import base64
 import io
+
 import pytest
-from PIL import Image
 from fastapi.testclient import TestClient
+from PIL import Image
 
 from connectome_engine.server.app import app
 

@@ -1,11 +1,9 @@
 """Thread-safe state manager and rolling telemetry history buffer."""
 
+import threading
 from collections import deque
 from dataclasses import asdict
-import threading
-import time
-from typing import Dict, Any, List, Optional
-import numpy as np
+from typing import Any, Dict
 
 from ..brain import CompleteObservationTelemetry
 

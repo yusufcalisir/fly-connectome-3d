@@ -15,7 +15,8 @@ into a single numpy/scipy vectorized pass that runs in <50 ms on a typical lapto
 """
 
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional
+
 import numpy as np
 import scipy.sparse as sp
 

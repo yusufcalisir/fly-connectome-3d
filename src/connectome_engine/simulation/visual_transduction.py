@@ -1,7 +1,8 @@
 """Visual transduction engine: retinal projection, chromatic decomposition, and innate looming threat detection."""
 
 from dataclasses import dataclass
-from typing import Tuple, Optional
+from typing import Optional
+
 import numpy as np
 
 from ..config import CONFIG

@@ -1,7 +1,7 @@
 """Central configuration, file paths, and biophysical neural constants."""
 
-from pathlib import Path
 from dataclasses import dataclass
+from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT_DIR / "data" / "malecns_v1"

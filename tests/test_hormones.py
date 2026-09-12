@@ -1,8 +1,7 @@
 """Unit tests for hormone kinetics (Dopamine, Octopamine, Serotonin)."""
 
-import pytest
-from connectome_engine.simulation.hormones import HormoneDynamicsEngine
 from connectome_engine.config import HORMONE_CONFIG
+from connectome_engine.simulation.hormones import HormoneDynamicsEngine
 
 
 def test_dopamine_synthesis_and_decay():

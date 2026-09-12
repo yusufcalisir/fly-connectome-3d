@@ -1,7 +1,6 @@
 """Unit and integration tests for custom photo visual transduction and spectral valence."""
 
 import numpy as np
-from PIL import Image
 
 from connectome_engine.simulation.visual_transduction import VisualTransductionEngine
 

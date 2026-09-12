@@ -12,9 +12,9 @@ Covers:
 """
 
 import time
+
 import numpy as np
 import scipy.sparse as sp
-import pytest
 
 from connectome_engine.config import CONFIG
 from connectome_engine.simulation.lif_kernel import SpikingConnectomeEngine

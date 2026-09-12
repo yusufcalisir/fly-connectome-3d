@@ -1,8 +1,8 @@
 """Integration test for the unified ConnectomeBrain engine."""
 
 import numpy as np
-import scipy.sparse as sp
 import pytest
+import scipy.sparse as sp
 
 from connectome_engine.brain import ConnectomeBrain
 from connectome_engine.data.circuits import IndexedCircuits

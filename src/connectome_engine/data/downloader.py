@@ -6,16 +6,10 @@ cryptographic SHA256 checksums, and compiles the sparse connectome graph.
 """
 
 import hashlib
-import json
-import sys
 import time
 import urllib.request
 from pathlib import Path
-from typing import Dict, Any, Tuple
-import numpy as np
-import pandas as pd
-import pyarrow.feather as feather
-import scipy.sparse as sp
+from typing import Any, Dict
 
 DATA_DIR = Path(__file__).resolve().parents[3] / "data" / "malecns_v1"
 

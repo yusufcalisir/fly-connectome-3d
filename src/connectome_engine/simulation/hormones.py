@@ -1,7 +1,7 @@
 """Neuromodulator hormone dynamics and synaptic plasticity kinetic engine."""
 
 from dataclasses import dataclass
-from typing import Dict
+
 import numpy as np
 
 from ..config import HORMONE_CONFIG, HormoneKineticsConstants

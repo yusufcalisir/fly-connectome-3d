@@ -1,7 +1,6 @@
 """Unit tests for visual transduction and looming threat detection."""
 
 import numpy as np
-import pytest
 
 from connectome_engine.simulation.visual_transduction import VisualTransductionEngine
 

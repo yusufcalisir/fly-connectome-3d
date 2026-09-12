@@ -1,6 +1,7 @@
 """Motor kinematics and behavioral decoding from descending neuron spike trains."""
 
 from dataclasses import dataclass
+
 import numpy as np
 
 
@@ -56,7 +57,8 @@ class MotorBehavioralDecoder:
         # 5. Compass Heading (Central Complex Ellipsoid Body EPG ring attractor)
         if total_epg_nodes > 0:
             target_angle = (epg_active_index / total_epg_nodes) * 360.0
-            # Heading turns with steering deflection
+            self.heading_deg = (target_angle + self.smooth_steering * 8.0) % 360.0
+        else:
             self.heading_deg = (self.heading_deg + self.smooth_steering * 8.0) % 360.0
 
         # 6. Front Right Leg Screen Swipe Choreography

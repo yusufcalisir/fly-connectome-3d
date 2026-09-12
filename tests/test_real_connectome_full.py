@@ -1,14 +1,12 @@
 """Comprehensive test suite verifying the official Janelia MaleCNS v1.0 166.7K connectome."""
 
-import json
 from pathlib import Path
-import numpy as np
-import scipy.sparse as sp
-import pytest
 
+import numpy as np
+
+from connectome_engine.config import CONFIG
 from connectome_engine.data.circuits import load_malecns_v1_connectome
 from connectome_engine.simulation.lif_kernel import SpikingConnectomeEngine
-from connectome_engine.config import CONFIG
 
 
 def test_malecns_v1_topology_integrity():
