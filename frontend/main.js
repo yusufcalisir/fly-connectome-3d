@@ -1479,16 +1479,42 @@ class ObservationChamber3D {
     camIsland.position.set(-0.24, 0.52, -0.03);
     phoneGroup.add(camIsland);
 
-    const standMat = new THREE.MeshStandardMaterial({ color: 0x222a38, metalness: 0.85, roughness: 0.3 });
-    const standStemGeo = new THREE.CylinderGeometry(0.04, 0.05, 1.2, 16);
+    const standMat = new THREE.MeshStandardMaterial({
+      color: 0x222a38,
+      metalness: 0.85,
+      roughness: 0.3,
+    });
+
+    // Rear clamp and knuckle joint mounted securely to the back of the smartphone
+    const rearClampGeo = new THREE.BoxGeometry(0.34, 0.16, 0.025);
+    const rearClamp = new THREE.Mesh(rearClampGeo, standMat);
+    rearClamp.position.set(0.0, -0.08, -0.032);
+    phoneGroup.add(rearClamp);
+
+    const knuckleJointGeo = new THREE.CylinderGeometry(0.025, 0.025, 0.07, 12);
+    const knuckleJoint = new THREE.Mesh(knuckleJointGeo, standMat);
+    knuckleJoint.rotation.x = Math.PI / 2;
+    knuckleJoint.position.set(0.0, -0.08, -0.07);
+    phoneGroup.add(knuckleJoint);
+
+    // Stand base resting on optical table, positioned safely behind the phone
+    const standBaseGeo = new THREE.CylinderGeometry(0.28, 0.32, 0.05, 24);
+    const standBase = new THREE.Mesh(standBaseGeo, standMat);
+    standBase.position.set(0.0, 0.025, 1.28);
+    this.rigGroup.add(standBase);
+
+    // Vertical stand post rising behind the phone casing
+    const standStemGeo = new THREE.CylinderGeometry(0.035, 0.045, 1.18, 16);
     const standStem = new THREE.Mesh(standStemGeo, standMat);
-    standStem.position.set(0.0, 0.55, 1.18);
+    standStem.position.set(0.0, 0.60, 1.28);
     this.rigGroup.add(standStem);
 
-    const standBaseGeo = new THREE.CylinderGeometry(0.35, 0.4, 0.06, 24);
-    const standBase = new THREE.Mesh(standBaseGeo, standMat);
-    standBase.position.set(0.0, 0.03, 1.18);
-    this.rigGroup.add(standBase);
+    // Articulated bridge arm connecting vertical post to phone rear knuckle
+    const bridgeArmGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.10, 12);
+    const bridgeArm = new THREE.Mesh(bridgeArmGeo, standMat);
+    bridgeArm.rotation.x = Math.PI / 2;
+    bridgeArm.position.set(0.0, 1.16, 1.24);
+    this.rigGroup.add(bridgeArm);
 
     this.phoneGroup = phoneGroup;
     this.rigGroup.add(phoneGroup);
