@@ -59,7 +59,12 @@ class ConnectomeBrain:
         constants: BiophysicalConstants = CONFIG,
     ):
         self.circuits = circuits
-        self.snn = SpikingConnectomeEngine(num_neurons, synaptic_weights, constants)
+        self.snn = SpikingConnectomeEngine(
+            num_neurons,
+            synaptic_weights,
+            constants,
+            polarity=circuits.polarity,
+        )
         self.hormones = HormoneDynamicsEngine()
         self.visual = VisualTransductionEngine(
             num_r1_r6=len(circuits.r1_r6_photoreceptors),

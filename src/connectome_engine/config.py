@@ -17,6 +17,7 @@ class BiophysicalConstants:
     v_rest_mv: float = -65.0      # Resting membrane potential (mV)
     v_thresh_mv: float = -50.0    # Action potential trigger threshold (mV)
     v_reset_mv: float = -70.0     # Post-spike reset potential (mV)
+    v_lower_bound_mv: float = -85.0 # Biological potassium/chloride reversal potential clamp (mV)
     tau_ref_ms: float = 2.0       # Absolute refractory period (ms)
     r_membrane_mohm: float = 10.0 # Membrane resistance (Megaohms)
 

@@ -34,6 +34,9 @@ class SNNTelemetry:
     voltage_max_mv: float
     spiking_neuron_indices: np.ndarray
     simulated_time_ms: float
+    excitatory_spikes: int = 0
+    inhibitory_spikes: int = 0
+    excitatory_ratio: float = 0.5
 
 
 class SpikingConnectomeEngine:
@@ -58,10 +61,21 @@ class SpikingConnectomeEngine:
         num_neurons: int,
         synaptic_weights: sp.csr_matrix,
         constants: BiophysicalConstants = CONFIG,
+        polarity: Optional[np.ndarray] = None,
     ):
         self.n = num_neurons
         self.weights = synaptic_weights.tocsr().astype(np.float32)
         self.cfg = constants
+
+        # Biological polarity (Dale's Principle: +1 Excitatory, -1 Inhibitory)
+        if polarity is not None:
+            self.polarity = polarity.astype(np.int8)
+            self.is_exc = self.polarity > 0
+            self.is_inh = self.polarity < 0
+        else:
+            self.polarity = np.ones(self.n, dtype=np.int8)
+            self.is_exc = np.ones(self.n, dtype=bool)
+            self.is_inh = np.zeros(self.n, dtype=bool)
 
         # Membrane states
         self.v = np.full(self.n, self.cfg.v_rest_mv, dtype=np.float32)
@@ -79,6 +93,7 @@ class SpikingConnectomeEngine:
         self.v_rest = np.float32(self.cfg.v_rest_mv)
         self.v_thresh = np.float32(self.cfg.v_thresh_mv)
         self.v_reset = np.float32(self.cfg.v_reset_mv)
+        self.v_lower = np.float32(getattr(self.cfg, "v_lower_bound_mv", -85.0))
         self.ref_steps_const = int(round(self.cfg.tau_ref_ms / self.cfg.dt_ms))
 
         # Simulation clock
@@ -114,6 +129,7 @@ class SpikingConnectomeEngine:
             + (self.v[non_ref] - self.v_rest) * self.decay_factor
             + total_input[non_ref] * (1.0 - self.decay_factor) * self.cfg.r_membrane_mohm
         )
+        self.v[non_ref] = np.maximum(self.v_lower, self.v[non_ref])
 
         new_spikes = non_ref & (self.v >= self.v_thresh)
         if np.any(new_spikes):
@@ -150,6 +166,7 @@ class SpikingConnectomeEngine:
             + (self.v[non_ref] - self.v_rest) * self._mini_decay
             + total_input[non_ref] * self._mini_drive * self.cfg.r_membrane_mohm
         )
+        self.v[non_ref] = np.maximum(self.v_lower, self.v[non_ref])
 
         # --- threshold detection ---
         new_spikes = non_ref & (self.v >= self.v_thresh)
@@ -196,6 +213,15 @@ class SpikingConnectomeEngine:
         total_chunk_spikes = int(chunk_spike_counts.sum())
         self.total_spikes_accumulated += total_chunk_spikes
 
+        # Vectorized Dale's Law E/I spike counting (Zero Mock)
+        exc_spikes = int(np.sum(chunk_spike_counts[self.is_exc]))
+        inh_spikes = int(np.sum(chunk_spike_counts[self.is_inh]))
+        exc_ratio = (
+            float(exc_spikes / max(1, total_chunk_spikes))
+            if total_chunk_spikes > 0
+            else 0.5
+        )
+
         spiking_indices = np.flatnonzero(chunk_spike_counts)
         mean_rate_hz = (
             total_chunk_spikes / (self.n * (target_ms / 1000.0))
@@ -209,6 +235,9 @@ class SpikingConnectomeEngine:
             voltage_max_mv=float(np.max(self.v)),
             spiking_neuron_indices=spiking_indices,
             simulated_time_ms=self.total_sim_ms,
+            excitatory_spikes=exc_spikes,
+            inhibitory_spikes=inh_spikes,
+            excitatory_ratio=exc_ratio,
         )
 
     def get_cluster_firing_rate(self, cluster_indices: np.ndarray, duration_ms: float = 50.0) -> float:
