@@ -43,6 +43,13 @@ def test_telemetry_get_endpoint(client):
     assert "excitatory_spikes" in data["latest"]["spike_counts"]
     assert "inhibitory_spikes" in data["latest"]["spike_counts"]
 
+    # VNC Leg Telemetry Verification
+    assert "vnc_legs" in data["latest"]
+    vnc = data["latest"]["vnc_legs"]
+    for k in ["t1_left_hz", "t1_right_hz", "t2_left_hz", "t2_right_hz", "t3_left_hz", "t3_right_hz", "tripod_phase"]:
+        assert k in vnc
+        assert isinstance(vnc[k], (int, float))
+
 
 def test_wirehead_endpoint(client):
     """Verify wireheading triggers dopamine pulse."""
@@ -73,6 +80,13 @@ def test_observe_endpoint(client):
     assert "excitatory_spikes" in latest["spike_counts"]
     assert "inhibitory_spikes" in latest["spike_counts"]
 
+    # Verify VNC legs in observation snapshot
+    assert "vnc_legs" in latest
+    vnc = latest["vnc_legs"]
+    for k in ["t1_left_hz", "t1_right_hz", "t2_left_hz", "t2_right_hz", "t3_left_hz", "t3_right_hz", "tripod_phase"]:
+        assert k in vnc
+        assert isinstance(vnc[k], (int, float))
+
 
 def test_websocket_telemetry_connection(client):
     """Verify WebSocket connection and command dispatch."""
@@ -82,6 +96,8 @@ def test_websocket_telemetry_connection(client):
         assert "latest" in initial_data
         assert "spike_counts" in initial_data["latest"]
         assert "excitatory_spikes" in initial_data["latest"]["spike_counts"]
+        assert "vnc_legs" in initial_data["latest"]
+        assert "tripod_phase" in initial_data["latest"]["vnc_legs"]
 
         # Send wirehead command
         ws.send_json({"command": "wirehead", "current_mv": 20.0})
