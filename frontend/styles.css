@@ -854,6 +854,159 @@ body {
   border-color: var(--c-hazard);
 }
 
+/* VNC Thoracic Hexapod Motor Pools */
+.vnc-hexapod-box {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.vnc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.vnc-header h4 {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: #38bdf8;
+  margin: 0;
+}
+
+.vnc-tag {
+  font-size: 8px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: rgba(0, 240, 255, 0.1);
+  color: #00f0ff;
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.tripod-status-row {
+  display: flex;
+  gap: 6px;
+}
+
+.tripod-pill {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.2s ease-out;
+}
+
+.tripod-pill .tripod-name {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.tripod-pill .tripod-legs {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  color: var(--text-muted);
+}
+
+.tripod-pill.active-stance {
+  background: rgba(0, 240, 255, 0.15);
+  border-color: #00f0ff;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.35);
+}
+
+.tripod-pill.active-stance .tripod-name {
+  color: #00f0ff;
+  text-shadow: 0 0 6px rgba(0, 240, 255, 0.6);
+}
+
+.tripod-pill.active-stance .tripod-legs {
+  color: #e0f2fe;
+}
+
+.tripod-pill.active-swing {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: #f59e0b;
+}
+
+.tripod-pill.active-swing .tripod-name {
+  color: #f59e0b;
+}
+
+.hexapod-leg-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.leg-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.leg-card.swing-active {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.04);
+}
+
+.leg-card.stance-active {
+  border-color: rgba(0, 240, 255, 0.45);
+  background: rgba(0, 240, 255, 0.05);
+}
+
+.leg-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 9px;
+}
+
+.leg-id {
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.leg-id small {
+  font-size: 7.5px;
+  color: var(--text-muted);
+}
+
+.leg-hz {
+  font-size: 9px;
+  color: #38bdf8;
+}
+
+.progress-bar.leg-bar {
+  background: linear-gradient(90deg, #0284c7, #38bdf8);
+}
+
+.leg-card.stance-active .progress-bar.leg-bar {
+  background: linear-gradient(90deg, #0284c7, #00f0ff);
+  box-shadow: 0 0 6px rgba(0, 240, 255, 0.5);
+}
+
+.leg-card.swing-active .progress-bar.leg-bar {
+  background: linear-gradient(90deg, #d97706, #fbbf24);
+  box-shadow: 0 0 6px rgba(251, 191, 36, 0.5);
+}
+
 /* CENTER VIEWPORT */
 .center-viewport {
   position: relative;

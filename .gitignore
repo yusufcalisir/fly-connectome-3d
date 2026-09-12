@@ -45,6 +45,8 @@ data/downloads/
 # Local Shell Scripts & Windows Executables (Do not push to remote)
 # ==============================================================================
 *.bat
+!start.bat
+!run.bat
 *.cmd
 *.ps1
 

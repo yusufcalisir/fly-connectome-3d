@@ -167,6 +167,77 @@
           <span id="badge-retreat" class="alert-pill" data-i18n="pill_retreat">MDN MOONWALKER</span>
           <span id="badge-jump" class="alert-pill" data-i18n="pill_jump">GIANT FIBER JUMP</span>
         </div>
+
+        <!-- VNC Thoracic Hexapod Motor Pools -->
+        <div class="vnc-hexapod-box">
+          <div class="vnc-header">
+            <h4 data-i18n="title_vnc_hexapod">VNC THORACIC HEXAPOD GAIT</h4>
+            <span class="vnc-tag" data-i18n="tag_vnc_cpg">CPG Alternating Tripod</span>
+          </div>
+
+          <!-- Tripod A / Tripod B Alternation Indicator -->
+          <div class="tripod-status-row">
+            <div id="tripod-a-badge" class="tripod-pill active-stance">
+              <span class="tripod-name">TRIPOD A</span>
+              <span class="tripod-legs">L1 · R2 · L3</span>
+            </div>
+            <div id="tripod-b-badge" class="tripod-pill active-swing">
+              <span class="tripod-name">TRIPOD B</span>
+              <span class="tripod-legs">R1 · L2 · R3</span>
+            </div>
+          </div>
+
+          <!-- 6-Leg Motor Neuron Pools (T1 Prothoracic, T2 Mesothoracic, T3 Metathoracic) -->
+          <div class="hexapod-leg-grid">
+            <!-- T1 Front Legs -->
+            <div class="leg-card" id="leg-card-t1l">
+              <div class="leg-info">
+                <span class="leg-id">L1 <small>(T1-L)</small></span>
+                <span id="vnc-t1l-hz" class="mono leg-hz">0.0 Hz</span>
+              </div>
+              <div class="progress-track mini"><div id="vnc-t1l-fill" class="progress-bar leg-bar"></div></div>
+            </div>
+            <div class="leg-card" id="leg-card-t1r">
+              <div class="leg-info">
+                <span class="leg-id">R1 <small>(T1-R)</small></span>
+                <span id="vnc-t1r-hz" class="mono leg-hz">0.0 Hz</span>
+              </div>
+              <div class="progress-track mini"><div id="vnc-t1r-fill" class="progress-bar leg-bar"></div></div>
+            </div>
+
+            <!-- T2 Middle Legs -->
+            <div class="leg-card" id="leg-card-t2l">
+              <div class="leg-info">
+                <span class="leg-id">L2 <small>(T2-L)</small></span>
+                <span id="vnc-t2l-hz" class="mono leg-hz">0.0 Hz</span>
+              </div>
+              <div class="progress-track mini"><div id="vnc-t2l-fill" class="progress-bar leg-bar"></div></div>
+            </div>
+            <div class="leg-card" id="leg-card-t2r">
+              <div class="leg-info">
+                <span class="leg-id">R2 <small>(T2-R)</small></span>
+                <span id="vnc-t2r-hz" class="mono leg-hz">0.0 Hz</span>
+              </div>
+              <div class="progress-track mini"><div id="vnc-t2r-fill" class="progress-bar leg-bar"></div></div>
+            </div>
+
+            <!-- T3 Hind Legs -->
+            <div class="leg-card" id="leg-card-t3l">
+              <div class="leg-info">
+                <span class="leg-id">L3 <small>(T3-L)</small></span>
+                <span id="vnc-t3l-hz" class="mono leg-hz">0.0 Hz</span>
+              </div>
+              <div class="progress-track mini"><div id="vnc-t3l-fill" class="progress-bar leg-bar"></div></div>
+            </div>
+            <div class="leg-card" id="leg-card-t3r">
+              <div class="leg-info">
+                <span class="leg-id">R3 <small>(T3-R)</small></span>
+                <span id="vnc-t3r-hz" class="mono leg-hz">0.0 Hz</span>
+              </div>
+              <div class="progress-track mini"><div id="vnc-t3r-fill" class="progress-bar leg-bar"></div></div>
+            </div>
+          </div>
+        </div>
       </div>
     </aside>
 

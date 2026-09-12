@@ -48,6 +48,8 @@ const TRANSLATIONS = {
     btn_swipe_title: 'LEG SWIPE',
     btn_swipe_sub: 'Front-Leg Screen Touch',
     title_motor: 'DESCENDING MOTOR OUTPUTS',
+    title_vnc_hexapod: 'VNC THORACIC HEXAPOD GAIT',
+    tag_vnc_cpg: 'CPG Alternating Tripod',
     label_steering: 'Steering (DNa02 L/R):',
     label_retinal_asym: 'Retinal Asymmetry (L/R):',
     label_drive: 'Forward Drive (DNp09):',
@@ -102,6 +104,8 @@ const TRANSLATIONS = {
     btn_swipe_title: 'BACAKLA KAYDIR',
     btn_swipe_sub: 'Ön Bacakla Ekrana Dokun',
     title_motor: 'İNEN MOTOR ÇIKTILARI',
+    title_vnc_hexapod: 'VNC THORAKS HEKSAPOD YÜRÜYÜŞÜ',
+    tag_vnc_cpg: 'CPG Alternatif Tripod',
     label_steering: 'Dümenleme (DNa02 S/S):',
     label_retinal_asym: 'Retinal Asimetri (S/S):',
     label_drive: 'İleri Yürüyüş (DNp09):',
@@ -893,6 +897,9 @@ class ObservationChamber3D {
     this.isSwiping = false;
     this.swipeProgress = 0.0;
 
+    this.cpgTripodPhase = 0.0;
+    this.vncLegs = null;
+
     this._initScene();
     this._buildEnvironment();
     this._buildPhotorealisticFly();
@@ -1345,7 +1352,10 @@ class ObservationChamber3D {
         side: cfg.side,
         phase: i * 1.05,
         name: cfg.name,
+        tripodGroup: (cfg.name === 'pro_L' || cfg.name === 'meso_R' || cfg.name === 'meta_L') ? 'A' : 'B',
         defaultRotZ: femur.rotation.z,
+        defaultFemurRotX: femur.rotation.x,
+        defaultTibiaRotZ: tibia.rotation.z,
         defaultPosX: legRoot.position.x,
         defaultPosY: legRoot.position.y,
         defaultPosZ: legRoot.position.z,
@@ -1764,6 +1774,7 @@ class ObservationChamber3D {
     const motor = telemetry.motor || {};
     this.forwardDrive = (motor.forward_drive_pct || 0) / 100;
     this.steeringDeflection = motor.steering_deflection || 0;
+    this.vncLegs = telemetry.vnc_legs || null;
 
     if (motor.giant_fiber_jump && !this.jumpTriggered) {
       this.jumpTriggered = true;
@@ -1919,7 +1930,27 @@ class ObservationChamber3D {
     }
 
     if (this.legs && this.legs.length) {
-      const stepFreq = 4.0 + this.forwardDrive * 12.0;
+      // 1. Thoracic CPG Tripod Phase Sync / Integration
+      if (this.vncLegs && this.vncLegs.tripod_phase !== undefined) {
+        const targetPhase = this.vncLegs.tripod_phase;
+        const diff = Math.atan2(Math.sin(targetPhase - this.cpgTripodPhase), Math.cos(targetPhase - this.cpgTripodPhase));
+        this.cpgTripodPhase = (this.cpgTripodPhase + diff * Math.min(1.0, dt * 18.0) + Math.PI * 2) % (Math.PI * 2);
+      } else {
+        const stepFreq = 3.0 + this.forwardDrive * 8.0;
+        this.cpgTripodPhase = (this.cpgTripodPhase + dt * 2.0 * Math.PI * stepFreq) % (Math.PI * 2);
+      }
+
+      // 2. Map 6 Legs to Biological VNC Motor Neuron Pool Firing Rates
+      const vnc = this.vncLegs || {};
+      const legHzMap = {
+        pro_L: vnc.t1_left_hz !== undefined ? vnc.t1_left_hz : (this.forwardDrive * 24.0),
+        pro_R: vnc.t1_right_hz !== undefined ? vnc.t1_right_hz : (this.forwardDrive * 24.0),
+        meso_L: vnc.t2_left_hz !== undefined ? vnc.t2_left_hz : (this.forwardDrive * 24.0),
+        meso_R: vnc.t2_right_hz !== undefined ? vnc.t2_right_hz : (this.forwardDrive * 24.0),
+        meta_L: vnc.t3_left_hz !== undefined ? vnc.t3_left_hz : (this.forwardDrive * 24.0),
+        meta_R: vnc.t3_right_hz !== undefined ? vnc.t3_right_hz : (this.forwardDrive * 24.0),
+      };
+
       for (const leg of this.legs) {
         if (leg.name === 'pro_R' && this.isSwiping) {
           this.swipeProgress += dt * 2.2;
@@ -1936,18 +1967,40 @@ class ObservationChamber3D {
           } else {
             leg.group.position.set(leg.defaultPosX, leg.defaultPosY, leg.defaultPosZ);
             leg.femur.rotation.z = leg.defaultRotZ;
+            leg.femur.rotation.x = leg.defaultFemurRotX;
+            leg.tibia.rotation.z = leg.defaultTibiaRotZ;
             this.isSwiping = false;
             this.swipeProgress = 0;
           }
         } else {
-          const angle = Math.sin(time * stepFreq + leg.phase) * (0.15 + this.forwardDrive * 0.25);
-          leg.femur.rotation.x = angle + leg.side * this.steeringDeflection * 0.3;
+          // Tripod A (pro_L, meso_R, meta_L) vs Tripod B (pro_R, meso_L, meta_R)
+          const legPhase = (leg.tripodGroup === 'A') ? this.cpgTripodPhase : (this.cpgTripodPhase + Math.PI);
+          const hz = legHzMap[leg.name] || 0;
+          const normHz = Math.min(1.0, hz / 35.0);
+
+          // Biological protraction/retraction amplitude scaled by leg motor pool rate
+          const amp = 0.08 + normHz * 0.28;
+          const swingLift = Math.max(0, Math.sin(legPhase));
+
+          // Femur swing/stance cycle
+          leg.femur.rotation.x = leg.defaultFemurRotX + Math.cos(legPhase) * amp + leg.side * this.steeringDeflection * 0.22;
+
+          // Tibia flexion during swing phase to lift foot off ball
+          leg.tibia.rotation.z = leg.defaultTibiaRotZ - leg.side * swingLift * (0.10 + normHz * 0.22);
         }
       }
     }
 
     if (this.treadmillBall) {
-      this.treadmillBall.rotation.x += this.forwardDrive * 0.08;
+      const vnc = this.vncLegs;
+      const avgHz = vnc ? (
+        ((vnc.t1_left_hz || 0) + (vnc.t1_right_hz || 0) +
+         (vnc.t2_left_hz || 0) + (vnc.t2_right_hz || 0) +
+         (vnc.t3_left_hz || 0) + (vnc.t3_right_hz || 0)) / 6.0
+      ) : (this.forwardDrive * 24.0);
+
+      const ballPitch = (avgHz / 35.0) * 0.08;
+      this.treadmillBall.rotation.x += ballPitch;
       this.treadmillBall.rotation.y += this.steeringDeflection * 0.04;
     }
 
@@ -2607,6 +2660,71 @@ class ConnectomeApp {
 
     const plast = h.plasticity_index || 0;
     document.getElementById('plasticity-val').textContent = (plast >= 0 ? '+' : '') + plast.toFixed(3);
+
+    // VNC Thoracic Hexapod Motor Telemetry
+    const vnc = t.vnc_legs || {};
+    const t1l = vnc.t1_left_hz !== undefined ? vnc.t1_left_hz : 0;
+    const t1r = vnc.t1_right_hz !== undefined ? vnc.t1_right_hz : 0;
+    const t2l = vnc.t2_left_hz !== undefined ? vnc.t2_left_hz : 0;
+    const t2r = vnc.t2_right_hz !== undefined ? vnc.t2_right_hz : 0;
+    const t3l = vnc.t3_left_hz !== undefined ? vnc.t3_left_hz : 0;
+    const t3r = vnc.t3_right_hz !== undefined ? vnc.t3_right_hz : 0;
+    const tripodPhase = vnc.tripod_phase !== undefined ? vnc.tripod_phase : (this.chamber ? this.chamber.cpgTripodPhase : 0);
+
+    const setLegHz = (id, hz) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = `${hz.toFixed(1)} Hz`;
+    };
+    setLegHz('vnc-t1l-hz', t1l);
+    setLegHz('vnc-t1r-hz', t1r);
+    setLegHz('vnc-t2l-hz', t2l);
+    setLegHz('vnc-t2r-hz', t2r);
+    setLegHz('vnc-t3l-hz', t3l);
+    setLegHz('vnc-t3r-hz', t3r);
+
+    const setLegBar = (id, hz) => {
+      const el = document.getElementById(id);
+      if (el) el.style.width = `${Math.min(100, Math.max(0, (hz / 35.0) * 100))}%`;
+    };
+    setLegBar('vnc-t1l-fill', t1l);
+    setLegBar('vnc-t1r-fill', t1r);
+    setLegBar('vnc-t2l-fill', t2l);
+    setLegBar('vnc-t2r-fill', t2r);
+    setLegBar('vnc-t3l-fill', t3l);
+    setLegBar('vnc-t3r-fill', t3r);
+
+    // Tripod A vs Tripod B Alternation
+    // When sin(phase) > 0: Tripod A in Swing, Tripod B in Stance
+    // When sin(phase) <= 0: Tripod A in Stance, Tripod B in Swing
+    const isASwing = Math.sin(tripodPhase) > 0;
+    const tripAEl = document.getElementById('tripod-a-badge');
+    const tripBEl = document.getElementById('tripod-b-badge');
+    if (tripAEl && tripBEl) {
+      if (isASwing) {
+        tripAEl.className = 'tripod-pill active-swing';
+        tripBEl.className = 'tripod-pill active-stance';
+      } else {
+        tripAEl.className = 'tripod-pill active-stance';
+        tripBEl.className = 'tripod-pill active-swing';
+      }
+    }
+
+    const updateCard = (id, isSwing) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.toggle('swing-active', isSwing);
+        el.classList.toggle('stance-active', !isSwing);
+      }
+    };
+    // Tripod A: L1, R2, L3
+    updateCard('leg-card-t1l', isASwing);
+    updateCard('leg-card-t2r', isASwing);
+    updateCard('leg-card-t3l', isASwing);
+
+    // Tripod B: R1, L2, R3
+    updateCard('leg-card-t1r', !isASwing);
+    updateCard('leg-card-t2l', !isASwing);
+    updateCard('leg-card-t3r', !isASwing);
 
     if (snapshot.history) {
       this.visualizers.drawDopamineWaveform(snapshot.history);
