@@ -3,12 +3,13 @@
 <div align="center">
   <h3>Interactive 3D <i>Drosophila</i> Connectome Simulation & Electrophysiology Cockpit</h3>
   <p>
-    Exploring neural dynamics, visual responses, and motor behaviors using connectome wiring from the Janelia MaleCNS v1.0 dataset.
+    Biophysically grounded spiking neural network simulation, 141K real 3D EM soma coordinates,
+    and thoracic motor kinematics driven by the adult <b>Janelia MaleCNS v1.0</b> connectome.
   </p>
 
   [![Python 3.12](https://img.shields.io/badge/Python-3.12%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
   [![Connectome](https://img.shields.io/badge/Connectome-Janelia_MaleCNS_v1.0-FF6F00?style=for-the-badge&logo=target&logoColor=white)](https://flywire.ai/)
-  [![Tests](https://img.shields.io/badge/Tests-34%2F34_Passing-00C853?style=for-the-badge&logo=pytest&logoColor=white)](#-testing--development)
+  [![Tests](https://img.shields.io/badge/Tests-84%2F84_Passing-00C853?style=for-the-badge&logo=pytest&logoColor=white)](#-testing--development)
   [![CI](https://img.shields.io/github/actions/workflow/status/yusufcalisir/fly-connectome-3d/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI)](https://github.com/yusufcalisir/fly-connectome-3d/actions)
   [![Three.js](https://img.shields.io/badge/Frontend-Three.js_r128-000000?style=for-the-badge&logo=three.js&logoColor=white)](https://threejs.org/)
   [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
@@ -17,11 +18,11 @@
 
   <p align="center">
     <a href="#-quickstart">⚡ Quickstart</a> •
-    <a href="#-key-features">✨ Features</a> •
-    <a href="#-how-it-works">🔍 How It Works</a> •
+    <a href="#-core-biophysical-integrations">🔬 Integrations</a> •
+    <a href="#-system-architecture">📐 Architecture</a> •
     <a href="#-empirical-benchmarks">📊 Benchmarks</a> •
-    <a href="#-circuits-modeled">🔬 Circuits</a> •
-    <a href="#-web-cockpit">🎮 Cockpit</a> •
+    <a href="#-neural-circuits-modeled">🧬 Circuits</a> •
+    <a href="#-web-cockpit--telemetry">🎮 Cockpit</a> •
     <a href="#-api-reference">📡 API</a> •
     <a href="#-testing--development">✅ Tests</a>
   </p>
@@ -31,40 +32,89 @@
 
 ## 🌟 Overview
 
-**FlyConnectome 3D** is an open-source simulation and visualization environment for exploring the connectome of the fruit fly (*Drosophila melanogaster*). The project connects the adult connectome wiring diagram (**Janelia Research Campus MaleCNS v1.0 / FlyWire**) to a Leaky Integrate-and-Fire (LIF) spiking neural network simulation, presenting real-time dynamics inside an interactive 3D web cockpit.
+**FlyConnectome 3D** is an open computational biology and neurokinematics platform modeling the central nervous system of the fruit fly (*Drosophila melanogaster*). The simulation bridges electron-microscopy synaptic wiring diagrams from the **Janelia Research Campus MaleCNS v1.0** dataset (~166.7K neurons, ~25.6M synapses) with a vectorized Leaky Integrate-and-Fire (LIF) biophysical engine and a high-performance 3D observation cockpit.
 
-Users can present visual stimuli on a virtual smartphone screen facing the fly. The simulation maps these images onto modeled photoreceptors, propagates activity through connected neural circuits, estimates neuromodulator levels (dopamine, octopamine, serotonin), and decodes downstream behavioral commands (walking, steering, and escape jumps) displayed on an air-cushioned spherical treadmill.
+Instead of artificial representations or heuristic movement cycles, sensory inputs on a virtual smartphone display stimulate bilateral photoreceptor arrays, propagate through excitatory and inhibitory neurotransmitter pathways (Dale's principle), engage descending motor tracts ($DNa02, DNp09, MDN, GF$), and directly drive **381 ventral nerve cord (VNC) leg motor neurons** to generate canonical alternating tripod locomotion on a spherical treadmill.
+
+---
+
+## 🔬 Core Biophysical Integrations
+
+### 1. 🧪 Neurotransmitter Polarity & Dale's Principle (E/I Balance)
+- **Dale's Principle**: Biological classification of 166.7K neurons by primary neurotransmitter predictions.
+  - **Acetylcholine (ACh)**: Excitatory current injection ($w > 0$, depolarizing EPSPs).
+  - **GABA, Glutamate, Histamine**: Inhibitory current injection ($w < 0$, hyperpolarizing IPSPs).
+- **Physiological Clamping**: Realistic potassium reversal potential clamp ($V_{\text{clamp}} = -85.0\text{ mV}$) prevents runaway hyper-excitation and unphysiological hyperpolarization, fostering natural rhythmic balance and sparse network firing.
+
+### 2. 🌌 141.8K Real 3D Soma Coordinates & Synaptic Wave Propagation
+- **EM Morphology Mapping**: Exact $[X, Y, Z]$ soma coordinates for **141,781 real neurons** extracted from MaleCNS v1.0 serial-section electron microscopy, isotropically normalized into Three.js anatomical space.
+- **High-Performance Binary Point Cloud**: Packed into a 2.55 MB binary buffer (`soma_coordinates_141k.bin`) with custom GPU point shaders.
+- **Synaptic Latency Waves**: Activity cascades through anatomical compartments with realistic synaptic conduction delays:
+  - $\Delta t = 0\text{ ms}$: Retinotopic input cartridges (Optic Lobe)
+  - $\Delta t = 18\text{ ms}$: Associative neuropils (Mushroom Body & Central Brain)
+  - $\Delta t = 36\text{ ms}$: Descending motor command pathways ($DNa02$, Giant Fiber)
+  - $\Delta t = 54\text{ ms}$: Ventral nerve cord thoracic motor pools ($T_1 - T_3$)
+
+### 3. 🧭 Bilateral Hemispheric Asymmetry & Closed-Loop Phototaxis
+- **Bilateral Retinotopy**: Strict separation of left (`somaSide == 'L'`) and right (`somaSide == 'R'`) visual hemifields.
+- **Optomotor Steering**: Calculates instantaneous retinal asymmetry:
+  
+  $$\text{Asymmetry} = \frac{\bar{I}_{\text{Right}} - \bar{I}_{\text{Left}}}{\bar{I}_{\text{Right}} + \bar{I}_{\text{Left}}}$$
+
+- **Descending Tract Modulation**: Illuminating the left visual field excites left-dominant optical pathways and triggers asymmetric firing in bilateral descending steering neurons ($DNa02$), causing the outer right legs to step faster and wider to orient the fly toward the light source.
+
+### 4. 🦿 VNC Thoracic Leg Motor Pools & Alternating Tripod Kinematics
+- **381 Biological Leg Motor Neurons**: Extracted from MaleCNS v1.0 neuromeres ($T_1$ prothoracic, $T_2$ mesothoracic, $T_3$ metathoracic):
+  - **$T1_L$ / $T1_R$ (Front Legs $L_1 / R_1$)**: 68 / 67 motor neurons
+  - **$T2_L$ / $T2_R$ (Middle Legs $L_2 / R_2$)**: 58 / 58 motor neurons
+  - **$T3_L$ / $T3_R$ (Hind Legs $L_3 / R_3$)**: 66 / 64 motor neurons
+- **Central Pattern Generator (CPG)**: Generates canonical insect alternating tripod coordination:
+  - **Tripod A** ($L_1, R_2, L_3$): Phase $\Phi_{\text{cpg}}$
+  - **Tripod B** ($R_1, L_2, R_3$): Phase $\Phi_{\text{cpg}} + \pi$ ($180^\circ$ antiphase)
+- **Direct Neural Joint Driving**: Femur protraction/retraction (`rotation.x`) and swing-phase tibia elevation (`rotation.z`) scale dynamically with each leg motor pool's firing rate ($Hz$). Reverse locomotion ($MDN$ moonwalker) reverses CPG phase progression.
+
+---
+
+## 📐 System Architecture
 
 ```
-                  ┌─────────────────────────────────┐
-                  │ Visual Stimulus (Image / Preset) │
-                  └────────────────┬────────────────┘
-                                   │
-                                   ▼
-                  ┌─────────────────────────────────┐
-                  │ Retinal Transduction (R1-R6, R8) │
-                  └────────────────┬────────────────┘
-                                   │
-                                   ▼
-                  ┌─────────────────────────────────┐
-                  │    Spiking Connectome Engine    │
-                  │   (Vectorized LIF Simulation)   │
-                  └───────────────┬─┬───────────────┘
-                                  │ │
-                 ┌────────────────┘ └───────────────┐
-                 ▼                                  ▼
-      ┌─────────────────────┐            ┌────────────────────┐
-      │   Neuromodulators   │            │   Motor Decoders   │
-      │ (Dopamine, OA, 5HT) │            │ (Steering, GF Jump)│
-      └──────────┬──────────┘            └──────────┬─────────┘
-                 │                                  │
-                 └────────────────┬─────────────────┘
-                                  │ WebSocket (60 Hz)
-                                  ▼
-                  ┌─────────────────────────────────┐
-                  │    Interactive 3D Web Cockpit   │
-                  │    (Three.js + Live Telemetry)  │
-                  └─────────────────────────────────┘
+                  ┌─────────────────────────────────────────┐
+                  │   Visual Stimulus (Phone Screen / File) │
+                  └────────────────────┬────────────────────┘
+                                       │
+                    ┌──────────────────┴──────────────────┐
+                    ▼                                     ▼
+         ┌─────────────────────┐               ┌─────────────────────┐
+         │ Left Retinotopy (L) │               │ Right Retinotopy (R)│
+         └──────────┬──────────┘               └──────────┬──────────┘
+                    │                                     │
+                    └──────────────────┬──────────────────┘
+                                       ▼
+                  ┌─────────────────────────────────────────┐
+                  │ 166.7K Biological Connectome Graph      │
+                  │ Dale's Principle: ACh (+) vs GABA/Glu(-)│
+                  │ 141.8K 3D Soma Point Cloud (GPU Wave)   │
+                  └────────────────────┬────────────────────┘
+                                       │
+                    ┌──────────────────┴──────────────────┐
+                    ▼                                     ▼
+         ┌─────────────────────┐               ┌─────────────────────┐
+         │ Neuromodulators     │               │ Descending Commands │
+         │ (DA, OA, 5-HT, E/I) │               │ (DNa02, DNp09, MDN) │
+         └──────────┬──────────┘               └──────────┬──────────┘
+                    │                                     │
+                    └──────────────────┬──────────────────┘
+                                       ▼
+                  ┌─────────────────────────────────────────┐
+                  │ VNC Thoracic Central Pattern Generator  │
+                  │ 381 Motor Neurons across T1, T2, T3     │
+                  └────────────────────┬────────────────────┘
+                                       │ WebSocket (60 Hz Telemetry)
+                                       ▼
+                  ┌─────────────────────────────────────────┐
+                  │ Three.js Cockpit & Hexapod Kinematics   │
+                  │ Alternating Tripod Gait on Treadmill    │
+                  └─────────────────────────────────────────┘
 ```
 
 ---
@@ -73,11 +123,10 @@ Users can present visual stimuli on a virtual smartphone screen facing the fly. 
 
 ### Prerequisites
 - **Python 3.12+**
-- [`uv`](https://github.com/astral-sh/uv) (recommended package and environment manager)
+- [`uv`](https://github.com/astral-sh/uv) (fast Python package and project manager)
 
-### 1. Clone & Install
+### 1. Installation
 ```bash
-# Clone the repository
 git clone https://github.com/yusufcalisir/fly-connectome-3d.git
 cd fly-connectome-3d
 
@@ -85,181 +134,177 @@ cd fly-connectome-3d
 uv sync
 ```
 
-### 2. Connectome Dataset (Optional)
-The simulation includes a lightweight built-in representative circuit graph so you can test immediately without extra setup.
-
-To use the full official **Janelia MaleCNS v1.0** dataset (~166k neurons, ~25.6M synapses):
+### 2. Connectome Dataset & 3D Soma Coordinates
+The repository includes automated download and compilation scripts for the official **Janelia MaleCNS v1.0** dataset:
 ```bash
-# 1. Download official dataset tables
+# 1. Download raw connectome Feather tables
 uv run python src/connectome_engine/data/downloader.py
 
-# 2. Compile into a compressed sparse CSR matrix (~80 MB)
+# 2. Compile sparse CSR connectome graph and circuit manifest
 uv run python src/connectome_engine/data/compile_malecns.py
+
+# 3. Compile 141K 3D soma coordinates binary buffer
+uv run python src/connectome_engine/data/compile_coordinates.py
 ```
 
-### 3. Launch the Application
+### 3. Launching the Engine
 
-On Windows:
+#### On Windows (Automated 1-Click Launcher):
 ```cmd
 start.bat
 ```
+`start.bat` provides:
+- Automated `uv` and Python environment verification.
+- Dataset integrity checks (`malecns_v1_graph.npz` and `soma_coordinates_141k.bin`).
+- Port conflict detection and process management.
+- **Smart Health-Check Polling**: Polls the server until 25.6M synapses are fully loaded into memory, opening the browser at the exact millisecond HTTP 200 is returned (preventing premature `ERR_CONNECTION_REFUSED` errors).
 
-Or run directly via `uv`:
+#### Subcommand Options:
+```cmd
+start.bat test           :: Runs complete biological test suite
+start.bat compile        :: Recompiles connectome and soma coordinates
+start.bat --no-browser   :: Runs headless without launching browser tab
+start.bat --reload       :: Enables Uvicorn hot code reload
+```
+
+#### On Linux / macOS:
 ```bash
 uv run uvicorn connectome_engine.server.app:app --host 127.0.0.1 --port 8000
 ```
-
-Open your browser and navigate to:
-```
-http://127.0.0.1:8000/
-```
-
----
-
-## ✨ Key Features
-
-- **Biological Connectome Integration**: Compatible with the Janelia MaleCNS v1.0 dataset, compiled into memory-mapped sparse CSR matrices for efficient sparse matrix multiplications.
-- **Vectorized LIF Simulation**: Simulates membrane potential updates and spike propagation across thousands of neurons using vectorized sub-step integration in NumPy.
-- **Visual Mapping & Looming Detection**: Projects stimuli onto simulated outer ($R_1-R_6$) and inner ($R_8$) photoreceptors, and detects rapid optical expansion via Lobula Columnar ($LC_4$) pathways.
-- **Neuromodulatory & Motor Decoding**: Simple differential equations track continuous concentrations of Dopamine, Octopamine, and Serotonin, feeding motor decoders for walking, steering ($DNa02$), and escape jumping (Giant Fiber).
-- **Interactive 3D Web Environment**: Built with Three.js to provide an electrophysiology laboratory view with multiple camera perspectives, animated fly kinematics, and live cranial circuit highlights.
-- **Bilingual Interface**: Seamless toggle between English and Turkish, with persistent language preference.
-
----
-
-## 🔍 How It Works
-
-### 1. Visual Input & Photoreceptor Transduction
-When an image or preset is presented on the virtual screen:
-- Outer photoreceptors ($R_1-R_6$) receive luminance-proportional input, modeling broad-spectrum visual drive.
-- Inner photoreceptors ($R_8$) receive chromatic-weighted input, modeling short-wavelength sensitivity.
-- If contrast expands rapidly across consecutive frames, an optical looming detector triggers an excitatory current into the $LC_4$ population.
-
-### 2. Spiking Neural Network Dynamics
-Neuron membrane potentials evolve according to Leaky Integrate-and-Fire (LIF) dynamics:
-
-$$\tau_m \frac{dV_i}{dt} = -(V_i(t) - V_{\text{rest}}) + R_m \left( I_i^{\text{syn}}(t) + I_i^{\text{ext}}(t) \right)$$
-
-When membrane potential exceeds threshold ($V_{\text{thresh}} = -50.0\text{ mV}$), the neuron spikes, resets to $V_{\text{reset}} = -70.0\text{ mV}$, and enters a brief refractory period ($\tau_{\text{ref}} = 2.0\text{ ms}$). Synaptic inputs are accumulated via sparse connectome weights.
-
-### 3. Neuromodulators & Motor Decoding
-- **Dopamine ($[\text{DA}]$)**: Driven by the $PAM11$ cluster; rises in response to appetitive cues or wirehead stimulation.
-- **Octopamine ($[\text{OA}]$)**: Driven by $TDC2$ neurons; elevated during sudden changes or threat cues.
-- **Serotonin ($[5\text{-HT}]$)**: Reflects calmer, baseline conditions and motor stability.
-- **Motor Outputs**: Firing rates in descending neurons are mapped to walking speed, steering angle, and high-priority escape responses via the Giant Fiber ($GF$) pathway.
+Open your browser at `http://127.0.0.1:8000/`.
 
 ---
 
 ## 📊 Empirical Benchmarks
 
-To illustrate how sensory transduction and LIF spiking dynamics behave across different visual inputs, the table below summarizes simulated network responses to calibrated reference inputs (50 ms simulation chunk, Janelia MaleCNS v1.0 connectome):
+The table below summarizes simulated network responses across calibrated sensory inputs (50 ms simulation chunk, Janelia MaleCNS v1.0 connectome):
 
-| Visual Stimulus | Luminance ($Y$) | Dominant Spectrum | Total Spikes | Mean Firing Rate | Looming Trigger | Simulated Circuit Response |
+| Visual Stimulus | Luminance ($Y$) | Dominant Spectrum | Network Spikes | Firing Rate | Looming Trigger | Circuit Dynamics & Kinematic Outcome |
 | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Pure White** (`#FFFFFF`) | 1.000 | Broad spectrum (6,500 K) | ~20,700 | 2.48 Hz | ❌ False | Broad-spectrum $R_1-R_6$ activation; widespread optic lobe propagation |
-| **Pure Red** (`#C80000`) | 0.235 | Long wavelength (~3,000 K) | 0 | 0.00 Hz | ❌ False | Sub-threshold current injection ($V < V_{\text{thresh}}$); network remains quiescent |
-| **Pure Blue** (`#0000E6`) | 0.103 | Short wavelength (UV / Blue) | ~6,680 | 0.80 Hz | ❌ False | Selective excitation of inner $R_8$ photoreceptors; chromatic contrast response |
-| **Rapid Dark / Looming** (`#000000`) | 0.000 | Contrast drop | ~11,000 | 1.32 Hz | ✅ True | Optical contrast collapse ($\Delta Y > 0.15$); activates $LC_4$ and Giant Fiber escape jump |
-
-### Key Observations
-- **Spectral Selectivity**: Outer photoreceptors ($R_1-R_6$) respond broadly to overall light intensity, whereas inner $R_8$ cells are selectively tuned toward shorter wavelengths.
-- **Threshold Nonlinearity**: Low-intensity or out-of-band inputs (such as pure red) distribute sub-threshold currents, keeping membrane potentials below firing threshold without generating spurious spikes.
-- **Spatio-Temporal Looming**: A sharp drop in luminance across frames triggers the $LC_4$ lobula columnar pathway, simulating an incoming visual threat and driving the Giant Fiber escape reflex.
-- **Statefulness**: Membrane potentials ($V_i$), refractory states ($\tau_{\text{ref}}$), and neuromodulator concentrations carry forward between frames, capturing temporal continuity rather than static stateless evaluations.
+| **Pure White** (`#FFFFFF`) | 1.000 | Broad spectrum (6,500 K) | ~20,700 | 2.48 Hz | ❌ Inactive | Broad-spectrum $R_1-R_6$ excitation; optic lobe wave propagation; steady tripod walking. |
+| **Pure Red** (`#C80000`) | 0.235 | Long wavelength (~3,000 K) | 0 | 0.00 Hz | ❌ Inactive | Sub-threshold current injection ($V < V_{\text{thresh}}$); network remains quiescent with potassium reversal clamping. |
+| **Pure Blue** (`#0000E6`) | 0.103 | Short wavelength (UV / Blue) | ~6,680 | 0.80 Hz | ❌ Inactive | Selective excitation of inner $R_8$ photoreceptors; moderate forward drive. |
+| **Rapid Dark / Looming** (`#000000`) | 0.000 | Contrast drop | ~11,000 | 1.32 Hz | ✅ Active | Contrast collapse ($\Delta Y > 0.15$); $LC_4$ activation; Giant Fiber ($GF$) jump escape triggered. |
 
 ---
 
-## 🔬 Circuits Modeled
+## 🧬 Neural Circuits Modeled
 
-The simulation identifies and maps key cell populations from the *Drosophila* connectome:
+The simulation maps specific, identifiable functional circuits from the Janelia MaleCNS v1.0 connectome:
 
-| Circuit / Cell Group | Connectome Identifier | Role in Model |
-| :--- | :--- | :--- |
-| **Photoreceptors** | $R_1 - R_6$, $R_8$ | Retinal luminance and chromatic input |
-| **Looming Detectors** | $LC_4$ | Sensitive to sudden visual expansion / looming threat |
-| **Dopaminergic System** | $PAM11$ | Modulates reward-related state and plasticity |
-| **Octopaminergic System** | $TDC2$ | Reflects arousal and stress signals |
-| **Serotonergic System** | $5\text{-HT}$ dorsal clusters | Supports steady baseline activity and patience |
-| **Mushroom Body** | Kenyon Cells ($KC$), $MBON$ | Learning and associative preference modulation |
-| **Central Complex** | $EPG$ compass neurons | Heading direction representation around an azimuthal ring |
-| **Descending Motor Neurons**| $DNa02$, $DNp09$, $GF$ | Asymmetric steering, forward walking, and escape jump |
+| Circuit Population | Anatomic / Genetic ID | Neuromere / Brain Area | Functional Role in Simulation |
+| :--- | :--- | :--- | :--- |
+| **Photoreceptors** | $R_1 - R_6$, $R_8$ | Retina / Optic Cartridge | Bilateral luminance and chromatic inputs |
+| **Looming Detectors** | $LC_4$ | Lobula Complex | Visual threat detection & rapid expansion |
+| **Dopaminergic System** | $PAM11$ | Mushroom Body / SMP | Appetitive reward, pleasure, and plastic association |
+| **Octopaminergic System** | $TDC2$ | Central Neuropil | Acute arousal, flight response, and motor vigor |
+| **Serotonergic System** | $5\text{-HT}$ clusters | Dorsal Central Brain | Baseline calm, motor persistence, and satiety |
+| **Compass Neurons** | $EPG$ ring | Central Complex ($EB/PB$) | Azimuthal head direction compass heading |
+| **Steering Descending** | $DNa02_L / DNa02_R$ | Brain $\rightarrow$ Thoracic VNC | Asymmetric outer leg step amplitude modulation |
+| **Forward Descending** | $DNp09$ | Brain $\rightarrow$ Thoracic VNC | Forward locomotion rate & CPG frequency drive |
+| **Reverse Descending** | $MDN$ | Brain $\rightarrow$ Thoracic VNC | Moonwalker reverse stepping & CPG phase inversion |
+| **Escape Descending** | $GF$ (Giant Fiber) | Brain $\rightarrow$ Thoracic VNC | Escape jump reflex & rapid wing elevation |
+| **Front Leg Motor Pools** | $T1_L / T1_R$ (`fl`) | Prothoracic Neuromere $T_1$ | 135 motor neurons driving $L_1 / R_1$ leg kinematics |
+| **Middle Leg Motor Pools**| $T2_L / T2_R$ (`ml`) | Mesothoracic Neuromere $T_2$ | 116 motor neurons driving $L_2 / R_2$ leg kinematics |
+| **Hind Leg Motor Pools**  | $T3_L / T3_R$ (`hl`) | Metathoracic Neuromere $T_3$ | 130 motor neurons driving $L_3 / R_3$ leg kinematics |
 
 ---
 
-## 🎮 Web Cockpit
+## 🎮 Web Cockpit & Telemetry
 
-The web interface brings the simulation into a real-time observation deck:
+The observation cockpit presents real-time electrophysiology and behavioral readouts:
 
-- **Camera Modes**:
-  - **Fly View (Default)**: General perspective focusing on the fly, treadmill, and screen.
-  - **Screen View**: Look directly at the stimuli being presented to the fly.
-  - **Neural View**: Translucent cranial visualization showing active brain regions (Optic Lobes, Mushroom Body, Central Complex, Descending Tracts).
-- **Stimulus Arena**:
-  - Presets: Sweet Watermelon, Looming Shadow, Predatory Spider, Forest Foliage.
-  - **Custom Image Upload**: Upload any PNG/JPEG to test custom visual patterns.
-- **Manual Actions**:
-  - **Dopamine Pulse**: Stimulate the $PAM11$ dopaminergic cluster.
-  - **Loom Threat**: Trigger an immediate optical threat expansion.
-  - **Leg Swipe**: Trigger tactile grooming/swipe motion.
+1. **Stimulus Arena**:
+   - **Preset Patterns**: Sugar Watermelon (Appetitive), Looming Shadow (Escape), Predatory Spider (Threat), Forest Foliage (Calm).
+   - **Custom Photo Upload**: Submits custom imagery for real-time photo-transduction.
+   - **Spatial Target Positions**: Left, Center, Right phototaxis orientation buttons.
+2. **Descending Motor & VNC Hexapod Telemetry**:
+   - **Bilateral Steering Meter**: $DNa02$ deflection with retinal hemisphere luminance bars.
+   - **Tripod Alternation Indicator**: Live status indicators for **Tripod A** ($L_1, R_2, L_3$) and **Tripod B** ($R_1, L_2, R_3$) in stance/swing.
+   - **6-Leg Firing Gauges**: Live $Hz$ meters for $L_1, R_1, L_2, R_2, L_3, R_3$.
+3. **Neurochemical Gauges & Oscilloscopes**:
+   - Continuous Dopamine ($PAM11$), Octopamine ($TDC2$), and Serotonin ($5\text{-HT}$) molar concentrations.
+   - Dale's Law E/I balance ratio and associative plasticity index.
+   - Real-time dopamine waveform and spike raster waterfall plots.
+4. **Interactive Camera Perspectives**:
+   - **Fly View**: Macro perspective on fly joints and spherical treadmill.
+   - **Phone Angle**: Displays visual stimuli as presented to the compound eyes.
+   - **Neural Synapses**: Visualizes the 141K 3D soma point cloud and real-time synaptic waves.
 
 ---
 
 ## 🌐 Bilingual Interface (EN / TR)
 
-The cockpit includes a language toggle in the header:
-- **English**: Standard terminology for computational neuroscience and simulation parameters.
-- **Türkçe**: Translated interface labels and tooltips (`Dopamin Şoku`, `Avcı Tehdidi`, `Uyaran Arenası`, etc.).
-- Preference is remembered across browser sessions via `localStorage`.
+The cockpit features a one-click language toggle (English $\leftrightarrow$ Türkçe) with persistent user preference storage:
+- **English**: Standard computational neuroscience terminology and units.
+- **Türkçe**: Anatomical and biophysical Turkish terminology (`VNC Thoraks Heksapod Yürüyüşü`, `Dopamin Şoku`, `Retinal Asimetri`, `Avcı Tehdidi`, etc.).
 
 ---
 
 ## 📡 API Reference
 
 ### WebSocket Telemetry Stream
-- **URL**: `ws://127.0.0.1:8000/ws/telemetry`
-- Stream: Delivers 60 Hz telemetry packets containing spike counts, neuromodulator levels, motor states, and compass heading.
+- **Endpoint**: `ws://127.0.0.1:8000/ws/telemetry`
+- **Rate**: 60 Hz bidirectional JSON stream.
+- **Payload Structure**:
+  ```json
+  {
+    "sim_time_ms": 150.0,
+    "spike_counts": { "total_spikes": 342, "excitatory_spikes": 280, "inhibitory_spikes": 62 },
+    "hormones": { "dopamine_nm": 18.5, "octopamine_nm": 3.2, "serotonin_nm": 8.0, "ei_balance": 1.45 },
+    "motor": { "forward_drive_pct": 65.0, "steering_deflection": -0.35, "compass_heading_deg": 142.5 },
+    "vnc_legs": {
+      "t1_left_hz": 12.4, "t1_right_hz": 24.8,
+      "t2_left_hz": 11.2, "t2_right_hz": 22.4,
+      "t3_left_hz": 14.1, "t3_right_hz": 28.2,
+      "tripod_phase": 1.84
+    },
+    "active_neurons": [12, 145, 890, 14022]
+  }
+  ```
 
 ### REST Endpoints
-| Endpoint | Method | Description |
+| Route | Method | Description |
 | :--- | :---: | :--- |
-| `/api/telemetry` | `GET` | Returns the latest telemetry frame and rolling history buffer. |
-| `/api/observe` | `POST` | Submits a visual frame (base64) to the retinal input engine. |
-| `/api/wirehead` | `POST` | Injects an excitatory current into the dopaminergic $PAM11$ cluster. |
+| `/api/telemetry` | `GET` | Fetches latest telemetry state and rolling historical buffer. |
+| `/api/observe` | `POST` | Ingests base64-encoded image frame for biological transduction. |
+| `/api/wirehead` | `POST` | Injects depolarizing current (+20 mV) into dopaminergic $PAM11$ cluster. |
+| `/api/connectome/soma-coordinates` | `GET` | Streams binary buffer of 141.8K real soma coordinates (`.bin`). |
+| `/api/connectome/soma-metadata` | `GET` | Returns anatomical bounding boxes, scaling factors, and circuit partitions. |
 
 ---
 
 ## ✅ Testing & Development
 
-The test suite covers unit dynamics, vectorization performance, live server communications, and connectome integrity.
+The test suite includes **84 automated tests across 22 test files**, covering biological circuits, biophysical equations, launcher scripts, and frontend contracts:
 
-Run the test suite with `uv`:
 ```bash
+# Run complete test suite
 uv run pytest tests/ -v
-```
 
-Check code formatting and imports with `ruff`:
-```bash
+# Run static analysis and style checks
 uv run ruff check src/ tests/
 ```
 
-### GitHub Actions CI
-Every commit and pull request runs automated checks via GitHub Actions:
-- Unit & integration tests
-- Performance benchmarks for vectorized LIF kernels
-- FastAPI REST and WebSocket lifecycle tests
-- Ruff linting and import ordering
-- Connectome topology validation
+### GitHub Actions CI Workflow
+Every push to `main` and pull request is verified across 5 parallel CI jobs:
+1. **`unit-tests`**: 75 tests covering biophysics, phototaxis, frontend contracts, and launcher scripts.
+2. **`performance-regression`**: Benchmarks the vectorized LIF kernel sub-500ms execution.
+3. **`real-connectome`**: Validates the 166.7K topology, 25.6M synapses, and 381 VNC motor neurons.
+4. **`server-integration`**: Validates FastAPI REST endpoints and WebSocket telemetry transmission.
+5. **`lint`**: Ruff static code analysis and `pyproject.toml` specification integrity.
 
 ---
 
-## 📚 References & Acknowledgments
+## 📚 References & Data Sources
 
-- **Janelia Research Campus (FlyEM Project)**: *Drosophila* male central nervous system (MaleCNS v1.0) connectome dataset.
-- **FlyWire & Princeton University**: Whole-brain connectome tools and community annotation resources.
-- **Three.js & FastAPI**: Core open-source technologies powering the 3D rendering and backend telemetry.
+- **Janelia Research Campus (FlyEM Team)**: *Drosophila* male central nervous system connectome (MaleCNS v1.0).
+- **FlyWire & Princeton University**: Community whole-brain connectomic proofreading and annotation tools.
+- **Three.js**: WebGL 3D rendering library.
+- **FastAPI & Uvicorn**: Asynchronous backend and real-time telemetry streaming framework.
 
 ---
 
 ## 📄 License
 
-Distributed under the [MIT License](LICENSE). Open-source project for computational neuroscience exploration, education, and visualization.
+This project is licensed under the [MIT License](LICENSE).
