@@ -126,7 +126,7 @@ def compile_connectome():
 
     circuits = {
         "r1_r6_photoreceptors": np.flatnonzero(types.eq("R1-R6")).tolist(),
-        "r8_photoreceptors": np.flatnonzero(types.eq("R8")).tolist(),
+        "r8_photoreceptors": np.flatnonzero(types.str.startswith("R8")).tolist(),
         "looming_threat_lc4": np.flatnonzero(types.str.startswith("LC4") | types.str.startswith("LPLC2")).tolist(),
         "pam11_dopamine_reward": np.flatnonzero(types.eq("PAM11")).tolist(),
         "ppl101_dopamine_aversive": np.flatnonzero(types.eq("PPL101")).tolist(),
@@ -140,7 +140,7 @@ def compile_connectome():
         "dna02_right": np.flatnonzero(types.eq("DNa02") & soma_side.eq("R")).tolist(),
         "dnp09_forward": np.flatnonzero(types.isin(["DNp09", "MN9"])).tolist(),
         "mdn_moonwalker": np.flatnonzero(types.eq("MDN") | types.str.startswith("MDN")).tolist(),
-        "giant_fiber_escape": np.flatnonzero(types.str.startswith("Giant_Fiber") | types.eq("GF")).tolist(),
+        "giant_fiber_escape": np.flatnonzero(types.isin(["DNp01", "GF"]) | types.str.startswith("Giant_Fiber")).tolist(),
     }
 
     for name, indices in circuits.items():

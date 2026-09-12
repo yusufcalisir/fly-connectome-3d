@@ -83,7 +83,7 @@ def extract_circuits(annotations_df: pd.DataFrame, ids: np.ndarray) -> IndexedCi
 
     # Photoreceptors
     r1_r6 = np.flatnonzero(types.eq("R1-R6")).astype(np.int32)
-    r8 = np.flatnonzero(types.eq("R8")).astype(np.int32)
+    r8 = np.flatnonzero(types.str.startswith("R8")).astype(np.int32)
     lc4 = np.flatnonzero(types.str.startswith("LC4") | types.str.startswith("LPLC2")).astype(np.int32)
 
     # Neuromodulators
@@ -105,7 +105,7 @@ def extract_circuits(annotations_df: pd.DataFrame, ids: np.ndarray) -> IndexedCi
     dna02_r = np.flatnonzero(types.eq("DNa02") & soma_side.eq("R")).astype(np.int32)
     dnp09 = np.flatnonzero(types.isin(["DNp09", "MN9"])).astype(np.int32)
     mdn = np.flatnonzero(types.eq("MDN") | types.str.startswith("MDN")).astype(np.int32)
-    gf = np.flatnonzero(types.str.startswith("Giant_Fiber") | types.eq("GF")).astype(np.int32)
+    gf = np.flatnonzero(types.isin(["DNp01", "GF"]) | types.str.startswith("Giant_Fiber")).astype(np.int32)
 
     return IndexedCircuits(
         r1_r6_photoreceptors=r1_r6,
