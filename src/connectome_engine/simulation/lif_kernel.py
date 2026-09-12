@@ -80,10 +80,10 @@ class SpikingConnectomeEngine:
         # Calculate postsynaptic currents: I_syn = W * S(t-1)
         # Note: only spiking neurons contribute; if no spikes, I_syn is 0
         if np.any(self.spikes):
-            # Sparse matrix-vector product with boolean spike vector
+            # Sparse matrix-vector product: sum outgoing weights from spiking pre-synaptic neurons
             spiking_indices = np.flatnonzero(self.spikes)
-            # Efficient slice: sum incoming weights from spiked neurons
-            i_syn = np.asarray(self.weights[:, spiking_indices].sum(axis=1)).ravel()
+            # Fast row-slice on CSR matrix
+            i_syn = np.asarray(self.weights[spiking_indices, :].sum(axis=0)).ravel()
         else:
             i_syn = np.zeros(self.n, dtype=np.float32)
 

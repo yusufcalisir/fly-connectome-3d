@@ -1,9 +1,12 @@
 """Biological circuit definitions and cell-type indexing for Drosophila connectomes."""
 
+import json
 from dataclasses import dataclass
-from typing import Dict, List, Tuple
+from pathlib import Path
+from typing import Dict, List, Tuple, Optional
 import numpy as np
 import pandas as pd
+import scipy.sparse as sp
 
 
 @dataclass
@@ -121,3 +124,52 @@ def extract_circuits(annotations_df: pd.DataFrame, ids: np.ndarray) -> IndexedCi
         mdn_moonwalker=mdn,
         giant_fiber_escape=gf,
     )
+
+
+def load_malecns_v1_connectome(
+    data_dir: Optional[Path] = None,
+) -> Tuple[int, sp.csr_matrix, IndexedCircuits, np.ndarray]:
+    """Load the official compiled Janelia MaleCNS v1.0 (166,700 neurons, 25,582,938 synapses) connectome."""
+    if data_dir is None:
+        data_dir = Path(__file__).resolve().parents[3] / "data" / "malecns_v1"
+
+    graph_path = data_dir / "malecns_v1_graph.npz"
+    manifest_path = data_dir / "circuits_manifest.json"
+
+    if not graph_path.exists() or not manifest_path.exists():
+        raise FileNotFoundError(
+            f"Compiled connectome not found at {graph_path}. Run downloader and compiler first."
+        )
+
+    with np.load(graph_path) as npz:
+        indptr = npz["indptr"]
+        indices = npz["indices"]
+        data = npz["data"]
+        shape = tuple(npz["shape"])
+        neuron_ids = npz["neuron_ids"]
+
+    adj = sp.csr_matrix((data, indices, indptr), shape=shape, dtype=np.float32)
+
+    with open(manifest_path, "r") as f:
+        c_dict = json.load(f)
+
+    circuits = IndexedCircuits(
+        r1_r6_photoreceptors=np.array(c_dict["r1_r6_photoreceptors"], dtype=np.int32),
+        r8_photoreceptors=np.array(c_dict["r8_photoreceptors"], dtype=np.int32),
+        looming_threat_lc4=np.array(c_dict["looming_threat_lc4"], dtype=np.int32),
+        pam11_dopamine_reward=np.array(c_dict["pam11_dopamine_reward"], dtype=np.int32),
+        ppl101_dopamine_aversive=np.array(c_dict["ppl101_dopamine_aversive"], dtype=np.int32),
+        octopamine_stress=np.array(c_dict["octopamine_stress"], dtype=np.int32),
+        serotonin_calm=np.array(c_dict["serotonin_calm"], dtype=np.int32),
+        kenyon_cells=np.array(c_dict["kenyon_cells"], dtype=np.int32),
+        mbon07_reward_output=np.array(c_dict["mbon07_reward_output"], dtype=np.int32),
+        mbon11_aversive_output=np.array(c_dict["mbon11_aversive_output"], dtype=np.int32),
+        epg_compass_neurons=np.array(c_dict["epg_compass_neurons"], dtype=np.int32),
+        dna02_left=np.array(c_dict["dna02_left"], dtype=np.int32),
+        dna02_right=np.array(c_dict["dna02_right"], dtype=np.int32),
+        dnp09_forward=np.array(c_dict["dnp09_forward"], dtype=np.int32),
+        mdn_moonwalker=np.array(c_dict["mdn_moonwalker"], dtype=np.int32),
+        giant_fiber_escape=np.array(c_dict["giant_fiber_escape"], dtype=np.int32),
+    )
+
+    return shape[0], adj, circuits, neuron_ids

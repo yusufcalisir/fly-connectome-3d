@@ -16,7 +16,7 @@ from pydantic import BaseModel
 
 from .state import ServerStateManager
 from ..brain import ConnectomeBrain
-from ..data.circuits import IndexedCircuits
+from ..data.circuits import IndexedCircuits, load_malecns_v1_connectome
 import scipy.sparse as sp
 
 app = FastAPI(title="Connectome Telemetry Engine", version="0.1.0")
@@ -41,35 +41,45 @@ CONNECTED_SOCKETS = set()
 
 # Global Brain Instance (initialized on startup)
 GLOBAL_BRAIN: Optional[ConnectomeBrain] = None
+IS_PROCESSING_FRAME = False
 
 
 def initialize_default_brain():
-    """Initialize a verified bio-circuit graph."""
+    """Initialize the connectome brain with the official 166.7K Janelia MaleCNS v1.0 dataset."""
     global GLOBAL_BRAIN
-    # 500-neuron representative functional connectome
-    n_nodes = 500
-    adj = sp.random(n_nodes, n_nodes, density=0.04, format="csr", dtype=np.float32)
+    data_dir = Path(__file__).resolve().parents[3] / "data" / "malecns_v1"
+    graph_path = data_dir / "malecns_v1_graph.npz"
 
-    circuits = IndexedCircuits(
-        r1_r6_photoreceptors=np.arange(0, 80, dtype=np.int32),
-        r8_photoreceptors=np.arange(80, 120, dtype=np.int32),
-        looming_threat_lc4=np.arange(120, 150, dtype=np.int32),
-        pam11_dopamine_reward=np.arange(150, 165, dtype=np.int32),
-        ppl101_dopamine_aversive=np.arange(165, 167, dtype=np.int32),
-        octopamine_stress=np.arange(167, 185, dtype=np.int32),
-        serotonin_calm=np.arange(185, 205, dtype=np.int32),
-        kenyon_cells=np.arange(205, 350, dtype=np.int32),
-        mbon07_reward_output=np.arange(350, 354, dtype=np.int32),
-        mbon11_aversive_output=np.arange(354, 356, dtype=np.int32),
-        epg_compass_neurons=np.arange(356, 420, dtype=np.int32),
-        dna02_left=np.arange(420, 422, dtype=np.int32),
-        dna02_right=np.arange(422, 424, dtype=np.int32),
-        dnp09_forward=np.arange(424, 432, dtype=np.int32),
-        mdn_moonwalker=np.arange(432, 434, dtype=np.int32),
-        giant_fiber_escape=np.arange(434, 436, dtype=np.int32),
-    )
+    if graph_path.exists():
+        print(f"[*] Loading official Janelia MCNS v1.0 connectome from {graph_path}...")
+        n_nodes, adj, circuits, neuron_ids = load_malecns_v1_connectome(data_dir)
+        print(f"    [+] Successfully loaded {n_nodes:,} biological neurons and {adj.nnz:,} synapses!")
+        GLOBAL_BRAIN = ConnectomeBrain(n_nodes, adj, circuits)
+    else:
+        print("[!] Official MCNS v1.0 graph not found, initializing representative bio-circuit graph.")
+        n_nodes = 500
+        adj = sp.random(n_nodes, n_nodes, density=0.04, format="csr", dtype=np.float32)
 
-    GLOBAL_BRAIN = ConnectomeBrain(n_nodes, adj, circuits)
+        circuits = IndexedCircuits(
+            r1_r6_photoreceptors=np.arange(0, 80, dtype=np.int32),
+            r8_photoreceptors=np.arange(80, 120, dtype=np.int32),
+            looming_threat_lc4=np.arange(120, 150, dtype=np.int32),
+            pam11_dopamine_reward=np.arange(150, 165, dtype=np.int32),
+            ppl101_dopamine_aversive=np.arange(165, 167, dtype=np.int32),
+            octopamine_stress=np.arange(167, 185, dtype=np.int32),
+            serotonin_calm=np.arange(185, 205, dtype=np.int32),
+            kenyon_cells=np.arange(205, 350, dtype=np.int32),
+            mbon07_reward_output=np.arange(350, 354, dtype=np.int32),
+            mbon11_aversive_output=np.arange(354, 356, dtype=np.int32),
+            epg_compass_neurons=np.arange(356, 420, dtype=np.int32),
+            dna02_left=np.arange(420, 422, dtype=np.int32),
+            dna02_right=np.arange(422, 424, dtype=np.int32),
+            dnp09_forward=np.arange(424, 432, dtype=np.int32),
+            mdn_moonwalker=np.arange(432, 434, dtype=np.int32),
+            giant_fiber_escape=np.arange(434, 436, dtype=np.int32),
+        )
+
+        GLOBAL_BRAIN = ConnectomeBrain(n_nodes, adj, circuits)
 
 
 initialize_default_brain()
@@ -152,16 +162,20 @@ async def websocket_telemetry(websocket: WebSocket):
                 boost = float(data.get("current_mv", 20.0))
                 STATE_MANAGER.trigger_wirehead(boost)
             elif cmd == "observe":
+                global IS_PROCESSING_FRAME
                 img_b64 = data.get("image_base64", "")
                 dur = float(data.get("duration_ms", 50.0))
-                if img_b64:
-                    snapshot = _process_frame(img_b64, dur)
-                    # Broadcast snapshot
-                    for ws in list(CONNECTED_SOCKETS):
-                        try:
-                            await ws.send_json(snapshot)
-                        except Exception:
-                            CONNECTED_SOCKETS.discard(ws)
+                if img_b64 and not IS_PROCESSING_FRAME:
+                    IS_PROCESSING_FRAME = True
+                    try:
+                        snapshot = await asyncio.to_thread(_process_frame, img_b64, dur)
+                        for ws in list(CONNECTED_SOCKETS):
+                            try:
+                                await ws.send_json(snapshot)
+                            except Exception:
+                                CONNECTED_SOCKETS.discard(ws)
+                    finally:
+                        IS_PROCESSING_FRAME = False
             elif cmd == "pause":
                 STATE_MANAGER.is_paused = True
             elif cmd == "resume":
