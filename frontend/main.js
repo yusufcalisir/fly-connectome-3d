@@ -986,8 +986,7 @@ class ObservationChamber3D {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
-    this.renderer.physicallyCorrectLights = true;
+    this.renderer.toneMappingExposure = 1.25;
     this.container.appendChild(this.renderer.domElement);
 
     if (window.THREE && window.THREE.OrbitControls) {
@@ -1001,11 +1000,11 @@ class ObservationChamber3D {
     }
 
     // Natural daylight hemisphere: sky green / ground warm
-    const hemiLight = new THREE.HemisphereLight(0xd4eec8, 0xc8b896, 1.2);
+    const hemiLight = new THREE.HemisphereLight(0xd4eec8, 0xc8b896, 2.2);
     this.scene.add(hemiLight);
 
     // Key light: soft window sunlight from upper-left
-    this.microscopeLight = new THREE.DirectionalLight(0xfff8e8, 2.8);
+    this.microscopeLight = new THREE.DirectionalLight(0xfff8e8, 4.0);
     this.microscopeLight.position.set(-2.5, 6.0, 3.5);
     this.microscopeLight.castShadow = true;
     this.microscopeLight.shadow.mapSize.width = 4096;
@@ -1020,19 +1019,24 @@ class ObservationChamber3D {
     this.scene.add(this.microscopeLight);
 
     // Cool fill from right (sky bounce)
-    const fillLight = new THREE.DirectionalLight(0xd8f0ff, 0.9);
+    const fillLight = new THREE.DirectionalLight(0xd8f0ff, 1.8);
     fillLight.position.set(3.5, 2.5, 1.5);
     this.scene.add(fillLight);
 
     // Warm back-rim (ground bounce)
-    const rimLight = new THREE.DirectionalLight(0xffe0a0, 0.55);
+    const rimLight = new THREE.DirectionalLight(0xffe0a0, 1.2);
     rimLight.position.set(-1.5, 0.8, -3.5);
     this.scene.add(rimLight);
 
     // Under-tray point for chitin iridescence
-    const underLight = new THREE.PointLight(0xa0d890, 0.6, 5.0);
-    underLight.position.set(0, 0.3, 0.5);
+    const underLight = new THREE.PointLight(0xa0d890, 1.8, 6.0);
+    underLight.position.set(0, 0.8, 0.8);
     this.scene.add(underLight);
+
+    // Top-down lab overhead
+    const overheadLight = new THREE.PointLight(0xfff5e8, 2.0, 8.0);
+    overheadLight.position.set(0, 5.0, 0);
+    this.scene.add(overheadLight);
   }
 
   _buildEnvironment() {
@@ -1060,15 +1064,15 @@ class ObservationChamber3D {
     const leafTex  = new THREE.CanvasTexture(generateLeafSprite());
     const daisyTex = new THREE.CanvasTexture(generateDaisySprite());
     const bgSprites = [
-      { tex: leafTex,  x: -3.5, y: 1.8, z: -2.8, sx: 2.8, sy: 2.2, ry:  0.35 },
-      { tex: leafTex,  x:  3.2, y: 1.6, z: -2.6, sx: 2.4, sy: 1.8, ry: -0.45 },
-      { tex: leafTex,  x: -1.5, y: 2.4, z: -3.2, sx: 3.2, sy: 2.4, ry:  0.12 },
-      { tex: leafTex,  x:  1.8, y: 2.0, z: -3.0, sx: 2.6, sy: 2.0, ry: -0.20 },
-      { tex: leafTex,  x:  0.2, y: 3.2, z: -3.4, sx: 3.6, sy: 2.8, ry:  0.05 },
-      { tex: leafTex,  x: -2.8, y: 3.0, z: -3.0, sx: 2.0, sy: 2.4, ry:  0.60 },
-      { tex: daisyTex, x: -2.2, y: 1.4, z: -2.4, sx: 0.9, sy: 0.9, ry:  0.1  },
-      { tex: daisyTex, x:  2.6, y: 1.2, z: -2.2, sx: 0.8, sy: 0.8, ry: -0.15 },
-      { tex: daisyTex, x:  0.8, y: 1.8, z: -3.0, sx: 1.0, sy: 1.0, ry:  0.0  },
+      { tex: leafTex,  x: -3.5, y: 2.2, z: -2.4, sx: 3.5, sy: 2.8, ry:  0.35 },
+      { tex: leafTex,  x:  3.2, y: 2.0, z: -2.2, sx: 3.0, sy: 2.4, ry: -0.45 },
+      { tex: leafTex,  x: -1.5, y: 2.8, z: -2.8, sx: 4.0, sy: 3.0, ry:  0.12 },
+      { tex: leafTex,  x:  1.8, y: 2.4, z: -2.6, sx: 3.2, sy: 2.6, ry: -0.20 },
+      { tex: leafTex,  x:  0.2, y: 3.8, z: -3.0, sx: 4.5, sy: 3.5, ry:  0.05 },
+      { tex: leafTex,  x: -2.8, y: 3.6, z: -2.6, sx: 2.8, sy: 3.0, ry:  0.60 },
+      { tex: daisyTex, x: -2.2, y: 1.6, z: -2.0, sx: 1.2, sy: 1.2, ry:  0.1  },
+      { tex: daisyTex, x:  2.6, y: 1.4, z: -1.8, sx: 1.1, sy: 1.1, ry: -0.15 },
+      { tex: daisyTex, x:  0.8, y: 2.2, z: -2.6, sx: 1.3, sy: 1.3, ry:  0.0  },
     ];
     for (const s of bgSprites) {
       const spriteMat = new THREE.MeshBasicMaterial({
@@ -1088,7 +1092,7 @@ class ObservationChamber3D {
     nozzleGroup.position.set(0, 0, 0);
 
     const baseFlangeGeo = new THREE.CylinderGeometry(0.7, 0.85, 0.15, 32);
-    const metalMat = new THREE.MeshStandardMaterial({ color: 0x222834, metalness: 0.9, roughness: 0.2 });
+    const metalMat = new THREE.MeshStandardMaterial({ color: 0x8899aa, metalness: 0.85, roughness: 0.18 });
     const baseFlange = new THREE.Mesh(baseFlangeGeo, metalMat);
     baseFlange.position.y = 0.075;
     nozzleGroup.add(baseFlange);
@@ -1115,9 +1119,9 @@ class ObservationChamber3D {
 
     const ballGeo = new THREE.SphereGeometry(0.55, 48, 48);
     const ballMat = new THREE.MeshStandardMaterial({
-      color: 0x222a38,
-      roughness: 0.75,
-      metalness: 0.1,
+      color: 0x4a5060,
+      roughness: 0.65,
+      metalness: 0.15,
     });
     this.treadmillBall = new THREE.Mesh(ballGeo, ballMat);
     this.treadmillBall.position.set(0, 0.55, 0);
@@ -1192,16 +1196,16 @@ class ObservationChamber3D {
     const ommatidiaTex = generateOmmatidiaTexture();
     const wingTex = generateWingTexture();
 
-    // Authentic Drosophila chitin: dark olive-black with clearcoat gloss & green sheen
+    // Authentic Drosophila chitin: dark greenish-bronze with clearcoat gloss
     const chitinMat = new THREE.MeshPhysicalMaterial({
-      color: 0x1e1a0c,
-      roughness: 0.18,
-      metalness: 0.42,
-      clearcoat: 1.0,
-      clearcoatRoughness: 0.06,
-      reflectivity: 0.85,
-      sheen: 0.5,
-      sheenColor: new THREE.Color(0x3d6020),
+      color: 0x3d3520,
+      roughness: 0.22,
+      metalness: 0.38,
+      clearcoat: 0.95,
+      clearcoatRoughness: 0.08,
+      reflectivity: 0.8,
+      sheen: 0.55,
+      sheenColor: new THREE.Color(0x4a7030),
       sheenRoughness: 0.3,
     });
 
@@ -1209,7 +1213,7 @@ class ObservationChamber3D {
     const eyeMat = new THREE.MeshPhysicalMaterial({
       color: 0xcc2200,
       emissive: new THREE.Color(0x3a0800),
-      roughness: 0.05,
+      roughness: 0.06,
       metalness: 0.0,
       transmission: 0.12,
       ior: 1.52,
@@ -1317,13 +1321,13 @@ class ObservationChamber3D {
     this.head.position.set(0, 0.12, 0.58);
 
     const headCuticleMat = new THREE.MeshPhysicalMaterial({
-      color: 0x1e1a0c,
-      roughness: 0.16,
-      metalness: 0.4,
-      clearcoat: 1.0,
+      color: 0x3d3520,
+      roughness: 0.20,
+      metalness: 0.36,
+      clearcoat: 0.95,
       clearcoatRoughness: 0.06,
-      sheen: 0.45,
-      sheenColor: new THREE.Color(0x3a5818),
+      sheen: 0.5,
+      sheenColor: new THREE.Color(0x4a7030),
     });
 
     const headGeo = new THREE.SphereGeometry(0.26, 20, 16);
