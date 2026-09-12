@@ -238,46 +238,148 @@ function generateOmmatidiaTexture() {
 }
 
 function generateBreadboardTexture() {
+  // White lab bench / optical table with subtle grid
   const canvas = document.createElement('canvas');
   canvas.width = 512;
   canvas.height = 512;
   const ctx = canvas.getContext('2d');
 
-  ctx.fillStyle = '#14171d';
+  // Warm white base
+  const grad = ctx.createRadialGradient(256, 256, 0, 256, 256, 380);
+  grad.addColorStop(0, '#f8f4ee');
+  grad.addColorStop(1, '#e8e0d4');
+  ctx.fillStyle = grad;
   ctx.fillRect(0, 0, 512, 512);
 
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.025)';
-  for (let i = 0; i < 600; i++) {
-    const y = Math.random() * 512;
-    ctx.fillRect(0, y, 512, 1);
-  }
-
+  // Subtle M6 hole grid
   const step = 64;
   for (let y = step / 2; y < 512; y += step) {
     for (let x = step / 2; x < 512; x += step) {
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
-      ctx.beginPath();
-      ctx.arc(x, y, 9, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#06080b';
-      ctx.beginPath();
-      ctx.arc(x, y, 7, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-      ctx.lineWidth = 1;
+      ctx.fillStyle = 'rgba(180, 165, 145, 0.55)';
       ctx.beginPath();
       ctx.arc(x, y, 5, 0, Math.PI * 2);
-      ctx.stroke();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(220, 210, 195, 0.85)';
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fill();
     }
+  }
+
+  // Light surface scratches
+  ctx.strokeStyle = 'rgba(200, 190, 175, 0.3)';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i < 30; i++) {
+    const sx = Math.random() * 512, sy = Math.random() * 512;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(sx + (Math.random() - 0.5) * 80, sy + (Math.random() - 0.5) * 20);
+    ctx.stroke();
   }
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(6, 6);
+  texture.repeat.set(4, 4);
   return texture;
+}
+
+function generateSkyGradient() {
+  // Soft green-cream bokeh background matching the reference
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+
+  // Base gradient: cream at bottom, soft green at top
+  const baseGrad = ctx.createLinearGradient(0, 0, 0, 512);
+  baseGrad.addColorStop(0, '#c8e8c0');   // soft green top
+  baseGrad.addColorStop(0.45, '#daf0d0');
+  baseGrad.addColorStop(0.75, '#eef5e8');
+  baseGrad.addColorStop(1, '#f5f0e8');   // warm cream bottom
+  ctx.fillStyle = baseGrad;
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Blurred bokeh circles (out-of-focus leaves/flowers)
+  const bokehs = [
+    { x: 80,  y: 90,  r: 80, c: 'rgba(140,195,110,0.28)' },
+    { x: 400, y: 60,  r: 100, c: 'rgba(160,210,120,0.22)' },
+    { x: 200, y: 180, r: 60,  c: 'rgba(130,185,100,0.18)' },
+    { x: 450, y: 220, r: 90,  c: 'rgba(150,200,115,0.20)' },
+    { x: 50,  y: 300, r: 70,  c: 'rgba(145,195,115,0.16)' },
+    { x: 320, y: 350, r: 110, c: 'rgba(155,205,125,0.15)' },
+    { x: 130, y: 430, r: 85,  c: 'rgba(140,190,110,0.12)' },
+    // White daisy bokeh
+    { x: 380, y: 130, r: 45,  c: 'rgba(255,252,240,0.35)' },
+    { x: 60,  y: 200, r: 35,  c: 'rgba(255,248,235,0.30)' },
+  ];
+  for (const b of bokehs) {
+    const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+    g.addColorStop(0, b.c);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 512, 512);
+  }
+
+  return canvas;
+}
+
+function generateLeafSprite() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 256, 256);
+
+  const g = ctx.createRadialGradient(128, 128, 10, 128, 128, 110);
+  g.addColorStop(0, 'rgba(120,185,90,0.85)');
+  g.addColorStop(0.6, 'rgba(95,155,65,0.7)');
+  g.addColorStop(1, 'rgba(70,130,50,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.ellipse(128, 128, 105, 70, Math.PI * 0.15, 0, Math.PI * 2);
+  ctx.fill();
+
+  // midrib
+  ctx.strokeStyle = 'rgba(60,110,40,0.6)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(30, 128);
+  ctx.quadraticCurveTo(128, 115, 225, 128);
+  ctx.stroke();
+
+  return canvas;
+}
+
+function generateDaisySprite() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 128, 128);
+
+  // petals
+  ctx.fillStyle = 'rgba(255,252,240,0.88)';
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2;
+    ctx.save();
+    ctx.translate(64, 64);
+    ctx.rotate(a);
+    ctx.beginPath();
+    ctx.ellipse(0, -26, 7, 18, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  // center
+  const gc = ctx.createRadialGradient(64, 64, 0, 64, 64, 14);
+  gc.addColorStop(0, 'rgba(255,210,50,1)');
+  gc.addColorStop(1, 'rgba(200,140,20,0.8)');
+  ctx.fillStyle = gc;
+  ctx.beginPath();
+  ctx.arc(64, 64, 14, 0, Math.PI * 2);
+  ctx.fill();
+
+  return canvas;
 }
 
 // ============================================================================
@@ -869,8 +971,8 @@ class ObservationChamber3D {
     const h = this.container.clientHeight || 600;
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x05070c);
-    this.scene.fog = new THREE.FogExp2(0x05070c, 0.035);
+    this.scene.background = new THREE.CanvasTexture(generateSkyGradient());
+    this.scene.fog = new THREE.FogExp2(0xc8e8c0, 0.018);
 
     this.rigGroup = new THREE.Group();
     this.scene.add(this.rigGroup);
@@ -884,7 +986,8 @@ class ObservationChamber3D {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.35;
+    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.physicallyCorrectLights = true;
     this.container.appendChild(this.renderer.domElement);
 
     if (window.THREE && window.THREE.OrbitControls) {
@@ -897,44 +1000,89 @@ class ObservationChamber3D {
       this.controls.target.set(0.0, 1.18, 0.80);
     }
 
-    const ambientLight = new THREE.AmbientLight(0x162035, 1.4);
-    this.scene.add(ambientLight);
+    // Natural daylight hemisphere: sky green / ground warm
+    const hemiLight = new THREE.HemisphereLight(0xd4eec8, 0xc8b896, 1.2);
+    this.scene.add(hemiLight);
 
-    this.microscopeLight = new THREE.SpotLight(0xffffff, 3.2);
-    this.microscopeLight.position.set(1.5, 5.0, 1.8);
-    this.microscopeLight.angle = 0.45;
-    this.microscopeLight.penumbra = 0.5;
+    // Key light: soft window sunlight from upper-left
+    this.microscopeLight = new THREE.DirectionalLight(0xfff8e8, 2.8);
+    this.microscopeLight.position.set(-2.5, 6.0, 3.5);
     this.microscopeLight.castShadow = true;
-    this.microscopeLight.shadow.mapSize.width = 2048;
-    this.microscopeLight.shadow.mapSize.height = 2048;
+    this.microscopeLight.shadow.mapSize.width = 4096;
+    this.microscopeLight.shadow.mapSize.height = 4096;
+    this.microscopeLight.shadow.camera.near = 0.5;
+    this.microscopeLight.shadow.camera.far = 20;
+    this.microscopeLight.shadow.camera.left = -4;
+    this.microscopeLight.shadow.camera.right = 4;
+    this.microscopeLight.shadow.camera.top = 4;
+    this.microscopeLight.shadow.camera.bottom = -4;
+    this.microscopeLight.shadow.bias = -0.001;
     this.scene.add(this.microscopeLight);
 
-    const fillLight = new THREE.DirectionalLight(0x00f0ff, 1.2);
-    fillLight.position.set(-3.5, 3.0, 2.5);
+    // Cool fill from right (sky bounce)
+    const fillLight = new THREE.DirectionalLight(0xd8f0ff, 0.9);
+    fillLight.position.set(3.5, 2.5, 1.5);
     this.scene.add(fillLight);
 
-    const rimLight = new THREE.DirectionalLight(0xff0066, 1.0);
-    rimLight.position.set(2.0, 2.5, -3.5);
+    // Warm back-rim (ground bounce)
+    const rimLight = new THREE.DirectionalLight(0xffe0a0, 0.55);
+    rimLight.position.set(-1.5, 0.8, -3.5);
     this.scene.add(rimLight);
+
+    // Under-tray point for chitin iridescence
+    const underLight = new THREE.PointLight(0xa0d890, 0.6, 5.0);
+    underLight.position.set(0, 0.3, 0.5);
+    this.scene.add(underLight);
   }
 
   _buildEnvironment() {
     const breadboardTex = generateBreadboardTexture();
     const tableGeo = new THREE.BoxGeometry(6.0, 0.4, 6.0);
-    const tableMat = new THREE.MeshStandardMaterial({
+    const tableMat = new THREE.MeshPhysicalMaterial({
       map: breadboardTex,
-      roughness: 0.25,
-      metalness: 0.88,
+      color: 0xf0ece4,
+      roughness: 0.12,
+      metalness: 0.02,
+      clearcoat: 0.55,
+      clearcoatRoughness: 0.08,
     });
     const table = new THREE.Mesh(tableGeo, tableMat);
     table.position.y = -0.2;
     table.receiveShadow = true;
     this.scene.add(table);
 
-    const borderMat = new THREE.MeshStandardMaterial({ color: 0x3a4250, metalness: 0.95, roughness: 0.15 });
+    const borderMat = new THREE.MeshStandardMaterial({ color: 0xd4cfc5, metalness: 0.05, roughness: 0.35 });
     const border = new THREE.Mesh(new THREE.BoxGeometry(6.05, 0.05, 6.05), borderMat);
     border.position.y = 0.01;
     this.scene.add(border);
+
+    // Background foliage sprites
+    const leafTex  = new THREE.CanvasTexture(generateLeafSprite());
+    const daisyTex = new THREE.CanvasTexture(generateDaisySprite());
+    const bgSprites = [
+      { tex: leafTex,  x: -3.5, y: 1.8, z: -2.8, sx: 2.8, sy: 2.2, ry:  0.35 },
+      { tex: leafTex,  x:  3.2, y: 1.6, z: -2.6, sx: 2.4, sy: 1.8, ry: -0.45 },
+      { tex: leafTex,  x: -1.5, y: 2.4, z: -3.2, sx: 3.2, sy: 2.4, ry:  0.12 },
+      { tex: leafTex,  x:  1.8, y: 2.0, z: -3.0, sx: 2.6, sy: 2.0, ry: -0.20 },
+      { tex: leafTex,  x:  0.2, y: 3.2, z: -3.4, sx: 3.6, sy: 2.8, ry:  0.05 },
+      { tex: leafTex,  x: -2.8, y: 3.0, z: -3.0, sx: 2.0, sy: 2.4, ry:  0.60 },
+      { tex: daisyTex, x: -2.2, y: 1.4, z: -2.4, sx: 0.9, sy: 0.9, ry:  0.1  },
+      { tex: daisyTex, x:  2.6, y: 1.2, z: -2.2, sx: 0.8, sy: 0.8, ry: -0.15 },
+      { tex: daisyTex, x:  0.8, y: 1.8, z: -3.0, sx: 1.0, sy: 1.0, ry:  0.0  },
+    ];
+    for (const s of bgSprites) {
+      const spriteMat = new THREE.MeshBasicMaterial({
+        map: s.tex,
+        transparent: true,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        opacity: 0.88,
+      });
+      const spriteMesh = new THREE.Mesh(new THREE.PlaneGeometry(s.sx, s.sy), spriteMat);
+      spriteMesh.position.set(s.x, s.y, s.z);
+      spriteMesh.rotation.y = s.ry;
+      this.scene.add(spriteMesh);
+    }
 
     const nozzleGroup = new THREE.Group();
     nozzleGroup.position.set(0, 0, 0);
@@ -1044,34 +1192,46 @@ class ObservationChamber3D {
     const ommatidiaTex = generateOmmatidiaTexture();
     const wingTex = generateWingTexture();
 
+    // Authentic Drosophila chitin: dark olive-black with clearcoat gloss & green sheen
     const chitinMat = new THREE.MeshPhysicalMaterial({
-      color: 0x5a341a,
-      roughness: 0.32,
-      metalness: 0.22,
-      clearcoat: 0.8,
-      clearcoatRoughness: 0.2,
-      reflectivity: 0.7,
-    });
-
-    const eyeMat = new THREE.MeshPhysicalMaterial({
-      color: 0x8a0418,
-      emissive: 0x220004,
+      color: 0x1e1a0c,
       roughness: 0.18,
-      metalness: 0.35,
-      bumpMap: ommatidiaTex,
-      bumpScale: 0.04,
-      clearcoat: 0.9,
-      clearcoatRoughness: 0.1,
+      metalness: 0.42,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.06,
+      reflectivity: 0.85,
+      sheen: 0.5,
+      sheenColor: new THREE.Color(0x3d6020),
+      sheenRoughness: 0.3,
     });
 
+    // Compound eyes: deep burgundy-red with IOR refraction & ommatidial bump
+    const eyeMat = new THREE.MeshPhysicalMaterial({
+      color: 0xcc2200,
+      emissive: new THREE.Color(0x3a0800),
+      roughness: 0.05,
+      metalness: 0.0,
+      transmission: 0.12,
+      ior: 1.52,
+      bumpMap: ommatidiaTex,
+      bumpScale: 0.07,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.04,
+      reflectivity: 0.95,
+    });
+
+    // Wings: iridescent transparent with visible venation
     const wingMat = new THREE.MeshPhysicalMaterial({
       map: wingTex,
       transparent: true,
-      opacity: 0.9,
-      roughness: 0.08,
-      metalness: 0.15,
-      transmission: 0.7,
-      ior: 1.35,
+      opacity: 0.82,
+      roughness: 0.04,
+      metalness: 0.08,
+      transmission: 0.78,
+      ior: 1.42,
+      iridescence: 0.9,
+      iridescenceIOR: 1.3,
+      iridescenceThicknessRange: [100, 400],
       side: THREE.DoubleSide,
       depthWrite: false,
     });
@@ -1128,14 +1288,19 @@ class ObservationChamber3D {
     for (let s = 0; s < abdSegments; s++) {
       const progress = s / (abdSegments - 1);
       const rad = 0.36 * Math.sin((progress + 0.15) * Math.PI * 0.85);
-      const segGeo = new THREE.CylinderGeometry(rad * 0.95, rad, 0.18, 20);
+      const segGeo = new THREE.CylinderGeometry(rad * 0.95, rad, 0.18, 24);
       segGeo.scale(0.85, 1.0, 1.25);
 
-      const isStripe = s >= 2;
+      // Alternating dark/amber bands — authentic Drosophila abdomen tergites
+      const isDark = s % 2 === 0;
       const segMat = new THREE.MeshPhysicalMaterial({
-        color: isStripe ? 0x221308 : 0x5a341a,
-        roughness: 0.4,
-        metalness: 0.18,
+        color: isDark ? 0x141008 : 0x2a2010,
+        roughness: isDark ? 0.18 : 0.28,
+        metalness: 0.38,
+        clearcoat: isDark ? 0.9 : 0.5,
+        clearcoatRoughness: 0.08,
+        sheen: 0.4,
+        sheenColor: new THREE.Color(isDark ? 0x203010 : 0x604020),
       });
 
       const segMesh = new THREE.Mesh(segGeo, segMat);
@@ -1152,13 +1317,13 @@ class ObservationChamber3D {
     this.head.position.set(0, 0.12, 0.58);
 
     const headCuticleMat = new THREE.MeshPhysicalMaterial({
-      color: 0x5a341a,
-      transparent: true,
-      opacity: 0.88,
-      roughness: 0.28,
-      metalness: 0.2,
-      transmission: 0.35,
-      ior: 1.4,
+      color: 0x1e1a0c,
+      roughness: 0.16,
+      metalness: 0.4,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.06,
+      sheen: 0.45,
+      sheenColor: new THREE.Color(0x3a5818),
     });
 
     const headGeo = new THREE.SphereGeometry(0.26, 20, 16);
@@ -1438,17 +1603,27 @@ class ObservationChamber3D {
     phoneGroup.rotation.x = -0.08;
 
     const bodyGeo = new THREE.BoxGeometry(0.86, 1.52, 0.045);
-    const bodyMat = new THREE.MeshStandardMaterial({
-      color: 0x181e28,
-      roughness: 0.2,
-      metalness: 0.9,
+    const bodyMat = new THREE.MeshPhysicalMaterial({
+      color: 0x111520,
+      roughness: 0.04,
+      metalness: 0.92,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.04,
+      reflectivity: 1.0,
     });
     const phoneBody = new THREE.Mesh(bodyGeo, bodyMat);
     phoneBody.castShadow = true;
     phoneGroup.add(phoneBody);
 
     const bezelGeo = new THREE.BoxGeometry(0.82, 1.48, 0.048);
-    const bezelMat = new THREE.MeshBasicMaterial({ color: 0x080a10 });
+    const bezelMat = new THREE.MeshPhysicalMaterial({
+      color: 0x06080e,
+      roughness: 0.0,
+      metalness: 0.1,
+      transmission: 0.08,
+      ior: 1.5,
+      clearcoat: 1.0,
+    });
     const bezel = new THREE.Mesh(bezelGeo, bezelMat);
     phoneGroup.add(bezel);
 
