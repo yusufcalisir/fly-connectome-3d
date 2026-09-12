@@ -129,10 +129,29 @@ def compile_connectome():
         .astype(str)
     )
 
+    subclass = (
+        nodes_df.get("subclass", pd.Series("", index=nodes_df.index))
+        .fillna("")
+        .astype(str)
+    )
+    superclass = (
+        nodes_df.get("superclass", pd.Series("", index=nodes_df.index))
+        .fillna("")
+        .astype(str)
+    )
+    is_leg_motor = superclass.eq("vnc_motor")
+
     r1_r6_l = np.flatnonzero(types.eq("R1-R6") & soma_side.eq("L")).tolist()
     r1_r6_r = np.flatnonzero(types.eq("R1-R6") & soma_side.eq("R")).tolist()
     r8_l = np.flatnonzero(types.str.startswith("R8") & soma_side.eq("L")).tolist()
     r8_r = np.flatnonzero(types.str.startswith("R8") & soma_side.eq("R")).tolist()
+
+    vnc_t1_l = np.flatnonzero(is_leg_motor & subclass.eq("fl") & soma_side.eq("L")).tolist()
+    vnc_t1_r = np.flatnonzero(is_leg_motor & subclass.eq("fl") & soma_side.eq("R")).tolist()
+    vnc_t2_l = np.flatnonzero(is_leg_motor & subclass.eq("ml") & soma_side.eq("L")).tolist()
+    vnc_t2_r = np.flatnonzero(is_leg_motor & subclass.eq("ml") & soma_side.eq("R")).tolist()
+    vnc_t3_l = np.flatnonzero(is_leg_motor & subclass.eq("hl") & soma_side.eq("L")).tolist()
+    vnc_t3_r = np.flatnonzero(is_leg_motor & subclass.eq("hl") & soma_side.eq("R")).tolist()
 
     circuits = {
         "r1_r6_photoreceptors": np.flatnonzero(types.eq("R1-R6")).tolist(),
@@ -157,6 +176,12 @@ def compile_connectome():
         "giant_fiber_escape": np.flatnonzero(types.isin(["DNp01", "GF"]) | types.str.startswith("Giant_Fiber")).tolist(),
         "excitatory_neurons": np.flatnonzero(signs > 0).tolist(),
         "inhibitory_neurons": np.flatnonzero(signs < 0).tolist(),
+        "vnc_t1_left": vnc_t1_l,
+        "vnc_t1_right": vnc_t1_r,
+        "vnc_t2_left": vnc_t2_l,
+        "vnc_t2_right": vnc_t2_r,
+        "vnc_t3_left": vnc_t3_l,
+        "vnc_t3_right": vnc_t3_r,
     }
 
     for name, indices in circuits.items():

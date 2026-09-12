@@ -50,6 +50,14 @@ class IndexedCircuits:
     inhibitory_neurons: np.ndarray = field(default_factory=lambda: np.empty(0, dtype=np.int32))
     polarity: np.ndarray | None = None
 
+    # VNC (Ventral Nerve Cord) Hexapod Leg Motor Pools (T1..T3, L/R)
+    vnc_t1_left: np.ndarray = field(default_factory=lambda: np.empty(0, dtype=np.int32))   # Prothoracic Left (Front Leg L1)
+    vnc_t1_right: np.ndarray = field(default_factory=lambda: np.empty(0, dtype=np.int32))  # Prothoracic Right (Front Leg R1)
+    vnc_t2_left: np.ndarray = field(default_factory=lambda: np.empty(0, dtype=np.int32))   # Mesothoracic Left (Middle Leg L2)
+    vnc_t2_right: np.ndarray = field(default_factory=lambda: np.empty(0, dtype=np.int32))  # Mesothoracic Right (Middle Leg R2)
+    vnc_t3_left: np.ndarray = field(default_factory=lambda: np.empty(0, dtype=np.int32))   # Metathoracic Left (Hind Leg L3)
+    vnc_t3_right: np.ndarray = field(default_factory=lambda: np.empty(0, dtype=np.int32))  # Metathoracic Right (Hind Leg R3)
+
     def __post_init__(self):
         """Ensure hemispheric arrays are initialized if only flat arrays were provided."""
         if len(self.r1_r6_left) == 0 and len(self.r1_r6_right) == 0 and len(self.r1_r6_photoreceptors) > 0:
@@ -145,6 +153,26 @@ def extract_circuits_from_annotations(
     mdn = np.flatnonzero(types.eq("MDN") | types.str.startswith("MDN")).astype(np.int32)
     gf = np.flatnonzero(types.isin(["DNp01", "GF"]) | types.str.startswith("Giant_Fiber")).astype(np.int32)
 
+    # VNC (Ventral Nerve Cord) Thoracic Leg Motor Neurons
+    subclass = (
+        df_aligned["subclass"].fillna("").astype(str)
+        if "subclass" in df_aligned.columns
+        else pd.Series("", index=df_aligned.index)
+    )
+    superclass = (
+        df_aligned["superclass"].fillna("").astype(str)
+        if "superclass" in df_aligned.columns
+        else pd.Series("", index=df_aligned.index)
+    )
+    is_leg_motor = superclass.eq("vnc_motor")
+
+    vnc_t1_l = np.flatnonzero(is_leg_motor & subclass.eq("fl") & soma_side.eq("L")).astype(np.int32)
+    vnc_t1_r = np.flatnonzero(is_leg_motor & subclass.eq("fl") & soma_side.eq("R")).astype(np.int32)
+    vnc_t2_l = np.flatnonzero(is_leg_motor & subclass.eq("ml") & soma_side.eq("L")).astype(np.int32)
+    vnc_t2_r = np.flatnonzero(is_leg_motor & subclass.eq("ml") & soma_side.eq("R")).astype(np.int32)
+    vnc_t3_l = np.flatnonzero(is_leg_motor & subclass.eq("hl") & soma_side.eq("L")).astype(np.int32)
+    vnc_t3_r = np.flatnonzero(is_leg_motor & subclass.eq("hl") & soma_side.eq("R")).astype(np.int32)
+
     # Polarity
     exc_neurons = np.empty(0, dtype=np.int32)
     inh_neurons = np.empty(0, dtype=np.int32)
@@ -180,6 +208,12 @@ def extract_circuits_from_annotations(
         excitatory_neurons=exc_neurons,
         inhibitory_neurons=inh_neurons,
         polarity=polarity,
+        vnc_t1_left=vnc_t1_l,
+        vnc_t1_right=vnc_t1_r,
+        vnc_t2_left=vnc_t2_l,
+        vnc_t2_right=vnc_t2_r,
+        vnc_t3_left=vnc_t3_l,
+        vnc_t3_right=vnc_t3_r,
     )
 
 
@@ -230,6 +264,13 @@ def load_malecns_v1_connectome(
     r8_l = np.array(c_dict.get("r8_left", []), dtype=np.int32)
     r8_r = np.array(c_dict.get("r8_right", []), dtype=np.int32)
 
+    vnc_t1_l = np.array(c_dict.get("vnc_t1_left", []), dtype=np.int32)
+    vnc_t1_r = np.array(c_dict.get("vnc_t1_right", []), dtype=np.int32)
+    vnc_t2_l = np.array(c_dict.get("vnc_t2_left", []), dtype=np.int32)
+    vnc_t2_r = np.array(c_dict.get("vnc_t2_right", []), dtype=np.int32)
+    vnc_t3_l = np.array(c_dict.get("vnc_t3_left", []), dtype=np.int32)
+    vnc_t3_r = np.array(c_dict.get("vnc_t3_right", []), dtype=np.int32)
+
     circuits = IndexedCircuits(
         r1_r6_photoreceptors=np.array(c_dict["r1_r6_photoreceptors"], dtype=np.int32),
         r8_photoreceptors=np.array(c_dict["r8_photoreceptors"], dtype=np.int32),
@@ -254,6 +295,12 @@ def load_malecns_v1_connectome(
         excitatory_neurons=exc_neurons,
         inhibitory_neurons=inh_neurons,
         polarity=polarity,
+        vnc_t1_left=vnc_t1_l,
+        vnc_t1_right=vnc_t1_r,
+        vnc_t2_left=vnc_t2_l,
+        vnc_t2_right=vnc_t2_r,
+        vnc_t3_left=vnc_t3_l,
+        vnc_t3_right=vnc_t3_r,
     )
 
     return shape[0], adj, circuits, neuron_ids
