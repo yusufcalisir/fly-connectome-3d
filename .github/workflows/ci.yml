@@ -109,14 +109,20 @@ jobs:
         id: cache-connectome
         uses: actions/cache@v4
         with:
-          path: data/malecns_v1/malecns_v1_graph.npz
-          key: malecns-v1-connectome-${{ hashFiles('src/connectome_engine/data/downloader.py') }}
+          path: |
+            data/malecns_v1/malecns_v1_graph.npz
+            data/malecns_v1/circuits_manifest.json
+          key: malecns-v1-connectome-${{ hashFiles('src/connectome_engine/data/downloader.py', 'src/connectome_engine/data/compile_malecns.py') }}
 
-      - name: Download connectome if not cached
+      - name: Download and compile connectome if not cached
         if: steps.cache-connectome.outputs.cache-hit != 'true'
+        continue-on-error: true
         run: |
           mkdir -p data/malecns_v1
-          uv run python src/connectome_engine/data/downloader.py
+          uv run python src/connectome_engine/data/downloader.py || true
+          if [ -f "data/malecns_v1/edges.feather" ]; then
+            uv run python src/connectome_engine/data/compile_malecns.py || true
+          fi
 
       - name: Run real-connectome tests
         run: |

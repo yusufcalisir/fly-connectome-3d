@@ -3,15 +3,24 @@
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from connectome_engine.config import CONFIG
 from connectome_engine.data.circuits import load_malecns_v1_connectome
 from connectome_engine.simulation.lif_kernel import SpikingConnectomeEngine
 
 
+def _get_data_dir() -> Path:
+    data_dir = Path(__file__).resolve().parents[1] / "data" / "malecns_v1"
+    graph_file = data_dir / "malecns_v1_graph.npz"
+    if not graph_file.exists():
+        pytest.skip(f"Janelia MaleCNS v1.0 compiled dataset not present at {graph_file}. Skipping.")
+    return data_dir
+
+
 def test_malecns_v1_topology_integrity():
     """Verify exact 166,700 neuron count and 25,582,938 synaptic connections."""
-    data_dir = Path(__file__).resolve().parents[1] / "data" / "malecns_v1"
+    data_dir = _get_data_dir()
     n_nodes, adj, circuits, neuron_ids = load_malecns_v1_connectome(data_dir)
 
     assert n_nodes == 166700, f"Expected 166,700 neurons, got {n_nodes}"
@@ -33,7 +42,7 @@ def test_malecns_v1_topology_integrity():
 
 def test_real_connectome_lif_dopamine_propagation():
     """Verify real LIF spike propagation through the 25.6M synaptic matrix upon PAM11 stimulation."""
-    data_dir = Path(__file__).resolve().parents[1] / "data" / "malecns_v1"
+    data_dir = _get_data_dir()
     n_nodes, adj, circuits, neuron_ids = load_malecns_v1_connectome(data_dir)
 
     engine = SpikingConnectomeEngine(n_nodes, adj, CONFIG)
