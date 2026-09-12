@@ -395,60 +395,266 @@ body {
   box-shadow: 0 0 16px rgba(0, 240, 255, 0.6);
 }
 
+/* Manual Action Bar - Sci-Fi Neuro-Cockpit Triggers */
 .action-bar {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 6px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 6px 0 10px 0;
 }
 
 .btn {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 6px;
-  border-radius: 8px;
+  gap: 8px;
+  padding: 10px 8px;
+  border-radius: 12px;
   cursor: pointer;
-  border: none;
-  transition: transform 0.1s, box-shadow 0.2s;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   text-align: left;
+  overflow: hidden;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 15%;
+  right: 15%;
+  height: 2px;
+  border-radius: 2px;
+  transition: all 0.35s ease;
+  z-index: 2;
+}
+
+.btn::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -90%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(25deg);
+  transition: left 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+}
+
+.btn:hover::after {
+  left: 140%;
 }
 
 .btn:active {
-  transform: scale(0.97);
+  transform: translateY(1px) scale(0.98);
+}
+
+.btn-icon-wrapper {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.25s ease;
+  z-index: 1;
 }
 
 .btn-icon {
-  font-size: 16px;
+  font-size: 15px;
+  line-height: 1;
+  display: inline-block;
+  transition: transform 0.25s ease;
+}
+
+.btn:hover .btn-icon {
+  transform: scale(1.18);
+}
+
+.btn-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+  z-index: 1;
+}
+
+.btn-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
 }
 
 .btn-text strong {
-  display: block;
+  font-family: var(--font-display);
   font-size: 11px;
-  letter-spacing: 0.5px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
 }
 
 .btn-text small {
+  font-family: var(--font-mono);
   font-size: 8px;
-  opacity: 0.8;
-  display: block;
+  color: rgba(255, 255, 255, 0.65);
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
 }
 
+.btn-badge {
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* 1. WIREHEAD - Dopamine Surge */
 .btn-wirehead {
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: #fff;
-  box-shadow: 0 4px 14px var(--c-dopamine-glow);
+  background: linear-gradient(145deg, rgba(16, 185, 129, 0.18) 0%, rgba(5, 70, 50, 0.35) 60%, rgba(3, 30, 22, 0.6) 100%);
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
+.btn-wirehead::before {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.btn-wirehead .btn-icon-wrapper {
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: inset 0 0 10px rgba(16, 185, 129, 0.2);
+}
+
+.btn-wirehead .btn-icon {
+  filter: drop-shadow(0 0 6px #10b981);
+}
+
+.btn-wirehead .btn-badge {
+  background: rgba(16, 185, 129, 0.25);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.45);
+}
+
+.btn-wirehead:hover {
+  border-color: rgba(16, 185, 129, 0.7);
+  background: linear-gradient(145deg, rgba(16, 185, 129, 0.28) 0%, rgba(5, 70, 50, 0.45) 60%, rgba(3, 30, 22, 0.7) 100%);
+  box-shadow: 0 6px 24px rgba(16, 185, 129, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 15px rgba(16, 185, 129, 0.2);
+}
+
+.btn-wirehead:hover::before {
+  left: 5%;
+  right: 5%;
+  box-shadow: 0 0 14px #10b981;
+}
+
+/* 2. LOOM THREAT - Giant Fiber Alarm */
 .btn-threat {
-  background: linear-gradient(135deg, #ef4444, #b91c1c);
-  color: #fff;
-  box-shadow: 0 4px 14px var(--c-hazard-glow);
+  background: linear-gradient(145deg, rgba(239, 68, 68, 0.18) 0%, rgba(120, 20, 20, 0.35) 60%, rgba(45, 8, 8, 0.6) 100%);
+  border-color: rgba(239, 68, 68, 0.4);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
+.btn-threat::before {
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+}
+
+.btn-threat .btn-icon-wrapper {
+  border-color: rgba(239, 68, 68, 0.4);
+  box-shadow: inset 0 0 10px rgba(239, 68, 68, 0.2);
+}
+
+.btn-threat .btn-icon {
+  filter: drop-shadow(0 0 6px #ef4444);
+}
+
+.btn-threat .btn-badge {
+  background: rgba(239, 68, 68, 0.25);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.45);
+}
+
+.btn-threat:hover {
+  border-color: rgba(239, 68, 68, 0.7);
+  background: linear-gradient(145deg, rgba(239, 68, 68, 0.28) 0%, rgba(120, 20, 20, 0.45) 60%, rgba(45, 8, 8, 0.7) 100%);
+  box-shadow: 0 6px 24px rgba(239, 68, 68, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 15px rgba(239, 68, 68, 0.25);
+}
+
+.btn-threat:hover::before {
+  left: 5%;
+  right: 5%;
+  box-shadow: 0 0 14px #ef4444;
+}
+
+/* 3. LEG SWIPE - Tactile Screen Swipe */
 .btn-swipe {
-  background: linear-gradient(135deg, #06b6d4, #0284c7);
-  color: #fff;
-  box-shadow: 0 4px 14px rgba(6, 182, 212, 0.4);
+  background: linear-gradient(145deg, rgba(0, 240, 255, 0.16) 0%, rgba(2, 110, 160, 0.35) 60%, rgba(6, 40, 60, 0.6) 100%);
+  border-color: rgba(0, 240, 255, 0.4);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.btn-swipe::before {
+  background: #00f0ff;
+  box-shadow: 0 0 8px #00f0ff;
+}
+
+.btn-swipe .btn-icon-wrapper {
+  border-color: rgba(0, 240, 255, 0.4);
+  box-shadow: inset 0 0 10px rgba(0, 240, 255, 0.2);
+}
+
+.btn-swipe .btn-icon {
+  filter: drop-shadow(0 0 6px #00f0ff);
+}
+
+.btn-swipe .btn-badge {
+  background: rgba(0, 240, 255, 0.22);
+  color: #38bdf8;
+  border: 1px solid rgba(0, 240, 255, 0.45);
+}
+
+.btn-swipe:hover {
+  border-color: rgba(0, 240, 255, 0.7);
+  background: linear-gradient(145deg, rgba(0, 240, 255, 0.26) 0%, rgba(2, 110, 160, 0.45) 60%, rgba(6, 40, 60, 0.7) 100%);
+  box-shadow: 0 6px 24px rgba(0, 240, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 15px rgba(0, 240, 255, 0.2);
+}
+
+.btn-swipe:hover::before {
+  left: 5%;
+  right: 5%;
+  box-shadow: 0 0 14px #00f0ff;
 }
 
 /* Motor Telemetry Box */
@@ -986,25 +1192,38 @@ body {
   }
 
   .action-bar {
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 4px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
   }
 
   .btn {
-    padding: 7px 4px;
-    gap: 4px;
+    padding: 8px 6px;
+    gap: 6px;
+    border-radius: 10px;
+  }
+
+  .btn-icon-wrapper {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+  }
+
+  .btn-icon {
+    font-size: 13px;
   }
 
   .btn-text strong {
-    font-size: 9px;
+    font-size: 9.5px;
+    letter-spacing: 0.3px;
   }
 
   .btn-text small {
     font-size: 7px;
   }
 
-  .btn-icon {
-    font-size: 13px;
+  .btn-badge {
+    font-size: 6.5px;
+    padding: 1px 3px;
   }
 
   .view-toggle-btn {
@@ -1059,5 +1278,24 @@ body {
 
   .action-bar {
     grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .btn {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .btn-icon-wrapper {
+    width: 28px;
+    height: 28px;
+  }
+
+  .btn-text strong {
+    font-size: 11px;
+  }
+
+  .btn-text small {
+    font-size: 8px;
   }
 }
