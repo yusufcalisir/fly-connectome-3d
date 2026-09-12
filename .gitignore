@@ -1,10 +1,60 @@
+# ==============================================================================
+# Byte-compiled / optimized / DLL files
+# ==============================================================================
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+
+# ==============================================================================
+# Virtual Environments & Packaging
+# ==============================================================================
 .venv/
-.pytest_cache/
-*.egg-info/
-dist/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 build/
-.DS_Store
+dist/
+*.egg-info/
+*.egg
+
+# ==============================================================================
+# Testing, Coverage & Type Checking
+# ==============================================================================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# ==============================================================================
+# Biological Connectome Datasets (Large Data Files > 100MB)
+# Note: Use `uv run python src/connectome_engine/data/downloader.py` to fetch
+# ==============================================================================
 data/**/*.feather
 data/**/*.npz
+data/**/*.parquet
+data/**/*.h5
+data/**/*.hdf5
+data/downloads/
+
+# ==============================================================================
+# Local Shell Scripts & Windows Executables (Do not push to remote)
+# ==============================================================================
+*.bat
+*.cmd
+*.ps1
+
+# ==============================================================================
+# IDE, Editor & OS Artifacts
+# ==============================================================================
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
