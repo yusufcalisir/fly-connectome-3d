@@ -101,6 +101,13 @@ def test_binary_pack_alignment_and_read():
     assert not np.isnan(positions).any()
     assert not np.isinf(positions).any()
 
+    # Graph indices (141781 int32) - naturally 4-byte aligned
+    graph_idx_bytes = total_somas * 4
+    graph_indices = np.frombuffer(file_bytes[offset : offset + graph_idx_bytes], dtype=np.int32)
+    offset += graph_idx_bytes
+    assert graph_indices.shape == (total_somas,)
+    assert np.sum(graph_indices >= 0) == 139662
+
     # Circuit tags (141781 uint8)
     circuit_bytes = total_somas
     circuits = np.frombuffer(file_bytes[offset : offset + circuit_bytes], dtype=np.uint8)
@@ -112,16 +119,9 @@ def test_binary_pack_alignment_and_read():
     polarity_bytes = total_somas
     polarities = np.frombuffer(file_bytes[offset : offset + polarity_bytes], dtype=np.int8)
     offset += polarity_bytes
+    assert offset == expected_size
     assert polarities.shape == (total_somas,)
     assert set(np.unique(polarities)).issubset({-1, 0, 1})
-
-    # Graph indices (141781 int32)
-    graph_idx_bytes = total_somas * 4
-    graph_indices = np.frombuffer(file_bytes[offset : offset + graph_idx_bytes], dtype=np.int32)
-    offset += graph_idx_bytes
-    assert offset == expected_size
-    assert graph_indices.shape == (total_somas,)
-    assert np.sum(graph_indices >= 0) == 139662
 
 
 def test_circuit_tag_accuracy(annotations_df):
@@ -129,7 +129,7 @@ def test_circuit_tag_accuracy(annotations_df):
     df_soma = annotations_df[annotations_df["somaLocation"].notna()].reset_index(drop=True)
 
     file_bytes = BIN_FILE.read_bytes()
-    offset = 16 + (len(df_soma) * 12)
+    offset = 16 + (len(df_soma) * 12) + (len(df_soma) * 4)
     circuits = np.frombuffer(file_bytes[offset : offset + len(df_soma)], dtype=np.uint8)
 
     # 1. Kenyon Cells -> Tag 2 (mushroom_body)

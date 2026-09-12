@@ -65,6 +65,7 @@ const TRANSLATIONS = {
     chart_dopamine: 'DOPAMINE WAVEFORM (Hz)',
     chart_raster: 'SPIKE RASTER STREAM (Matrix Waterfall)',
     badge_biophysics: 'MaleCNS v1.0 Biophysics',
+    badge_somas: '141.8K Somas 3D',
     chart_scale_frames: '120 frames',
     chart_scale_landmarks: '64 landmarks',
     nav_3d: '3D View',
@@ -76,6 +77,7 @@ const TRANSLATIONS = {
     header_sim_time: 'SİM SÜRESİ:',
     header_spikes: 'TOPLAM SPİKE:',
     badge_biophysics: 'MaleCNS v1.0 Biyofizik',
+    badge_somas: '141.8K Gerçek Soma 3D',
     panel_stimulus: 'UYARAN ARENASI',
     tag_phone_feed: 'Sanal Telefon Yayını',
     label_presets: 'Uyaran Şablonu Seçin:',
@@ -843,7 +845,9 @@ class ObservationChamber3D {
     this.leftWing = null;
     this.rightWing = null;
     this.legs = [];
-    this.brainSparkSystem = null;
+    this.connectomePointCloud = null;
+    this.graphToSomaMap = null;
+    this.glowingSomas = [];
     this.phoneScreenMesh = null;
     this.phoneLight = null;
     this.phoneTexture = null;
@@ -864,6 +868,7 @@ class ObservationChamber3D {
     this._buildPhotorealisticFly();
     this._buildNeuropilCompartments();
     this._buildVirtualSmartphone();
+    this._loadRealSomaPointCloud();
     this._setupEventListeners();
     this._setCameraPreset('fly');
   }
@@ -1238,34 +1243,6 @@ class ObservationChamber3D {
 
     this.head.add(probGroup);
 
-    // 7. Neural Sparks
-    const sparkGeo = new THREE.BufferGeometry();
-    const sparkCount = 64;
-    const positions = new Float32Array(sparkCount * 3);
-    const colors = new Float32Array(sparkCount * 3);
-
-    for (let i = 0; i < sparkCount; i++) {
-      positions[i * 3 + 0] = (Math.random() - 0.5) * 0.28;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 0.22;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 0.22;
-      colors[i * 3 + 0] = 0.0;
-      colors[i * 3 + 1] = 0.95;
-      colors[i * 3 + 2] = 0.85;
-    }
-
-    sparkGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    sparkGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-    const sparkMat = new THREE.PointsMaterial({
-      size: 0.04,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.85,
-      blending: THREE.AdditiveBlending,
-    });
-    this.brainSparkSystem = new THREE.Points(sparkGeo, sparkMat);
-    this.head.add(this.brainSparkSystem);
-
     this.flyGroup.add(this.head);
 
     // 8. Wings
@@ -1432,6 +1409,132 @@ class ObservationChamber3D {
       centralComplex: centralComplex,
       gfMat: gfMat,
     };
+  }
+
+  async _loadRealSomaPointCloud() {
+    try {
+      const [coordRes, metaRes] = await Promise.all([
+        fetch('/api/connectome/soma-coordinates'),
+        fetch('/api/connectome/soma-metadata'),
+      ]);
+      if (!coordRes.ok) {
+        console.warn(`[Connectome 3D] Failed to fetch coordinates (HTTP ${coordRes.status})`);
+        return;
+      }
+      const buffer = await coordRes.arrayBuffer();
+
+      const headerView = new Uint32Array(buffer, 0, 2);
+      const magic = headerView[0];
+      const count = headerView[1];
+      if (magic !== 0x464C5933) {
+        console.warn('[Connectome 3D] Invalid binary magic header:', magic.toString(16));
+        return;
+      }
+
+      let offset = 16;
+      // Positions: count * 3 float32 (offset 16)
+      const posBytes = count * 3 * 4;
+      const positions = new Float32Array(buffer.slice(offset, offset + posBytes));
+      offset += posBytes;
+
+      // Graph node indices: count int32 (offset 1,701,388)
+      const graphBytes = count * 4;
+      const graphIndices = new Int32Array(buffer.slice(offset, offset + graphBytes));
+      offset += graphBytes;
+
+      // Circuit tags: count uint8
+      const circuitTags = new Uint8Array(buffer.slice(offset, offset + count));
+      offset += count;
+
+      // Polarities: count int8
+      const polarities = new Int8Array(buffer.slice(offset, offset + count));
+      offset += count;
+
+      // Build reverse O(1) graphToSomaMap (166700 graph nodes -> soma index)
+      this.graphToSomaMap = new Int32Array(166700);
+      this.graphToSomaMap.fill(-1);
+      for (let i = 0; i < count; i++) {
+        const gIdx = graphIndices[i];
+        if (gIdx >= 0 && gIdx < 166700) {
+          this.graphToSomaMap[gIdx] = i;
+        }
+      }
+
+      // Map Circuit tags to colors
+      // 0: #38bdf8 (central_brain) -> [0.22, 0.74, 0.97]
+      // 1: #00f0ff (optic_lobe) -> [0.0, 0.94, 1.0]
+      // 2: #10b981 (mushroom_body) -> [0.06, 0.73, 0.51]
+      // 3: #f59e0b (central_complex) -> [0.96, 0.62, 0.04]
+      // 4: #ef4444 (descending_motor) -> [0.94, 0.27, 0.27]
+      // 5: #a855f7 (vnc_motor_cord) -> [0.66, 0.33, 0.97]
+      const palette = [
+        [0.22, 0.74, 0.97],
+        [0.0, 0.94, 1.0],
+        [0.06, 0.73, 0.51],
+        [0.96, 0.62, 0.04],
+        [0.94, 0.27, 0.27],
+        [0.66, 0.33, 0.97],
+      ];
+
+      const colors = new Float32Array(count * 3);
+      const activity = new Float32Array(count);
+
+      for (let i = 0; i < count; i++) {
+        const tag = circuitTags[i] < palette.length ? circuitTags[i] : 0;
+        const rgb = palette[tag];
+        colors[i * 3 + 0] = rgb[0];
+        colors[i * 3 + 1] = rgb[1];
+        colors[i * 3 + 2] = rgb[2];
+        activity[i] = 0.0;
+      }
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      geometry.setAttribute('activity', new THREE.BufferAttribute(activity, 1));
+
+      const pointShaderMat = new THREE.ShaderMaterial({
+        uniforms: {
+          baseSize: { value: 0.010 },
+        },
+        vertexShader: `
+          attribute float activity;
+          varying vec3 vColor;
+          varying float vActivity;
+          uniform float baseSize;
+          void main() {
+            vColor = color;
+            vActivity = activity;
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            gl_PointSize = (baseSize + activity * 0.024) * (260.0 / -mvPosition.z);
+            gl_Position = projectionMatrix * mvPosition;
+          }
+        `,
+        fragmentShader: `
+          varying vec3 vColor;
+          varying float vActivity;
+          void main() {
+            float dist = length(gl_PointCoord - vec2(0.5));
+            if (dist > 0.5) discard;
+            float alpha = smoothstep(0.5, 0.12, dist) * (0.65 + vActivity * 0.35);
+            vec3 finalColor = mix(vColor, vec3(1.0, 1.0, 1.0), vActivity * 0.85);
+            gl_FragColor = vec4(finalColor, alpha);
+          }
+        `,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      });
+
+      this.connectomePointCloud = new THREE.Points(geometry, pointShaderMat);
+      if (this.head) {
+        this.head.add(this.connectomePointCloud);
+      }
+
+      console.log(`[Connectome 3D] Successfully loaded ${count.toLocaleString()} real EM neuron somas into Three.js point cloud.`);
+    } catch (err) {
+      console.error('[Connectome 3D] Failed to load 141K soma point cloud:', err);
+    }
   }
 
   _buildVirtualSmartphone() {
@@ -1659,17 +1762,42 @@ class ObservationChamber3D {
       this.triggerLegSwipe();
     }
 
-    if (this.brainSparkSystem) {
-      const p = this.brainSparkSystem.geometry.attributes.position;
-      const count = p.count;
-      const simTime = telemetry.sim_time_ms || 0;
-      for (let i = 0; i < count; i++) {
-        if ((i + spikes) % 6 === 0) {
-          p.setY(i, Math.sin(simTime * 0.05 + i) * 0.13);
+    if (this.connectomePointCloud && this.connectomePointCloud.geometry.attributes.activity) {
+      const actAttr = this.connectomePointCloud.geometry.attributes.activity;
+      const actArr = actAttr.array;
+
+      // 1. Exponential decay of previously active somas (O(k) where k is active count)
+      if (this.glowingSomas && this.glowingSomas.length > 0) {
+        const nextGlowing = [];
+        for (let i = 0; i < this.glowingSomas.length; i++) {
+          const sIdx = this.glowingSomas[i];
+          actArr[sIdx] *= 0.78;
+          if (actArr[sIdx] > 0.04) {
+            nextGlowing.push(sIdx);
+          } else {
+            actArr[sIdx] = 0.0;
+          }
+        }
+        this.glowingSomas = nextGlowing;
+      } else {
+        this.glowingSomas = [];
+      }
+
+      // 2. Light up real spiking somas from telemetry
+      const activeNeurons = telemetry.active_neurons || [];
+      if (this.graphToSomaMap && activeNeurons.length > 0) {
+        for (let i = 0; i < activeNeurons.length; i++) {
+          const gIdx = activeNeurons[i];
+          if (gIdx >= 0 && gIdx < this.graphToSomaMap.length) {
+            const sIdx = this.graphToSomaMap[gIdx];
+            if (sIdx >= 0 && sIdx < actArr.length) {
+              actArr[sIdx] = 1.0;
+              this.glowingSomas.push(sIdx);
+            }
+          }
         }
       }
-      p.needsUpdate = true;
-      this.brainSparkSystem.material.size = 0.03 + Math.min(spikes * 0.001, 0.06);
+      actAttr.needsUpdate = true;
     }
 
     if (this.phoneLight) {

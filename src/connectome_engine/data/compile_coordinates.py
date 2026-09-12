@@ -188,17 +188,17 @@ def extract_and_compile_coordinates() -> Tuple[Path, Path]:
         f.write(np.float32(scale_factor).tobytes())
         f.write(np.uint32(0).tobytes())  # reserved
 
-        # Section 1: Positions (Float32, shape N*3)
+        # Section 1: Positions (Float32, shape N*3) - offset 16 (4-byte aligned)
         f.write(three_positions.tobytes())
 
-        # Section 2: Circuit tags (Uint8, shape N)
+        # Section 2: Graph node indices (Int32, shape N) - offset 1,701,388 (4-byte aligned)
+        f.write(graph_indices.tobytes())
+
+        # Section 3: Circuit tags (Uint8, shape N)
         f.write(circuit_tags.tobytes())
 
-        # Section 3: Polarities (Int8, shape N)
+        # Section 4: Polarities (Int8, shape N)
         f.write(polarities.tobytes())
-
-        # Section 4: Graph node indices (Int32, shape N)
-        f.write(graph_indices.tobytes())
 
     file_size = OUTPUT_BIN.stat().st_size
     expected_size = 16 + (total_somas * 12) + (total_somas * 1) + (total_somas * 1) + (total_somas * 4)
