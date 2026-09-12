@@ -477,62 +477,93 @@ class StimulusGenerator {
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, w, h);
 
-    const aura = ctx.createRadialGradient(w / 2, h / 2, 10, w / 2, h / 2, 70);
-    aura.addColorStop(0, 'rgba(255, 30, 80, 0.35)');
+    const aura = ctx.createRadialGradient(w / 2, h / 2, 80, w / 2, h / 2, 560);
+    aura.addColorStop(0, 'rgba(255, 30, 80, 0.40)');
+    aura.addColorStop(0.5, 'rgba(255, 30, 80, 0.15)');
     aura.addColorStop(1, 'rgba(255, 30, 80, 0.0)');
     ctx.fillStyle = aura;
     ctx.fillRect(0, 0, w, h);
 
     ctx.save();
-    ctx.translate(w / 2, h / 2 + 15);
-    const bob = Math.sin(this.time * 2.5) * 3;
+    ctx.translate(w / 2, h / 2 + 120);
+    const bob = Math.sin(this.time * 2.5) * 24;
     ctx.translate(0, bob);
 
+    // High-resolution vector watermelon slice
+    // 1. Outer glossy green rind
     ctx.beginPath();
-    ctx.arc(0, 0, 36, 0.15 * Math.PI, 0.85 * Math.PI, false);
-    ctx.lineWidth = 9;
-    ctx.strokeStyle = '#1e7534';
+    ctx.arc(0, 0, 288, 0.15 * Math.PI, 0.85 * Math.PI, false);
+    ctx.lineWidth = 72;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#156526';
     ctx.stroke();
 
+    // 2. Inner crisp lime-white rind layer
     ctx.beginPath();
-    ctx.arc(0, 0, 32, 0.16 * Math.PI, 0.84 * Math.PI, false);
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = '#e6f7df';
+    ctx.arc(0, 0, 256, 0.16 * Math.PI, 0.84 * Math.PI, false);
+    ctx.lineWidth = 32;
+    ctx.strokeStyle = '#e2f7dd';
     ctx.stroke();
+
+    // 3. Juicy crimson/coral gradient flesh
+    const fleshGrad = ctx.createRadialGradient(0, 0, 40, 0, 0, 240);
+    fleshGrad.addColorStop(0, '#ff1744');
+    fleshGrad.addColorStop(0.8, '#f50057');
+    fleshGrad.addColorStop(1, '#c51162');
 
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.arc(0, 0, 30, 0.18 * Math.PI, 0.82 * Math.PI, false);
+    ctx.arc(0, 0, 240, 0.18 * Math.PI, 0.82 * Math.PI, false);
     ctx.closePath();
-    ctx.fillStyle = '#ff1744';
+    ctx.fillStyle = fleshGrad;
     ctx.fill();
 
-    const seeds = [
-      [-12, 14],
-      [12, 14],
-      [0, 20],
-      [-8, 22],
-      [8, 22],
-      [0, 10],
+    // 4. Glossy seeds with specular highlights
+    const seedCoords = [
+      [-96, 112],
+      [96, 112],
+      [0, 160],
+      [-64, 176],
+      [64, 176],
+      [0, 80],
+      [-48, 120],
+      [48, 120],
     ];
-    ctx.fillStyle = '#111';
-    for (const [sx, sy] of seeds) {
+    for (const [sx, sy] of seedCoords) {
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(0.2 * (sx < 0 ? -1 : 1));
+      ctx.fillStyle = '#0a0a0e';
       ctx.beginPath();
-      ctx.ellipse(sx, sy, 1.8, 3.2, 0.2 * (sx < 0 ? -1 : 1), 0, Math.PI * 2);
+      ctx.ellipse(0, 0, 14, 25, 0, 0, Math.PI * 2);
       ctx.fill();
+
+      // Seed highlight
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+      ctx.beginPath();
+      ctx.ellipse(-3, -6, 4, 8, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
     }
 
-    const dripY = 32 + ((this.time * 25) % 35);
-    ctx.fillStyle = 'rgba(255, 100, 150, 0.9)';
+    // 5. Sweet glowing juice drops
+    const dripY = 256 + ((this.time * 200) % 280);
+    const dropGrad = ctx.createRadialGradient(0, dripY, 2, 0, dripY, 20);
+    dropGrad.addColorStop(0, 'rgba(255, 80, 140, 0.95)');
+    dropGrad.addColorStop(1, 'rgba(255, 30, 80, 0.0)');
+    ctx.fillStyle = dropGrad;
     ctx.beginPath();
-    ctx.arc(0, dripY, 2.5, 0, Math.PI * 2);
+    ctx.arc(0, dripY, 20, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
   }
 
   _renderShadow(ctx, w, h, dt) {
-    ctx.fillStyle = '#f0f4f8';
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+    bgGrad.addColorStop(0, '#f8fafc');
+    bgGrad.addColorStop(1, '#e2e8f0');
+    ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, w, h);
 
     if (this.isLoomingActive) {
@@ -544,74 +575,140 @@ class StimulusGenerator {
       this.loomingProgress = 0.15;
     }
 
-    const maxR = Math.hypot(w, h) * 0.7;
-    const currentR = 5 + Math.pow(this.loomingProgress, 2.4) * maxR;
+    const maxR = Math.hypot(w, h) * 0.75;
+    const currentR = 40 + Math.pow(this.loomingProgress, 2.4) * maxR;
 
-    const shadowGrad = ctx.createRadialGradient(w / 2, h / 2, currentR * 0.7, w / 2, h / 2, currentR);
+    const shadowGrad = ctx.createRadialGradient(w / 2, h / 2, currentR * 0.65, w / 2, h / 2, currentR);
     shadowGrad.addColorStop(0, '#020306');
-    shadowGrad.addColorStop(0.85, '#090b12');
-    shadowGrad.addColorStop(1, 'rgba(10, 15, 25, 0.2)');
+    shadowGrad.addColorStop(0.7, '#070910');
+    shadowGrad.addColorStop(0.9, '#111522');
+    shadowGrad.addColorStop(1, 'rgba(15, 23, 42, 0)');
 
     ctx.fillStyle = shadowGrad;
     ctx.beginPath();
     ctx.arc(w / 2, h / 2, currentR, 0, Math.PI * 2);
     ctx.fill();
 
-    if (this.loomingProgress > 0.4) {
-      ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
-      ctx.font = 'bold 10px monospace';
+    if (this.loomingProgress > 0.35) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.92)';
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 4;
+      ctx.font = '800 36px "Outfit", system-ui, sans-serif';
       ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
       const lang = window.currentLang || 'en';
-      ctx.fillText(lang === 'tr' ? '! TEHDİT TESPİT EDİLDİ !' : '! THREAT DETECTED !', w / 2, 22);
+      const text = lang === 'tr' ? '⚠ AVCI TEHDİDİ TESPİT EDİLDİ ⚠' : '⚠ PREDATOR THREAT DETECTED ⚠';
+      ctx.strokeText(text, w / 2, 160);
+      ctx.fillText(text, w / 2, 160);
+      ctx.restore();
     }
   }
 
   _renderSpider(ctx, w, h) {
-    ctx.fillStyle = '#10141a';
+    const bgGrad = ctx.createRadialGradient(w / 2, h / 2, 50, w / 2, h / 2, h * 0.7);
+    bgGrad.addColorStop(0, '#151922');
+    bgGrad.addColorStop(1, '#080a0f');
+    ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, w, h);
+
+    // Subtle ambient web strands
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(w, h);
+    ctx.moveTo(w, 0); ctx.lineTo(0, h);
+    ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h);
+    ctx.stroke();
 
     ctx.save();
     ctx.translate(w / 2, h / 2);
-    const crawl = Math.sin(this.time * 6) * 4;
+    const crawl = Math.sin(this.time * 6) * 32;
     ctx.translate(0, crawl);
 
-    ctx.fillStyle = '#1c1b24';
-    ctx.strokeStyle = '#852028';
-    ctx.lineWidth = 1.5;
-
+    // High-resolution arachnid body
+    // Abdomen
+    const abdGrad = ctx.createRadialGradient(0, 80, 20, 0, 80, 160);
+    abdGrad.addColorStop(0, '#2d2c38');
+    abdGrad.addColorStop(0.7, '#15141c');
+    abdGrad.addColorStop(1, '#09080d');
+    ctx.fillStyle = abdGrad;
+    ctx.strokeStyle = '#991b1b';
+    ctx.lineWidth = 6;
     ctx.beginPath();
-    ctx.ellipse(0, 12, 14, 20, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 96, 110, 160, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
+    // Cephalothorax
+    const cephGrad = ctx.createRadialGradient(0, -48, 15, 0, -48, 90);
+    cephGrad.addColorStop(0, '#353444');
+    cephGrad.addColorStop(1, '#111018');
+    ctx.fillStyle = cephGrad;
+    ctx.strokeStyle = '#7f1d1d';
+    ctx.lineWidth = 5;
     ctx.beginPath();
-    ctx.ellipse(0, -6, 10, 11, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, -48, 80, 90, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = '#ff1133';
+    // Glowing predator eyes (multiple ocelli)
+    const eyeGlow = ctx.createRadialGradient(0, -96, 5, 0, -96, 40);
+    eyeGlow.addColorStop(0, 'rgba(255, 20, 50, 0.8)');
+    eyeGlow.addColorStop(1, 'rgba(255, 20, 50, 0)');
+    ctx.fillStyle = eyeGlow;
     ctx.beginPath();
-    ctx.arc(-3, -12, 2, 0, Math.PI * 2);
-    ctx.arc(3, -12, 2, 0, Math.PI * 2);
+    ctx.arc(0, -96, 40, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.strokeStyle = '#2d2d38';
-    ctx.lineWidth = 2;
-    for (let i = 0; i < 4; i++) {
-      const sideY = -12 + i * 8;
-      const legPhase = this.time * 8 + i * 1.2;
-      const legOffset = Math.sin(legPhase) * 6;
-
+    ctx.fillStyle = '#ff1744';
+    const eyes = [[-24, -96, 14], [24, -96, 14], [-10, -112, 9], [10, -112, 9], [-38, -92, 8], [38, -92, 8]];
+    for (const [ex, ey, er] of eyes) {
       ctx.beginPath();
-      ctx.moveTo(-7, sideY);
-      ctx.lineTo(-24, sideY - 10 + legOffset);
-      ctx.lineTo(-38, sideY + 12 + legOffset);
+      ctx.arc(ex, ey, er, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 8 Articulated jointed legs with highlights
+    for (let i = 0; i < 4; i++) {
+      const sideY = -90 + i * 64;
+      const legPhase = this.time * 8 + i * 1.2;
+      const legOffset = Math.sin(legPhase) * 48;
+
+      // Left Leg
+      ctx.strokeStyle = '#374151';
+      ctx.lineWidth = 14;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-56, sideY);
+      ctx.lineTo(-190, sideY - 80 + legOffset);
+      ctx.lineTo(-300, sideY + 95 + legOffset);
       ctx.stroke();
 
+      // Left claw
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 6;
       ctx.beginPath();
-      ctx.moveTo(7, sideY);
-      ctx.lineTo(24, sideY - 10 - legOffset);
-      ctx.lineTo(38, sideY + 12 - legOffset);
+      ctx.moveTo(-300, sideY + 95 + legOffset);
+      ctx.lineTo(-325, sideY + 120 + legOffset);
+      ctx.stroke();
+
+      // Right Leg
+      ctx.strokeStyle = '#374151';
+      ctx.lineWidth = 14;
+      ctx.beginPath();
+      ctx.moveTo(56, sideY);
+      ctx.lineTo(190, sideY - 80 - legOffset);
+      ctx.lineTo(300, sideY + 95 - legOffset);
+      ctx.stroke();
+
+      // Right claw
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(300, sideY + 95 - legOffset);
+      ctx.lineTo(325, sideY + 120 - legOffset);
       ctx.stroke();
     }
 
@@ -620,31 +717,61 @@ class StimulusGenerator {
 
   _renderNeutral(ctx, w, h) {
     const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
-    bgGrad.addColorStop(0, '#06170d');
-    bgGrad.addColorStop(1, '#0e2d19');
+    bgGrad.addColorStop(0, '#041309');
+    bgGrad.addColorStop(0.5, '#072412');
+    bgGrad.addColorStop(1, '#0c3d1f');
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, w, h);
 
+    // Ambient floating dust motes
+    ctx.fillStyle = 'rgba(167, 243, 208, 0.25)';
+    for (let m = 0; m < 16; m++) {
+      const mx = (m * 47 + this.time * 15) % w;
+      const my = (m * 83 + Math.sin(this.time + m) * 40) % h;
+      ctx.beginPath();
+      ctx.arc(mx, my, (m % 3) + 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     ctx.save();
-    for (let i = 0; i < 5; i++) {
-      const lx = 20 + i * 15;
-      const ly = 30 + i * 22;
+    for (let i = 0; i < 6; i++) {
+      const lx = 140 + (i % 3) * 220;
+      const ly = 240 + Math.floor(i / 3) * 420;
 
       ctx.save();
       ctx.translate(lx, ly);
-      ctx.rotate(0.2 * Math.sin(this.time + i) + (i % 2 === 0 ? 0.3 : -0.3));
+      const sway = 0.15 * Math.sin(this.time * 1.8 + i) + (i % 2 === 0 ? 0.25 : -0.25);
+      ctx.rotate(sway);
 
-      ctx.fillStyle = i % 2 === 0 ? '#1b5e20' : '#2e7d32';
+      // Lush foliage leaf
+      const leafGrad = ctx.createLinearGradient(-120, 0, 120, 0);
+      leafGrad.addColorStop(0, i % 2 === 0 ? '#15803d' : '#166534');
+      leafGrad.addColorStop(0.5, i % 2 === 0 ? '#22c55e' : '#4ade80');
+      leafGrad.addColorStop(1, '#14532d');
+
+      ctx.fillStyle = leafGrad;
       ctx.beginPath();
-      ctx.ellipse(0, 0, 18, 9, 0.4, 0, Math.PI * 2);
+      ctx.ellipse(0, 0, 150, 75, 0.35, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-      ctx.lineWidth = 1;
+      // Crisp leaf veins
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+      ctx.lineWidth = 4;
       ctx.beginPath();
-      ctx.moveTo(-16, 0);
-      ctx.lineTo(16, 0);
+      ctx.moveTo(-135, 0);
+      ctx.lineTo(135, 0);
       ctx.stroke();
+
+      // Side lateral veins
+      ctx.lineWidth = 2.5;
+      for (let v = -90; v <= 90; v += 35) {
+        ctx.beginPath();
+        ctx.moveTo(v, 0);
+        ctx.lineTo(v + 35, 45);
+        ctx.moveTo(v, 0);
+        ctx.lineTo(v + 35, -45);
+        ctx.stroke();
+      }
 
       ctx.restore();
     }
@@ -666,16 +793,28 @@ class StimulusGenerator {
     const offsetX = (w - renderW) / 2;
     const offsetY = (h - renderH) / 2;
 
+    // High quality bicubic scaling without ANY scanlines
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(this.customImage, offsetX, offsetY, renderW, renderH);
 
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
-    for (let y = 0; y < h; y += 4) {
-      ctx.fillRect(0, y, w, 1);
-    }
+    // Subtle edge vignette for photorealistic integration
+    const vignette = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.45, w / 2, h / 2, Math.max(w, h) * 0.72);
+    vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    vignette.addColorStop(1, 'rgba(0, 0, 0, 0.32)');
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, w, h);
   }
 
   getBase64Frame() {
-    return this.canvas.toDataURL('image/png');
+    if (!this.retinaCanvas) {
+      this.retinaCanvas = document.createElement('canvas');
+      this.retinaCanvas.width = 90;
+      this.retinaCanvas.height = 160;
+      this.retinaCtx = this.retinaCanvas.getContext('2d', { willReadFrequently: true });
+    }
+    this.retinaCtx.drawImage(this.canvas, 0, 0, 90, 160);
+    return this.retinaCanvas.toDataURL('image/jpeg', 0.85);
   }
 }
 
@@ -1316,6 +1455,10 @@ class ObservationChamber3D {
     this.phoneTexture = new THREE.CanvasTexture(this.stimulusCanvas);
     this.phoneTexture.minFilter = THREE.LinearFilter;
     this.phoneTexture.magFilter = THREE.LinearFilter;
+    this.phoneTexture.generateMipmaps = false;
+    if (this.renderer && this.renderer.capabilities) {
+      this.phoneTexture.anisotropy = Math.min(this.renderer.capabilities.getMaxAnisotropy(), 16);
+    }
 
     const screenGeo = new THREE.PlaneGeometry(0.78, 1.42);
     const screenMat = new THREE.MeshBasicMaterial({
@@ -1483,16 +1626,17 @@ class ObservationChamber3D {
       this.neuropils.centralComplex.rotation.z = headingRad;
     }
 
-    if (da > 22.0 && !this.isSwiping && Math.random() < 0.15) {
+    if (da > 22.0 && !this.isSwiping && (spikes % 7 === 0)) {
       this.triggerLegSwipe();
     }
 
     if (this.brainSparkSystem) {
       const p = this.brainSparkSystem.geometry.attributes.position;
       const count = p.count;
+      const simTime = telemetry.sim_time_ms || 0;
       for (let i = 0; i < count; i++) {
-        if (Math.random() < Math.min(spikes / 60, 0.4)) {
-          p.setY(i, (Math.random() - 0.5) * 0.26);
+        if ((i + spikes) % 6 === 0) {
+          p.setY(i, Math.sin(simTime * 0.05 + i) * 0.13);
         }
       }
       p.needsUpdate = true;
