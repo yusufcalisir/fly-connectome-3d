@@ -27,7 +27,10 @@ class BiophysicalConstants:
     substeps_per_chunk: int = 500 # chunk_ms / dt_ms (500 steps)
 
     # Synaptic scale
-    synaptic_weight_scale: float = 0.275 # Scaling multiplier for raw synapse counts
+    # Set to 0.12: prevents runaway recurrent saturation after looming spike bursts.
+    # At 0.275 the 25M-synapse recurrent network self-amplifies into a ~500K-spike
+    # saturated state after any large event, making subsequent stimuli indistinguishable.
+    synaptic_weight_scale: float = 0.12
 
     # Optical eye resolution
     frame_width: int = 90

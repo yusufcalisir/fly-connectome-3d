@@ -152,9 +152,10 @@ class ConnectomeBrain:
 
         # Bilateral Optomotor Descending Motor Drive (DNa02 Steering Neurons)
         # Asymmetric visual luminance drives ipsilateral turning (positive phototaxis)
+        # Gain 8.0 / 5.0 (was 5.0 / 3.0) for clearer left/right steering differentiation.
         asym = vis_telemetry.hemispheric_asymmetry
-        l_steer_drive = float(np.clip(-asym * 5.0 + (vis_telemetry.left_luminance - vis_telemetry.right_luminance) * 3.0, -4.0, 7.0))
-        r_steer_drive = float(np.clip(asym * 5.0 + (vis_telemetry.right_luminance - vis_telemetry.left_luminance) * 3.0, -4.0, 7.0))
+        l_steer_drive = float(np.clip(-asym * 8.0 + (vis_telemetry.left_luminance - vis_telemetry.right_luminance) * 5.0, -6.0, 9.0))
+        r_steer_drive = float(np.clip(asym * 8.0 + (vis_telemetry.right_luminance - vis_telemetry.left_luminance) * 5.0, -6.0, 9.0))
 
         if len(self.circuits.dna02_left) > 0 and l_steer_drive != 0.0:
             self.snn.inject_current(
@@ -168,10 +169,18 @@ class ConnectomeBrain:
             )
 
         # If looming predator detected, blast current directly into LC4 threat circuit
+        # and immediately soft-reset membrane voltages of the broader network to prevent
+        # recurrent runaway amplification persisting across subsequent frames.
         if vis_telemetry.looming_threat_detected and len(self.circuits.looming_threat_lc4) > 0:
             self.snn.inject_current(
                 self.circuits.looming_threat_lc4,
                 vis_telemetry.looming_currents[: len(self.circuits.looming_threat_lc4)],
+            )
+            # Post-burst soft reset: pull non-refractory neurons 60% of the way back to rest
+            # so the looming event is a transient response rather than a permanent state change.
+            non_ref = self.snn.refractory_steps == 0
+            self.snn.v[non_ref] = (
+                self.snn.v_rest * 0.60 + self.snn.v[non_ref] * 0.40
             )
 
         # Manual Wireheading stimulation if triggered

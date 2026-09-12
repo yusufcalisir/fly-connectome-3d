@@ -1159,6 +1159,118 @@ body {
 }
 
 /* ==========================================================================
+   CNS LIVE NEURAL ACTIVITY 3D VIEWER
+   ========================================================================== */
+
+.cns-activity-box {
+  background: rgba(4, 10, 22, 0.70);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  box-shadow: 0 0 24px rgba(0, 180, 255, 0.07), inset 0 0 30px rgba(0, 20, 40, 0.6);
+  border-radius: 10px;
+  padding: 10px;
+  position: relative;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.cns-activity-box:hover {
+  border-color: rgba(0, 229, 255, 0.45);
+  box-shadow: 0 0 30px rgba(0, 229, 255, 0.12), inset 0 0 30px rgba(0, 20, 40, 0.7);
+}
+
+.cns-activity-box .chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.cns-activity-box .chart-header h3 {
+  font-family: 'Space Mono', 'Outfit', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.cns-activity-box .chart-header h3::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #00f0ff;
+  box-shadow: 0 0 10px #00f0ff;
+  animation: cnsPulse 2s infinite ease-in-out;
+}
+
+@keyframes cnsPulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.25); box-shadow: 0 0 14px #00f0ff; }
+}
+
+.cns-canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  background: radial-gradient(circle at 50% 45%, #071529 0%, #020409 100%);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 229, 255, 0.18);
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.95);
+  cursor: grab;
+  user-select: none;
+}
+
+.cns-canvas-wrap:active {
+  cursor: grabbing;
+}
+
+#cns-brain-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.cns-hud-overlay {
+  position: absolute;
+  bottom: 6px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+  font-family: 'Space Mono', monospace;
+  font-size: 8.5px;
+  color: rgba(56, 189, 248, 0.7);
+  letter-spacing: 0.3px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95);
+}
+
+.cns-badge {
+  background: rgba(2, 12, 28, 0.75);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 229, 255, 0.18);
+  color: #38bdf8;
+  font-weight: 600;
+}
+
+.cns-badge-hint {
+  background: rgba(2, 12, 28, 0.75);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 229, 255, 0.12);
+  color: rgba(148, 163, 184, 0.65);
+}
+
+
+/* ==========================================================================
    MOBILE & TABLET RESPONSIVE SYSTEM
    ========================================================================== */
 

@@ -52,12 +52,12 @@
         <div class="screen-preview-container">
           <canvas id="virtual-phone-canvas" width="720" height="1280"></canvas>
           <div class="screen-overlay-badges">
-            <span id="stimulus-type-tag" class="overlay-tag appetitive" data-i18n="tag_appetitive">APPETITIVE</span>
+            <span id="stimulus-type-tag" class="overlay-tag" data-i18n="tag_baseline">BASELINE</span>
           </div>
         </div>
         <div class="stimulus-info">
-          <h3 id="current-photo-title">Sweet Ripe Watermelon</h3>
-          <p id="current-photo-desc">High-sugar olfactory & visual chromatic target.</p>
+          <h3 id="current-photo-title">Forest Foliage Canopy</h3>
+          <p id="current-photo-desc">Ambient natural green leaves providing calm baseline input.</p>
         </div>
       </div>
 
@@ -65,10 +65,10 @@
       <div class="stimulus-controls">
         <label class="control-label" data-i18n="label_presets">Select Stimulus Preset:</label>
         <div class="button-matrix">
-          <button class="stim-btn active" data-preset="fruit" data-i18n="preset_fruit">🍉 Sugar Fruit (Appetitive)</button>
+          <button class="stim-btn" data-preset="fruit" data-i18n="preset_fruit">🍉 Sugar Fruit (Appetitive)</button>
           <button class="stim-btn" data-preset="shadow" data-i18n="preset_shadow">⚠️ Looming Shadow (Panic)</button>
           <button class="stim-btn" data-preset="spider" data-i18n="preset_spider">🕷️ Predatory Spider (Threat)</button>
-          <button class="stim-btn" data-preset="neutral" data-i18n="preset_foliage">🌿 Forest Foliage (Calm)</button>
+          <button class="stim-btn active" data-preset="neutral" data-i18n="preset_foliage">🌿 Forest Foliage (Calm)</button>
           <button id="upload-btn" class="stim-btn upload-stim-btn" data-i18n="preset_upload">📷 Upload Custom Photo</button>
           <input type="file" id="photo-upload-input" accept="image/*" style="display: none;">
         </div>
@@ -332,7 +332,23 @@
           <span id="plasticity-val" class="mono">+0.000</span>
         </div>
       </div>
+
+      <!-- CNS Live Neural Activity Viewer -->
+      <div class="cns-activity-box">
+        <div class="chart-header">
+          <h3 data-i18n="chart_cns_activity">CNS / NEURAL ACTIVITY</h3>
+          <span class="mono chart-scale" id="cns-active-count">0 active</span>
+        </div>
+        <div class="cns-canvas-wrap">
+          <canvas id="cns-brain-canvas" width="340" height="220"></canvas>
+          <div class="cns-hud-overlay">
+            <span class="cns-badge">MaleCNS v1.0 · 141.8K Somas</span>
+            <span class="cns-badge-hint" data-i18n="cns_drag_hint">Drag to rotate 3D</span>
+          </div>
+        </div>
+      </div>
     </aside>
+
   </main>
 
   <!-- Floating Mobile Navigation Bar (Active on screens <= 1024px) -->

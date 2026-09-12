@@ -156,6 +156,11 @@ class SpikingConnectomeEngine:
         m = self._MINI
         total_input = i_syn + self.i_ext  # shape (n,)
 
+        # Biophysical dendritic saturation clamp: no neuron receives more than 20 pA
+        # of total synaptic + external drive per mini-chunk. This prevents runaway
+        # recurrent amplification when large LC4/looming burst events occur.
+        np.clip(total_input, -20.0, 20.0, out=total_input)
+
         # --- voltage integration (vectorized over all neurons) ---
         # V[t+m] = V_rest + (V[t] - V_rest) * decay^m + I*R * (1 - decay^m)
         in_ref = self.refractory_steps > 0

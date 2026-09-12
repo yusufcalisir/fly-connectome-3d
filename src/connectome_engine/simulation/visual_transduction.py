@@ -148,15 +148,18 @@ class VisualTransductionEngine:
         hemispheric_asymmetry = float(np.clip((right_lum - left_lum) / asym_denom, -1.0, 1.0))
 
         # 1. R1-R6 outer photoreceptor currents (proportional to luminance + contrast)
-        r1_r6_l_currents = (lum[self.r1_r6_l_y, self.r1_r6_l_x] * 4.0).astype(np.float32)
-        r1_r6_r_currents = (lum[self.r1_r6_r_y, self.r1_r6_r_x] * 4.0).astype(np.float32)
+        # Scale 7.0 ensures mean-luminance pixels (~0.22) exceed the LIF threshold of 1.5 pA
+        # (v_thresh − v_rest) / R_membrane = (−50 − (−65)) / 10 = 1.5 pA  [LIF biophysics]
+        r1_r6_l_currents = (lum[self.r1_r6_l_y, self.r1_r6_l_x] * 7.0).astype(np.float32)
+        r1_r6_r_currents = (lum[self.r1_r6_r_y, self.r1_r6_r_x] * 7.0).astype(np.float32)
         r1_r6_currents = np.concatenate([r1_r6_l_currents, r1_r6_r_currents])
 
-        # 2. R8 chromatic photoreceptor currents (spectral blue/green vs red ratio)
+        # 2. R8 chromatic photoreceptor currents (Rh5 blue/UV vs Rh6 green pathway)
+        # Scale 5.0 amplifies spectral differences (red vs green vs UV stimuli)
         r8_l_bg = (rgb[self.r8_l_y, self.r8_l_x, 1] + rgb[self.r8_l_y, self.r8_l_x, 2]) * 0.5
         r8_r_bg = (rgb[self.r8_r_y, self.r8_r_x, 1] + rgb[self.r8_r_y, self.r8_r_x, 2]) * 0.5
-        r8_l_currents = (r8_l_bg * 3.5).astype(np.float32)
-        r8_r_currents = (r8_r_bg * 3.5).astype(np.float32)
+        r8_l_currents = (r8_l_bg * 5.0).astype(np.float32)
+        r8_r_currents = (r8_r_bg * 5.0).astype(np.float32)
         r8_currents = np.concatenate([r8_l_currents, r8_r_currents])
 
         # 3. Innate Looming Threat Detection (Expanding Dark Shadows)

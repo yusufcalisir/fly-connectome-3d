@@ -71,6 +71,8 @@ const TRANSLATIONS = {
     h_ei_hint: "Synaptic balance: ACh excitation vs GABA/Glu/Histamine inhibition",
     chart_dopamine: 'DOPAMINE WAVEFORM (Hz)',
     chart_raster: 'SPIKE RASTER STREAM (Matrix Waterfall)',
+    chart_cns_activity: 'CNS / NEURAL ACTIVITY',
+    cns_drag_hint: 'Drag to rotate 3D',
     badge_biophysics: 'MaleCNS v1.0 Biophysics',
     badge_somas: '141.8K Somas 3D',
     chart_scale_frames: '120 frames',
@@ -127,6 +129,8 @@ const TRANSLATIONS = {
     h_ei_hint: "Sinaptik denge: Asetilkolin eksitasyonu vs GABA/Glutamat/Histamin inhibisyonu",
     chart_dopamine: 'DOPAMİN DALGA FORMU (Hz)',
     chart_raster: 'SPİKE ŞELALESİ (Matris Akışı)',
+    chart_cns_activity: 'CNS / CANLI SİNİRSEL AKTİVİTE',
+    cns_drag_hint: '3D döndürmek için sürükleyin',
     label_plasticity: 'Öğrenilmiş Çağrışım Kayması (KC ──► MBON):',
     chart_scale_frames: '120 kare',
     chart_scale_landmarks: '64 referans',
@@ -308,7 +312,7 @@ class StimulusGenerator {
   constructor(canvasId) {
     this.canvas = document.getElementById(canvasId);
     this.ctx = this.canvas.getContext('2d');
-    this.preset = 'fruit';
+    this.preset = 'neutral'; // Default: Forest Foliage (Calm baseline)
     this.time = 0;
     this.loomingProgress = 0;
     this.isLoomingActive = false;
@@ -350,6 +354,10 @@ class StimulusGenerator {
         tagClass: '',
       },
     };
+
+    // Sync card info immediately on construction so overlay text matches canvas
+    // (called after presetsInfo is defined so updateCardInfo can read it)
+    this.updateCardInfo();
   }
 
   setPreset(preset) {
@@ -1577,6 +1585,15 @@ class ObservationChamber3D {
       }
 
       console.log(`[Connectome 3D] Successfully loaded ${count.toLocaleString()} real EM neuron somas into Three.js point cloud.`);
+      this.somaData = {
+        count,
+        positions,
+        circuitTags,
+        graphToSomaMap: this.graphToSomaMap,
+      };
+      if (typeof this.onSomaDataLoaded === 'function') {
+        this.onSomaDataLoaded(this.somaData);
+      }
     } catch (err) {
       console.error('[Connectome 3D] Failed to load 141K soma point cloud:', err);
     }
@@ -2060,18 +2077,339 @@ class ObservationChamber3D {
 // 4. CENTRAL COMPLEX (EPG) COMPASS & NEUROCHEMICAL COCKPIT VISUALIZERS
 // ============================================================================
 
+// ============================================================================
+// 4. CNS LIVE 3D NEURAL ACTIVITY & COCKPIT VISUALIZERS
+// ============================================================================
+
+class CNSBrainVisualizer3D {
+  constructor(canvasId = 'cns-brain-canvas') {
+    this.canvas = document.getElementById(canvasId);
+    if (!this.canvas) return;
+
+    this.isWebGL = false;
+    this.renderer = null;
+    this.scene = null;
+    this.camera = null;
+    this.brainGroup = null;
+    this.pointCloud = null;
+    this.somaCount = 0;
+    this.graphToSomaMap = null;
+    this.activityArray = null;
+    this.activeSomaQueue = [];
+    this._loaded = false;
+    this._loading = false;
+
+    // Interactive 3D controls & auto-rotation
+    this.autoRotate = true;
+    this.rotationSpeed = 0.0048;
+    this.basePitch = 0.28; // Forward pitch so dorsal surface & optic lobes tilt toward viewer
+    this.isDragging = false;
+    this.prevPointerX = 0;
+    this.prevPointerY = 0;
+    this._rafId = null;
+
+    this._initThree();
+    this._initInteraction();
+  }
+
+  _initThree() {
+    if (typeof THREE === 'undefined') {
+      console.warn('[CNS Visualizer] THREE.js not available.');
+      return;
+    }
+    try {
+      const rect = this.canvas.parentElement
+        ? this.canvas.parentElement.getBoundingClientRect()
+        : this.canvas.getBoundingClientRect();
+      const width = rect.width > 0 ? rect.width : 340;
+      const height = rect.height > 0 ? rect.height : 220;
+
+      this.renderer = new THREE.WebGLRenderer({
+        canvas: this.canvas,
+        alpha: true,
+        antialias: true,
+        powerPreference: 'high-performance',
+      });
+      this.renderer.setSize(width, height, false);
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+      this.scene = new THREE.Scene();
+
+      // Camera positioned to view Drosophila connectome from an elevated 3/4 dorsal angle
+      this.camera = new THREE.PerspectiveCamera(38, width / height, 0.05, 50);
+      this.camera.position.set(0, 0.45, 0.82);
+      this.camera.lookAt(0, 0, 0);
+
+      this.brainGroup = new THREE.Group();
+      this.brainGroup.rotation.x = -0.45;
+      this.brainGroup.rotation.z = -0.10;
+      this.scene.add(this.brainGroup);
+
+      this.isWebGL = true;
+      this._startLoop();
+
+      window.addEventListener('resize', () => this._onResize());
+    } catch (err) {
+      console.warn('[CNS Visualizer] WebGL init failed:', err);
+      this.isWebGL = false;
+    }
+  }
+
+  _onResize() {
+    if (!this.canvas || !this.renderer || !this.camera) return;
+    const rect = this.canvas.parentElement
+      ? this.canvas.parentElement.getBoundingClientRect()
+      : this.canvas.getBoundingClientRect();
+    const w = rect.width > 0 ? rect.width : 340;
+    const h = rect.height > 0 ? rect.height : 220;
+    this.renderer.setSize(w, h, false);
+    this.camera.aspect = w / h;
+    this.camera.updateProjectionMatrix();
+  }
+
+  _initInteraction() {
+    if (!this.canvas) return;
+
+    this.canvas.addEventListener('pointerdown', (e) => {
+      this.isDragging = true;
+      this.prevPointerX = e.clientX;
+      this.prevPointerY = e.clientY;
+      try { this.canvas.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (!this.isDragging || !this.brainGroup) return;
+      const dx = e.clientX - this.prevPointerX;
+      const dy = e.clientY - this.prevPointerY;
+      this.brainGroup.rotation.y += dx * 0.009;
+      this.brainGroup.rotation.x = Math.max(-0.85, Math.min(0.85, this.brainGroup.rotation.x + dy * 0.009));
+      this.prevPointerX = e.clientX;
+      this.prevPointerY = e.clientY;
+    });
+
+    const stopDrag = (e) => {
+      if (this.isDragging) {
+        this.isDragging = false;
+        try { this.canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+      }
+    };
+    window.addEventListener('pointerup', stopDrag);
+    window.addEventListener('pointercancel', stopDrag);
+  }
+
+  loadSomas(somaData) {
+    if (!this.isWebGL || !somaData) return;
+    const { count, positions, circuitTags, graphToSomaMap } = somaData;
+    this.somaCount = count;
+    this.graphToSomaMap = graphToSomaMap;
+    this._loaded = true;
+
+    // Center somas around origin (dataset center is [0.0, -0.0368, -0.2180])
+    const centeredPos = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      centeredPos[i * 3 + 0] = positions[i * 3 + 0];
+      centeredPos[i * 3 + 1] = positions[i * 3 + 1] - (-0.0368);
+      centeredPos[i * 3 + 2] = positions[i * 3 + 2] - (-0.2180);
+    }
+
+    // Bioluminescent palette matching Drosophila neuroanatomy:
+    // 0: Central Brain -> deep cyan / electric blue [0.15, 0.65, 0.95]
+    // 1: Optic Lobe    -> bright electric cyan     [0.00, 0.88, 1.00]
+    // 2: Mushroom Body -> amber / golden honey     [1.00, 0.65, 0.15]
+    // 3: Central Comp. -> emerald / mint green     [0.10, 0.95, 0.55]
+    // 4: Motor / GF    -> fiery coral orange       [1.00, 0.35, 0.25]
+    // 5: VNC Thoracic  -> radiant violet           [0.65, 0.35, 1.00]
+    const palette = [
+      [0.15, 0.65, 0.95],
+      [0.00, 0.88, 1.00],
+      [1.00, 0.65, 0.15],
+      [0.10, 0.95, 0.55],
+      [1.00, 0.35, 0.25],
+      [0.65, 0.35, 1.00],
+    ];
+
+    const colors = new Float32Array(count * 3);
+    this.activityArray = new Float32Array(count);
+
+    for (let i = 0; i < count; i++) {
+      const tag = circuitTags[i] < palette.length ? circuitTags[i] : 0;
+      const rgb = palette[tag];
+      colors[i * 3 + 0] = rgb[0];
+      colors[i * 3 + 1] = rgb[1];
+      colors[i * 3 + 2] = rgb[2];
+      this.activityArray[i] = 0.0;
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(centeredPos, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    geometry.setAttribute('activity', new THREE.BufferAttribute(this.activityArray, 1));
+
+    const pointShaderMat = new THREE.ShaderMaterial({
+      vertexColors: true,
+      uniforms: {
+        baseSize: { value: 0.012 },
+      },
+      vertexShader: `
+        #ifndef USE_COLOR
+        attribute vec3 color;
+        #endif
+        attribute float activity;
+        varying vec3 vColor;
+        varying float vActivity;
+        uniform float baseSize;
+        void main() {
+          vColor = color;
+          vActivity = activity;
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          float size = (baseSize + activity * 0.038) * (200.0 / -mvPosition.z);
+          gl_PointSize = clamp(size, 1.0, 36.0);
+          gl_Position = projectionMatrix * mvPosition;
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vColor;
+        varying float vActivity;
+        void main() {
+          float dist = length(gl_PointCoord - vec2(0.5));
+          if (dist > 0.5) discard;
+          float radial = smoothstep(0.5, 0.06, dist);
+          // Ethereal semi-transparent resting somas + intense 100% alpha on firing
+          float alpha = radial * (0.35 + vActivity * 0.65);
+          // Active somas flare white-cyan bloom
+          vec3 spikeColor = vec3(1.0, 1.0, 1.0);
+          vec3 finalColor = mix(vColor * 0.85, spikeColor, vActivity * 0.92);
+          gl_FragColor = vec4(finalColor, alpha);
+        }
+      `,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+
+    if (this.pointCloud) {
+      this.brainGroup.remove(this.pointCloud);
+    }
+    this.pointCloud = new THREE.Points(geometry, pointShaderMat);
+    this.brainGroup.add(this.pointCloud);
+
+    console.log(`[CNS 3D Visualizer] Loaded ${count.toLocaleString()} real EM somas into rotating brain.`);
+  }
+
+  async fetchSomasIfMissing() {
+    if (this._loaded || this._loading) return;
+    this._loading = true;
+    try {
+      const res = await fetch('/api/connectome/soma-coordinates');
+      if (!res.ok) return;
+      const buffer = await res.arrayBuffer();
+      const headerView = new Uint32Array(buffer, 0, 2);
+      const magic = headerView[0];
+      const count = headerView[1];
+      if (magic !== 0x464C5933) return;
+
+      let offset = 16;
+      const posBytes = count * 3 * 4;
+      const positions = new Float32Array(buffer.slice(offset, offset + posBytes));
+      offset += posBytes;
+
+      const graphBytes = count * 4;
+      const graphIndices = new Int32Array(buffer.slice(offset, offset + graphBytes));
+      offset += graphBytes;
+
+      const circuitTags = new Uint8Array(buffer.slice(offset, offset + count));
+      offset += count;
+
+      const graphToSomaMap = new Int32Array(166700);
+      graphToSomaMap.fill(-1);
+      for (let i = 0; i < count; i++) {
+        const gIdx = graphIndices[i];
+        if (gIdx >= 0 && gIdx < 166700) {
+          graphToSomaMap[gIdx] = i;
+        }
+      }
+
+      this.loadSomas({ count, positions, circuitTags, graphToSomaMap });
+    } catch (e) {
+      console.warn('[CNS 3D Visualizer] Direct fetch error:', e);
+    } finally {
+      this._loading = false;
+    }
+  }
+
+  updateActivity(activeNeurons = []) {
+    const countEl = document.getElementById('cns-active-count');
+    if (countEl) {
+      countEl.textContent = `${activeNeurons.length.toLocaleString()} active`;
+    }
+
+    if (!this.isWebGL || !this.pointCloud || !this.graphToSomaMap || !this.activityArray) return;
+
+    for (let i = 0; i < activeNeurons.length; i++) {
+      const gIdx = activeNeurons[i];
+      if (gIdx >= 0 && gIdx < this.graphToSomaMap.length) {
+        const sIdx = this.graphToSomaMap[gIdx];
+        if (sIdx >= 0 && sIdx < this.somaCount) {
+          this.activityArray[sIdx] = 1.0;
+          this.activeSomaQueue.push(sIdx);
+        }
+      }
+    }
+  }
+
+  _startLoop() {
+    const render = () => {
+      // Smooth continuous 3D rotation
+      if (this.brainGroup && this.autoRotate && !this.isDragging) {
+        this.brainGroup.rotation.y += this.rotationSpeed;
+      }
+
+      // Smooth decay of active firing somas with biological latency
+      if (this.pointCloud && this.activeSomaQueue.length > 0) {
+        const nextQueue = [];
+        const actAttr = this.pointCloud.geometry.attributes.activity;
+        for (let i = 0; i < this.activeSomaQueue.length; i++) {
+          const sIdx = this.activeSomaQueue[i];
+          this.activityArray[sIdx] *= 0.84;
+          if (this.activityArray[sIdx] > 0.04) {
+            nextQueue.push(sIdx);
+          } else {
+            this.activityArray[sIdx] = 0.0;
+          }
+        }
+        this.activeSomaQueue = nextQueue;
+        actAttr.needsUpdate = true;
+      }
+
+      if (this.renderer && this.scene && this.camera) {
+        this.renderer.render(this.scene, this.camera);
+      }
+
+      this._rafId = requestAnimationFrame(render);
+    };
+    this._rafId = requestAnimationFrame(render);
+  }
+}
+
 class CockpitVisualizers {
   constructor() {
     this.compassCanvas = document.getElementById('compass-canvas');
-    this.compassCtx = this.compassCanvas.getContext('2d');
+    this.compassCtx = this.compassCanvas ? this.compassCanvas.getContext('2d') : null;
 
     this.dopamineCanvas = document.getElementById('dopamine-chart');
-    this.dopamineCtx = this.dopamineCanvas.getContext('2d');
+    this.dopamineCtx = this.dopamineCanvas ? this.dopamineCanvas.getContext('2d') : null;
 
     this.rasterCanvas = document.getElementById('raster-canvas');
-    this.rasterCtx = this.rasterCanvas.getContext('2d');
+    this.rasterCtx = this.rasterCanvas ? this.rasterCanvas.getContext('2d') : null;
 
+    this.cnsVisualizer = new CNSBrainVisualizer3D('cns-brain-canvas');
     this.headingDeg = 0;
+  }
+
+  updateCNSActivity(activeNeurons = []) {
+    if (this.cnsVisualizer) {
+      this.cnsVisualizer.updateActivity(activeNeurons);
+    }
   }
 
   drawEPGCompass(headingDeg = 0) {
@@ -2228,6 +2566,17 @@ class ConnectomeApp {
     this.stimulus = new StimulusGenerator('virtual-phone-canvas');
     this.chamber = new ObservationChamber3D('three-container', this.stimulus.canvas);
     this.visualizers = new CockpitVisualizers();
+
+    // Link real 141K somas to the 3D CNS visualizer
+    if (this.chamber.somaData) {
+      this.visualizers.cnsVisualizer.loadSomas(this.chamber.somaData);
+    } else {
+      this.chamber.onSomaDataLoaded = (somaData) => {
+        if (this.visualizers && this.visualizers.cnsVisualizer) {
+          this.visualizers.cnsVisualizer.loadSomas(somaData);
+        }
+      };
+    }
 
     this.ws = null;
     this.isStreaming = false;
@@ -2390,6 +2739,27 @@ class ConnectomeApp {
         });
       });
     }
+
+    // ── Startup sync: fire the initially-active preset and position immediately
+    // so the brain receives the correct first frame without waiting for a click.
+    const initialPresetBtn = document.querySelector('.stim-btn.active[data-preset]');
+    if (initialPresetBtn) {
+      const preset = initialPresetBtn.getAttribute('data-preset');
+      this.stimulus.setPreset(preset);
+      const info = this.stimulus.presetsInfo[preset];
+      const name = info?.title?.en || preset;
+      const valence = info?.tag?.en || 'NEUTRAL';
+      // Send after a brief delay to let WebSocket connect first
+      setTimeout(() => {
+        this.sendWsCommand({ command: 'stimulus_preset', preset, name, valence });
+      }, 800);
+    }
+
+    const initialPosBtn = document.querySelector('.pos-btn.active[data-pos]');
+    if (initialPosBtn) {
+      const pos = initialPosBtn.getAttribute('data-pos');
+      this.stimulus.setPosition(pos);
+    }
   }
 
   _initCustomPhotoUpload() {
@@ -2486,8 +2856,13 @@ class ConnectomeApp {
         this._isFrameInFlight = false;
         try {
           const snapshot = JSON.parse(event.data);
-          // Ignore server keep-alive pings
-          if (snapshot && snapshot.ping) return;
+          // Respond to server keep-alive ping with pong to maintain connection
+          if (snapshot && snapshot.ping) {
+            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+              this.ws.send(JSON.stringify({ command: 'pong' }));
+            }
+            return;
+          }
           this._handleTelemetrySnapshot(snapshot);
         } catch (err) {
           console.error('[Connectome WS] Parse error:', err);
@@ -2511,6 +2886,19 @@ class ConnectomeApp {
     } catch (e) {
       console.warn('[Connectome WS] WebSocket init failed:', e);
     }
+
+    // Immediate reconnection on tab restore / focus
+    if (!this._hasVisibilityListener) {
+      this._hasVisibilityListener = true;
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          if (!this.ws || this.ws.readyState === WebSocket.CLOSED || this.ws.readyState === WebSocket.CLOSING) {
+            console.log('[Connectome WS] Tab returned to foreground, reconnecting WebSocket immediately...');
+            this._initWebSocket();
+          }
+        }
+      });
+    }
   }
 
   _startObservationLoop() {
@@ -2518,6 +2906,9 @@ class ConnectomeApp {
     this._lastFrameTime = 0;
 
     setInterval(() => {
+      // If browser tab is minimized or hidden, pause sensory capture to conserve CPU & avoid timeouts
+      if (document.hidden) return;
+
       this.stimulus.render(0.05);
 
       // Backpressure flow control:
@@ -2768,6 +3159,11 @@ class ConnectomeApp {
     if (snapshot.history) {
       this.visualizers.drawDopamineWaveform(snapshot.history);
       this.visualizers.drawSpikeRaster(snapshot.history);
+    }
+
+    const activeNeurons = t.active_neurons || [];
+    if (this.visualizers && typeof this.visualizers.updateCNSActivity === 'function') {
+      this.visualizers.updateCNSActivity(activeNeurons);
     }
   }
 

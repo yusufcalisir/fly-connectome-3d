@@ -291,7 +291,11 @@ async def websocket_telemetry(websocket: WebSocket):
 
             cmd = data.get("command")
 
-            if cmd == "wirehead":
+            if cmd == "pong":
+                # Heartbeat acknowledgement from browser client
+                continue
+
+            elif cmd == "wirehead":
                 boost = float(data.get("current_mv", 20.0))
                 STATE_MANAGER.trigger_wirehead(boost)
                 print(f"[Neural Surge] [*] Wirehead reward pulse: +{boost:.1f} mV", flush=True)

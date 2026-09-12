@@ -9,7 +9,7 @@
 
   [![Python 3.12](https://img.shields.io/badge/Python-3.12%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
   [![Connectome](https://img.shields.io/badge/Connectome-Janelia_MaleCNS_v1.0-FF6F00?style=for-the-badge&logo=target&logoColor=white)](https://flywire.ai/)
-  [![Tests](https://img.shields.io/badge/Tests-84%2F84_Passing-00C853?style=for-the-badge&logo=pytest&logoColor=white)](#-testing--development)
+  [![Tests](https://img.shields.io/badge/Tests-80%2F80_Passing-00C853?style=for-the-badge&logo=pytest&logoColor=white)](#-testing--development)
   [![CI](https://img.shields.io/github/actions/workflow/status/yusufcalisir/fly-connectome-3d/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI)](https://github.com/yusufcalisir/fly-connectome-3d/actions)
   [![Three.js](https://img.shields.io/badge/Frontend-Three.js_r128-000000?style=for-the-badge&logo=three.js&logoColor=white)](https://threejs.org/)
   [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
@@ -20,6 +20,7 @@
     <a href="#-quickstart">⚡ Quickstart</a> •
     <a href="#-core-biophysical-integrations">🔬 Integrations</a> •
     <a href="#-system-architecture">📐 Architecture</a> •
+    <a href="#-3d-neural-visualization--dual-viewport-architecture">🌌 3D Architecture</a> •
     <a href="#-empirical-benchmarks">📊 Benchmarks</a> •
     <a href="#-neural-circuits-modeled">🧬 Circuits</a> •
     <a href="#-web-cockpit--telemetry">🎮 Cockpit</a> •
@@ -153,7 +154,7 @@ uv run python src/connectome_engine/data/compile_coordinates.py
 
 Start the biocomputing server and telemetry engine using `uv`:
 ```bash
-uv run uvicorn connectome_engine.server.app:app --host 127.0.0.1 --port 8000
+uv run uvicorn connectome_engine.server.app:app --host 127.0.0.1 --port 8000 --ws-ping-interval 30 --ws-ping-timeout 60
 ```
 
 Open your browser and navigate to:
@@ -218,6 +219,78 @@ The observation cockpit presents real-time electrophysiology and behavioral read
    - **Fly View**: Macro perspective on fly joints and spherical treadmill.
    - **Phone Angle**: Displays visual stimuli as presented to the compound eyes.
    - **Neural Synapses**: Visualizes the 141K 3D soma point cloud and real-time synaptic waves.
+5. **Dedicated CNS 3D Neural Activity Viewport (Bottom-Right Panel)**:
+   - Real-time rotating 3D fruit fly central nervous system point cloud (141.8K real somas).
+   - Live synaptic flares lighting up active circuits, complete with interactive 3D touch/mouse drag manipulation.
+
+---
+
+## 🌌 3D Neural Visualization & Dual-Viewport Architecture
+
+FlyConnectome 3D implements a synchronized **dual Three.js WebGL viewport architecture** that bridges whole-body kinematic behavior with an isolated, live anatomical central nervous system inspection view:
+
+```
+                                  ┌────────────────────────────────────────────────────────┐
+                                  │      60 Hz Bidirectional Telemetry (WebSocket)        │
+                                  └───────────┬────────────────────────────────┬───────────┘
+                                              │                                │
+                       ┌──────────────────────▼───────┐        ┌───────────────▼──────────────────────┐
+                       │   Viewport 1: Rig & Treadmill │        │   Viewport 2: Cockpit CNS 3D View    │
+                       │   (#three-container)         │        │   (#cns-brain-canvas)                │
+                       ├──────────────────────────────┤        ├──────────────────────────────────────┤
+                       │ • Anatomical Fly Rig         │        │ • Isolated MaleCNS v1.0 Point Cloud  │
+                       │ • Hexapod 6-Leg Kinematics   │        │ • 141,781 Real EM Soma Coordinates   │
+                       │ • Spherical Air Treadmill    │        │ • 360° Turntable Auto-Rotation       │
+                       │ • OLED Stimulus Display      │        │ • Circuit Bioluminescent Palettes    │
+                       │ • Cranial Wave Propagation   │        │ • Spiking Blooming & Synaptic Flares │
+                       │ • Orbit Camera Director      │        │ • Interactive Mouse / Touch Drag     │
+                       └──────────────────────────────┘        └──────────────────────────────────────┘
+```
+
+### 1. Primary Electrophysiology & Kinematic Chamber (`#three-container`)
+- **Biomechanical Insect Morphology**:
+  - **Head & Sensory Lattice**: Bilateral compound eye meshes with hexagonal ommatidia normal maps, articulated olfactory antennae, and feeding proboscis.
+  - **Chitinous Thorax & Abdomen**: Realistic chitin standard PBR materials with subtle respiratory ventilation oscillations.
+  - **Six Articulated Thoracic Legs**: Prothoracic ($T_1$), mesothoracic ($T_2$), and metathoracic ($T_3$) leg assemblies, each modeled with anatomical coxa, femur, tibia, and tarsus joint segments.
+  - **Treadmill Ball Rig**: Air-supported floating sphere dynamically rotating under the fly's tarsi in direct kinematic closed-loop coupling with the VNC alternating tripod gait.
+- **Virtual Stimulus Arena**:
+  - A 720×1280 virtual smartphone display mounted on an articulating ball-mount stand in front of the fly.
+  - Live canvas rendering of chromatic targets (appetitive sugar fruits, looming predatory shadows, spider threats, forest foliage, and user-uploaded custom images).
+  - Dynamic retinal casting: The display casts physical light onto the compound eyes, driving the bilateral retinotopic arrays.
+- **Cranial Synaptic Latency Wave Propagation**:
+  - The 141.8K EM somas embedded inside the cranial capsule are rendered via GPU point shaders (`THREE.Points`).
+  - Active action potentials propagate in 4 distinct biological latency waves ($0\text{ ms}$ retina $\rightarrow$ $18\text{ ms}$ mushroom body $\rightarrow$ $36\text{ ms}$ central complex/descending $\rightarrow$ $54\text{ ms}$ thoracic VNC), creating visual rippling wavefronts through the head.
+- **Multi-Camera Director**:
+  - **Fly View**: Macro perspective on the spherical treadmill and hexapod leg articulation.
+  - **Phone Angle**: First-person retinal perspective from the stimulus screen toward the fly.
+  - **Neural Synapses**: Close-up inspection of the cranial point cloud and synaptic firing waves.
+
+### 2. Dedicated Cockpit CNS 3D Neural Activity Viewport (`#cns-brain-canvas`)
+Located in the bottom-right panel of the cockpit, this dedicated viewport provides a standalone, high-resolution 3D inspection of the fruit fly central nervous system in continuous operation:
+- **Full Connectome Soma Architecture**:
+  - Directly ingests the **141,781 real EM soma coordinates** from `soma_coordinates_141k.bin` (MaleCNS v1.0).
+  - Normalizes and centers the somas around origin (`[0.0, -0.0368, -0.2180]`), fitting the natural bounding sphere perfectly inside the viewport.
+- **Elevated 3/4 Dorsal Perspective & Turntable Auto-Rotation**:
+  - Positioned at an elevated dorsal angle ($\theta_{\text{pitch}} = -0.45\text{ rad}$, $\theta_{\text{roll}} = -0.10\text{ rad}$) matching standard neuroanatomical orientation (revealing bilateral optic lobes, central brain dome, and ventral nerve cord).
+  - Continuously auto-rotates around the vertical axis (`rotation.y += 0.0048`), providing a complete 360-degree holographic inspection.
+- **Bioluminescent Circuit Color Coding**:
+  Somas are color-coded by verified biological neuropil circuits:
+  - **Optic Lobes ($R_1-R_8$, Lamina/Medulla)**: Electric Cyan (`#00f0ff`, `rgb(0, 224, 255)`)
+  - **Central Brain Neuropil**: Deep Electric Blue (`#38bdf8`, `rgb(38, 166, 242)`)
+  - **Mushroom Body (Kenyon Cells)**: Honey Amber (`#f59e0b`, `rgb(255, 166, 38)`)
+  - **Central Complex ($EPG$ Compass)**: Mint Emerald (`#10b981`, `rgb(26, 242, 140)`)
+  - **Descending Motor Pathways ($DNa02, DNp09, GF$)**: Fiery Coral (`#ef4444`, `rgb(255, 89, 64)`)
+  - **Ventral Nerve Cord (Thoracic Motor Cord)**: Radiant Violet (`#a855f7`, `rgb(166, 89, 255)`)
+- **GPU Additive Blending & Dynamic Action Potential Flares**:
+  - Built with custom GLSL vertex and fragment shaders using `THREE.AdditiveBlending`.
+  - **Resting state**: Ethereal, semi-transparent points ($\alpha = 0.35$ with soft radial gaussian falloff).
+  - **Spiking state**: When the biophysical engine fires action potentials, active somas expand up to **4.5× in point size**, ignite in pure **radiant white-cyan bloom** ($\alpha = 1.0$), and smoothly decay over $\approx 150\text{ ms}$ with realistic biological latency. Dense firing clusters fuse into glowing energy hubs.
+- **Interactive 3D Touch & Mouse Drag**:
+  - Users can click and drag (or touch-drag on mobile/tablets) to freely pitch, yaw, and inspect the connectome from any angle in 3D space.
+  - Releasing the pointer smoothly restores the graceful auto-rotation.
+- **Real-Time Telemetry HUD**:
+  - Live active soma counter (e.g., `35,321 active`) dynamically updated every frame.
+  - Bottom telemetry badge displaying dataset provenance (`MaleCNS v1.0 · 141.8K Somas`) and interaction hints.
 
 ---
 
@@ -264,7 +337,7 @@ The cockpit features a one-click language toggle (English $\leftrightarrow$ Tür
 
 ## ✅ Testing & Development
 
-The test suite includes **84 automated tests across 22 test files**, covering biological circuits, biophysical equations, launcher scripts, and frontend contracts:
+The test suite includes **80 automated tests across 22 test files**, covering biological circuits, biophysical equations, launcher scripts, and frontend contracts:
 
 ```bash
 # Run complete test suite
