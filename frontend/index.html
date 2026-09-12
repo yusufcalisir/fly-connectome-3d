@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/static/logo.svg?v=1.2.2">
   <link rel="alternate icon" href="/favicon.ico">
-  <link rel="stylesheet" href="/static/styles.css?v=1.2.2">
+  <link rel="stylesheet" href="/static/styles.css?v=1.2.3">
   <!-- Three.js and OrbitControls from CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -72,6 +72,16 @@
           <button id="upload-btn" class="stim-btn upload-stim-btn" data-i18n="preset_upload">📷 Upload Custom Photo</button>
           <input type="file" id="photo-upload-input" accept="image/*" style="display: none;">
         </div>
+
+        <!-- Target Position Selector (Spatial Phototaxis) -->
+        <div class="target-position-controls">
+          <label class="control-label" data-i18n="label_target_pos">Spatial Target Position (Phototaxis):</label>
+          <div class="position-button-group">
+            <button class="pos-btn" data-pos="left" id="btn-pos-left" type="button">◀ <span data-i18n="pos_left">Left</span></button>
+            <button class="pos-btn active" data-pos="center" id="btn-pos-center" type="button">● <span data-i18n="pos_center">Center</span></button>
+            <button class="pos-btn" data-pos="right" id="btn-pos-right" type="button"><span data-i18n="pos_right">Right</span> ▶</button>
+          </div>
+        </div>
       </div>
 
       <!-- Manual Action Bar -->
@@ -124,6 +134,24 @@
           </div>
           <div class="bidirectional-bar">
             <div id="steering-indicator" class="pointer"></div>
+          </div>
+        </div>
+
+        <!-- Retinal Asymmetry (Phototaxis) -->
+        <div class="meter-group">
+          <div class="meter-row">
+            <span data-i18n="label_retinal_asym">Retinal Asymmetry (L/R):</span>
+            <span id="retinal-asym-val" class="mono">0.00 (Balanced)</span>
+          </div>
+          <div class="hemisphere-bars">
+            <div class="hemi-bar-wrapper">
+              <span class="hemi-lbl">L</span>
+              <div class="progress-track mini"><div id="lum-left-fill" class="progress-bar lum-bar"></div></div>
+            </div>
+            <div class="hemi-bar-wrapper">
+              <span class="hemi-lbl">R</span>
+              <div class="progress-track mini"><div id="lum-right-fill" class="progress-bar lum-bar"></div></div>
+            </div>
           </div>
         </div>
 
@@ -252,6 +280,6 @@
     </button>
   </nav>
 
-  <script src="/static/main.js?v=1.2.3"></script>
+  <script src="/static/main.js?v=1.2.5"></script>
 </body>
 </html>

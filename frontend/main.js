@@ -37,6 +37,10 @@ const TRANSLATIONS = {
     preset_spider: '🕷️ Predatory Spider (Threat)',
     preset_foliage: '🌿 Forest Foliage (Calm)',
     preset_upload: '📷 Upload Custom Photo',
+    label_target_pos: 'Spatial Target Position (Phototaxis):',
+    pos_left: 'Left',
+    pos_center: 'Center',
+    pos_right: 'Right',
     btn_wirehead_title: 'WIREHEAD',
     btn_wirehead_sub: 'Inject +20mV Dopamine',
     btn_threat_title: 'LOOM THREAT',
@@ -45,6 +49,7 @@ const TRANSLATIONS = {
     btn_swipe_sub: 'Front-Leg Screen Touch',
     title_motor: 'DESCENDING MOTOR OUTPUTS',
     label_steering: 'Steering (DNa02 L/R):',
+    label_retinal_asym: 'Retinal Asymmetry (L/R):',
     label_drive: 'Forward Drive (DNp09):',
     pill_retreat: 'MDN MOONWALKER',
     pill_jump: 'GIANT FIBER JUMP',
@@ -86,6 +91,10 @@ const TRANSLATIONS = {
     preset_spider: '🕷️ Avcı Örümcek (Tehdit)',
     preset_foliage: '🌿 Orman Yeşilliği (Dingin)',
     preset_upload: '📷 Özel Fotoğraf Yükle',
+    label_target_pos: 'Uzamsal Hedef Konumu (Fototaksi):',
+    pos_left: 'Sol',
+    pos_center: 'Merkez',
+    pos_right: 'Sağ',
     btn_wirehead_title: 'DOPAMİN ŞOKU',
     btn_wirehead_sub: '+20mV Dopamin Enjekte Et',
     btn_threat_title: 'AVCI TEHDİDİ',
@@ -94,6 +103,7 @@ const TRANSLATIONS = {
     btn_swipe_sub: 'Ön Bacakla Ekrana Dokun',
     title_motor: 'İNEN MOTOR ÇIKTILARI',
     label_steering: 'Dümenleme (DNa02 S/S):',
+    label_retinal_asym: 'Retinal Asimetri (S/S):',
     label_drive: 'İleri Yürüyüş (DNp09):',
     pill_retreat: 'MDN GERİ YÜRÜYÜŞ',
     pill_jump: 'GİANT FİBER SIÇRAMA',
@@ -300,6 +310,9 @@ class StimulusGenerator {
     this.isLoomingActive = false;
     this.customImage = null;
     this.customImageValence = null;
+    this.targetPosition = 'center';
+    this.targetOffsetFactor = 0.0;
+    this.targetOffsetCurrent = 0.0;
 
     this.presetsInfo = {
       fruit: {
@@ -341,6 +354,19 @@ class StimulusGenerator {
       this.loomingProgress = 0;
       this.isLoomingActive = preset === 'shadow';
       this.updateCardInfo();
+    }
+  }
+
+  setPosition(pos) {
+    if (pos === 'left') {
+      this.targetPosition = 'left';
+      this.targetOffsetFactor = -1.0;
+    } else if (pos === 'right') {
+      this.targetPosition = 'right';
+      this.targetOffsetFactor = 1.0;
+    } else {
+      this.targetPosition = 'center';
+      this.targetOffsetFactor = 0.0;
     }
   }
 
@@ -452,18 +478,22 @@ class StimulusGenerator {
     const h = this.canvas.height;
     const ctx = this.ctx;
 
+    // Smoothly interpolate target position offset (-1.0 to +1.0)
+    this.targetOffsetCurrent += (this.targetOffsetFactor - this.targetOffsetCurrent) * Math.min(1.0, dt * 10.0);
+    const targetX = w / 2 + this.targetOffsetCurrent * (w * 0.28);
+
     ctx.save();
     ctx.clearRect(0, 0, w, h);
 
     switch (this.preset) {
       case 'fruit':
-        this._renderFruit(ctx, w, h);
+        this._renderFruit(ctx, w, h, targetX);
         break;
       case 'shadow':
-        this._renderShadow(ctx, w, h, dt);
+        this._renderShadow(ctx, w, h, dt, targetX);
         break;
       case 'spider':
-        this._renderSpider(ctx, w, h);
+        this._renderSpider(ctx, w, h, targetX);
         break;
       case 'neutral':
         this._renderNeutral(ctx, w, h);
@@ -476,14 +506,14 @@ class StimulusGenerator {
     ctx.restore();
   }
 
-  _renderFruit(ctx, w, h) {
+  _renderFruit(ctx, w, h, targetX = w / 2) {
     const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
     bgGrad.addColorStop(0, '#0c0512');
     bgGrad.addColorStop(1, '#1b081e');
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, w, h);
 
-    const aura = ctx.createRadialGradient(w / 2, h / 2, 80, w / 2, h / 2, 560);
+    const aura = ctx.createRadialGradient(targetX, h / 2, 80, targetX, h / 2, 560);
     aura.addColorStop(0, 'rgba(255, 30, 80, 0.40)');
     aura.addColorStop(0.5, 'rgba(255, 30, 80, 0.15)');
     aura.addColorStop(1, 'rgba(255, 30, 80, 0.0)');
@@ -491,7 +521,7 @@ class StimulusGenerator {
     ctx.fillRect(0, 0, w, h);
 
     ctx.save();
-    ctx.translate(w / 2, h / 2 + 120);
+    ctx.translate(targetX, h / 2 + 120);
     const bob = Math.sin(this.time * 2.5) * 24;
     ctx.translate(0, bob);
 
@@ -565,7 +595,7 @@ class StimulusGenerator {
     ctx.restore();
   }
 
-  _renderShadow(ctx, w, h, dt) {
+  _renderShadow(ctx, w, h, dt, targetX = w / 2) {
     const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
     bgGrad.addColorStop(0, '#f8fafc');
     bgGrad.addColorStop(1, '#e2e8f0');
@@ -584,7 +614,7 @@ class StimulusGenerator {
     const maxR = Math.hypot(w, h) * 0.75;
     const currentR = 40 + Math.pow(this.loomingProgress, 2.4) * maxR;
 
-    const shadowGrad = ctx.createRadialGradient(w / 2, h / 2, currentR * 0.65, w / 2, h / 2, currentR);
+    const shadowGrad = ctx.createRadialGradient(targetX, h / 2, currentR * 0.65, targetX, h / 2, currentR);
     shadowGrad.addColorStop(0, '#020306');
     shadowGrad.addColorStop(0.7, '#070910');
     shadowGrad.addColorStop(0.9, '#111522');
@@ -592,7 +622,7 @@ class StimulusGenerator {
 
     ctx.fillStyle = shadowGrad;
     ctx.beginPath();
-    ctx.arc(w / 2, h / 2, currentR, 0, Math.PI * 2);
+    ctx.arc(targetX, h / 2, currentR, 0, Math.PI * 2);
     ctx.fill();
 
     if (this.loomingProgress > 0.35) {
@@ -611,8 +641,8 @@ class StimulusGenerator {
     }
   }
 
-  _renderSpider(ctx, w, h) {
-    const bgGrad = ctx.createRadialGradient(w / 2, h / 2, 50, w / 2, h / 2, h * 0.7);
+  _renderSpider(ctx, w, h, targetX = w / 2) {
+    const bgGrad = ctx.createRadialGradient(targetX, h / 2, 50, targetX, h / 2, h * 0.7);
     bgGrad.addColorStop(0, '#151922');
     bgGrad.addColorStop(1, '#080a0f');
     ctx.fillStyle = bgGrad;
@@ -624,11 +654,11 @@ class StimulusGenerator {
     ctx.beginPath();
     ctx.moveTo(0, 0); ctx.lineTo(w, h);
     ctx.moveTo(w, 0); ctx.lineTo(0, h);
-    ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h);
+    ctx.moveTo(targetX, 0); ctx.lineTo(targetX, h);
     ctx.stroke();
 
     ctx.save();
-    ctx.translate(w / 2, h / 2);
+    ctx.translate(targetX, h / 2);
     const crawl = Math.sin(this.time * 6) * 32;
     ctx.translate(0, crawl);
 
@@ -1865,7 +1895,7 @@ class ObservationChamber3D {
           }, 54);
         }
       }
-
+    }
 
     if (this.phoneLight) {
       if (oa > 4.5) {
@@ -1919,6 +1949,12 @@ class ObservationChamber3D {
     if (this.treadmillBall) {
       this.treadmillBall.rotation.x += this.forwardDrive * 0.08;
       this.treadmillBall.rotation.y += this.steeringDeflection * 0.04;
+    }
+
+    if (this.flyGroup && !this.jumpTriggered) {
+      // Dynamic physical yaw and subtle banking when steering toward stimulus
+      this.flyGroup.rotation.y = this.steeringDeflection * 0.22;
+      this.flyGroup.rotation.z = -this.steeringDeflection * 0.08;
     }
 
     if (this.leftWing && this.rightWing) {
@@ -2239,6 +2275,15 @@ class ConnectomeApp {
       });
     });
 
+    document.querySelectorAll('.pos-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.pos-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const pos = btn.getAttribute('data-pos');
+        if (pos) this.stimulus.setPosition(pos);
+      });
+    });
+
     const wireheadBtn = document.getElementById('wirehead-btn');
     if (wireheadBtn) {
       wireheadBtn.addEventListener('click', () => {
@@ -2513,6 +2558,33 @@ class ConnectomeApp {
     document.getElementById('steering-val').textContent = (steer >= 0 ? '+' : '') + steer.toFixed(2);
     const steerPercent = 50 + steer * 45;
     document.getElementById('steering-indicator').style.left = `${Math.max(5, Math.min(95, steerPercent))}%`;
+
+    // Retinal Hemisphere Telemetry (Phototaxis / Light Asymmetry)
+    const vis = t.visual || {};
+    const lumL = vis.left_luminance !== undefined ? vis.left_luminance : (t.left_luminance || 0);
+    const lumR = vis.right_luminance !== undefined ? vis.right_luminance : (t.right_luminance || 0);
+    const asym = vis.hemispheric_asymmetry !== undefined ? vis.hemispheric_asymmetry : (t.hemispheric_asymmetry || 0);
+
+    const lumLFill = document.getElementById('lum-left-fill');
+    if (lumLFill) lumLFill.style.width = `${Math.min(100, Math.max(0, lumL * 100))}%`;
+
+    const lumRFill = document.getElementById('lum-right-fill');
+    if (lumRFill) lumRFill.style.width = `${Math.min(100, Math.max(0, lumR * 100))}%`;
+
+    const asymValEl = document.getElementById('retinal-asym-val');
+    if (asymValEl) {
+      const lang = window.currentLang || 'en';
+      if (asym < -0.06) {
+        asymValEl.textContent = `${asym.toFixed(2)} (${lang === 'tr' ? 'Sol Baskın' : 'Left Dominant'})`;
+        asymValEl.style.color = '#38bdf8';
+      } else if (asym > 0.06) {
+        asymValEl.textContent = `+${asym.toFixed(2)} (${lang === 'tr' ? 'Sağ Baskın' : 'Right Dominant'})`;
+        asymValEl.style.color = '#38bdf8';
+      } else {
+        asymValEl.textContent = `0.00 (${lang === 'tr' ? 'Dengeli' : 'Balanced'})`;
+        asymValEl.style.color = 'var(--text-muted)';
+      }
+    }
 
     document.getElementById('drive-val').textContent = `${drive.toFixed(0)}%`;
     document.getElementById('drive-fill').style.width = `${Math.max(0, Math.min(100, drive))}%`;
