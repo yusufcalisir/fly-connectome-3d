@@ -3,7 +3,6 @@
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -40,13 +39,30 @@ class IndexedCircuits:
     mdn_moonwalker: np.ndarray          # Backward reverse retreat
     giant_fiber_escape: np.ndarray      # Bilateral emergency jump/flight escape
 
+    # Hemispheric Vision Partition (Defaults to empty or automatically split from flat photoreceptors)
+    r1_r6_left: np.ndarray = field(default_factory=lambda: np.empty(0, dtype=np.int32))
+    r1_r6_right: np.ndarray = field(default_factory=lambda: np.empty(0, dtype=np.int32))
+    r8_left: np.ndarray = field(default_factory=lambda: np.empty(0, dtype=np.int32))
+    r8_right: np.ndarray = field(default_factory=lambda: np.empty(0, dtype=np.int32))
+
     # Biological Neurotransmitter Polarity (Dale's Principle)
     excitatory_neurons: np.ndarray = field(default_factory=lambda: np.empty(0, dtype=np.int32))
     inhibitory_neurons: np.ndarray = field(default_factory=lambda: np.empty(0, dtype=np.int32))
-    polarity: Optional[np.ndarray] = None
+    polarity: np.ndarray | None = None
+
+    def __post_init__(self):
+        """Ensure hemispheric arrays are initialized if only flat arrays were provided."""
+        if len(self.r1_r6_left) == 0 and len(self.r1_r6_right) == 0 and len(self.r1_r6_photoreceptors) > 0:
+            mid = len(self.r1_r6_photoreceptors) // 2
+            self.r1_r6_left = self.r1_r6_photoreceptors[:mid]
+            self.r1_r6_right = self.r1_r6_photoreceptors[mid:]
+        if len(self.r8_left) == 0 and len(self.r8_right) == 0 and len(self.r8_photoreceptors) > 0:
+            mid = len(self.r8_photoreceptors) // 2
+            self.r8_left = self.r8_photoreceptors[:mid]
+            self.r8_right = self.r8_photoreceptors[mid:]
 
 
-def map_transmitter_signs(transmitters: pd.Series) -> Tuple[np.ndarray, np.ndarray]:
+def map_transmitter_signs(transmitters: pd.Series) -> tuple[np.ndarray, np.ndarray]:
     """Map biological neurotransmitter identities to synaptic signs.
 
     Fast transmission rules (verified from FlyWire/MaleCNS annotations):
@@ -58,27 +74,23 @@ def map_transmitter_signs(transmitters: pd.Series) -> Tuple[np.ndarray, np.ndarr
     """
     cleaned = transmitters.fillna("").str.lower().to_numpy()
     signs = np.ones(len(cleaned), dtype=np.float32)
-    uncertain = np.zeros(len(cleaned), dtype=bool)
 
-    for i, t in enumerate(cleaned):
-        if "acetylcholine" in t or "ach" in t:
-            signs[i] = 1.0
-        elif "gaba" in t or "glutamate" in t or "histamine" in t:
-            signs[i] = -1.0
-        elif not t:
-            uncertain[i] = True
-            signs[i] = 1.0
-        else:
-            # Neuromodulators or mixed
-            signs[i] = 1.0
+    signs[cleaned == "acetylcholine"] = 1.0
+    signs[cleaned == "gaba"] = -1.0
+    signs[cleaned == "glutamate"] = -1.0
+    signs[cleaned == "histamine"] = -1.0
+    signs[cleaned == "dopamine"] = 1.0
+    signs[cleaned == "serotonin"] = 1.0
+    signs[cleaned == "octopamine"] = 1.0
 
-    return signs, uncertain
+    unmapped = np.count_nonzero(cleaned == "") + np.count_nonzero(cleaned == "unknown")
+    return signs, np.array([unmapped], dtype=np.int32)
 
 
-def extract_circuits(
+def extract_circuits_from_annotations(
     annotations_df: pd.DataFrame,
     ids: np.ndarray,
-    transmitters_df: Optional[pd.DataFrame] = None,
+    transmitters_df: pd.DataFrame | None = None,
 ) -> IndexedCircuits:
     """Extract and validate all functional circuits from annotations dataframe."""
     df = annotations_df.copy()
@@ -88,11 +100,28 @@ def extract_circuits(
     # Reindex to match the exact order of the graph nodes
     df_aligned = df.reindex(ids)
     types = df_aligned["type"].fillna("").astype(str)
-    soma_side = df_aligned.get("somaSide", pd.Series("", index=df_aligned.index)).fillna("").astype(str)
+    soma_side = (
+        df_aligned.get("somaSide", pd.Series("", index=df_aligned.index))
+        .fillna(df_aligned.get("rootSide", pd.Series("", index=df_aligned.index)))
+        .fillna("")
+        .astype(str)
+    )
 
-    # Photoreceptors
-    r1_r6 = np.flatnonzero(types.eq("R1-R6")).astype(np.int32)
-    r8 = np.flatnonzero(types.str.startswith("R8")).astype(np.int32)
+    # Photoreceptors: Bilateral Hemispheric Retinotopic Partitioning
+    r1_r6_l = np.flatnonzero(types.eq("R1-R6") & soma_side.eq("L")).astype(np.int32)
+    r1_r6_r = np.flatnonzero(types.eq("R1-R6") & soma_side.eq("R")).astype(np.int32)
+    if len(r1_r6_l) > 0 or len(r1_r6_r) > 0:
+        r1_r6 = np.r_[r1_r6_l, r1_r6_r].astype(np.int32)
+    else:
+        r1_r6 = np.flatnonzero(types.eq("R1-R6")).astype(np.int32)
+
+    r8_l = np.flatnonzero(types.str.startswith("R8") & soma_side.eq("L")).astype(np.int32)
+    r8_r = np.flatnonzero(types.str.startswith("R8") & soma_side.eq("R")).astype(np.int32)
+    if len(r8_l) > 0 or len(r8_r) > 0:
+        r8 = np.r_[r8_l, r8_r].astype(np.int32)
+    else:
+        r8 = np.flatnonzero(types.str.startswith("R8")).astype(np.int32)
+
     lc4 = np.flatnonzero(types.str.startswith("LC4") | types.str.startswith("LPLC2")).astype(np.int32)
 
     # Neuromodulators
@@ -131,6 +160,10 @@ def extract_circuits(
         r1_r6_photoreceptors=r1_r6,
         r8_photoreceptors=r8,
         looming_threat_lc4=lc4,
+        r1_r6_left=r1_r6_l,
+        r1_r6_right=r1_r6_r,
+        r8_left=r8_l,
+        r8_right=r8_r,
         pam11_dopamine_reward=pam11,
         ppl101_dopamine_aversive=ppl101,
         octopamine_stress=octopamine,
@@ -151,8 +184,8 @@ def extract_circuits(
 
 
 def load_malecns_v1_connectome(
-    data_dir: Optional[Path] = None,
-) -> Tuple[int, sp.csr_matrix, IndexedCircuits, np.ndarray]:
+    data_dir: Path | None = None,
+) -> tuple[int, sp.csr_matrix, IndexedCircuits, np.ndarray]:
     """Load the official compiled Janelia MaleCNS v1.0 (166,700 neurons, 25,582,938 synapses) connectome."""
     if data_dir is None:
         data_dir = Path(__file__).resolve().parents[3] / "data" / "malecns_v1"
@@ -171,7 +204,7 @@ def load_malecns_v1_connectome(
         data = npz["data"]
         shape = tuple(npz["shape"])
         neuron_ids = npz["neuron_ids"]
-        polarity = npz["polarity"] if "polarity" in npz else None
+        polarity = npz.get("polarity", None)
 
     adj = sp.csr_matrix((data, indices, indptr), shape=shape, dtype=np.float32)
 
@@ -192,10 +225,19 @@ def load_malecns_v1_connectome(
         inh_neurons = np.empty(0, dtype=np.int32)
         polarity = np.ones(shape[0], dtype=np.int8)
 
+    r1_r6_l = np.array(c_dict.get("r1_r6_left", []), dtype=np.int32)
+    r1_r6_r = np.array(c_dict.get("r1_r6_right", []), dtype=np.int32)
+    r8_l = np.array(c_dict.get("r8_left", []), dtype=np.int32)
+    r8_r = np.array(c_dict.get("r8_right", []), dtype=np.int32)
+
     circuits = IndexedCircuits(
         r1_r6_photoreceptors=np.array(c_dict["r1_r6_photoreceptors"], dtype=np.int32),
         r8_photoreceptors=np.array(c_dict["r8_photoreceptors"], dtype=np.int32),
         looming_threat_lc4=np.array(c_dict["looming_threat_lc4"], dtype=np.int32),
+        r1_r6_left=r1_r6_l,
+        r1_r6_right=r1_r6_r,
+        r8_left=r8_l,
+        r8_right=r8_r,
         pam11_dopamine_reward=np.array(c_dict["pam11_dopamine_reward"], dtype=np.int32),
         ppl101_dopamine_aversive=np.array(c_dict["ppl101_dopamine_aversive"], dtype=np.int32),
         octopamine_stress=np.array(c_dict["octopamine_stress"], dtype=np.int32),

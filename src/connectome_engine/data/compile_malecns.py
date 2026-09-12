@@ -10,8 +10,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pyarrow.feather as feather
 import scipy.sparse as sp
+from pyarrow import feather
 
 DATA_DIR = Path(__file__).resolve().parents[3] / "data" / "malecns_v1"
 OUTPUT_NPZ = DATA_DIR / "malecns_v1_graph.npz"
@@ -122,11 +122,25 @@ def compile_connectome():
     # 4. Extract verified biological circuit indices
     print("\n[4/4] Extracting identified cell-type circuits...")
     types = nodes_df["type"].fillna("").astype(str)
-    soma_side = nodes_df.get("somaSide", pd.Series("", index=nodes_df.index)).fillna("").astype(str)
+    soma_side = (
+        nodes_df.get("somaSide", pd.Series("", index=nodes_df.index))
+        .fillna(nodes_df.get("rootSide", pd.Series("", index=nodes_df.index)))
+        .fillna("")
+        .astype(str)
+    )
+
+    r1_r6_l = np.flatnonzero(types.eq("R1-R6") & soma_side.eq("L")).tolist()
+    r1_r6_r = np.flatnonzero(types.eq("R1-R6") & soma_side.eq("R")).tolist()
+    r8_l = np.flatnonzero(types.str.startswith("R8") & soma_side.eq("L")).tolist()
+    r8_r = np.flatnonzero(types.str.startswith("R8") & soma_side.eq("R")).tolist()
 
     circuits = {
         "r1_r6_photoreceptors": np.flatnonzero(types.eq("R1-R6")).tolist(),
+        "r1_r6_left": r1_r6_l,
+        "r1_r6_right": r1_r6_r,
         "r8_photoreceptors": np.flatnonzero(types.str.startswith("R8")).tolist(),
+        "r8_left": r8_l,
+        "r8_right": r8_r,
         "looming_threat_lc4": np.flatnonzero(types.str.startswith("LC4") | types.str.startswith("LPLC2")).tolist(),
         "pam11_dopamine_reward": np.flatnonzero(types.eq("PAM11")).tolist(),
         "ppl101_dopamine_aversive": np.flatnonzero(types.eq("PPL101")).tolist(),
