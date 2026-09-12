@@ -1444,6 +1444,7 @@ class ObservationChamber3D {
 
       // Circuit tags: count uint8
       const circuitTags = new Uint8Array(buffer.slice(offset, offset + count));
+      this.somaCircuits = circuitTags;
       offset += count;
 
       // Polarities: count int8
@@ -1783,22 +1784,88 @@ class ObservationChamber3D {
         this.glowingSomas = [];
       }
 
-      // 2. Light up real spiking somas from telemetry
+      // 2. Cascade real biological wave propagation across anatomical circuits
       const activeNeurons = telemetry.active_neurons || [];
       if (this.graphToSomaMap && activeNeurons.length > 0) {
+        // Group somas by biological synaptic latency:
+        // Wave 0 (0ms): Optic Lobe (retinal input cartridges)
+        // Wave 1 (18ms): Central Brain & Mushroom Body (associative/neuropil)
+        // Wave 2 (36ms): Central Complex & Descending Motor (steering / giant fiber)
+        // Wave 3 (54ms): Ventral Nerve Cord (thoracic motor cord)
+        const wave0 = [];
+        const wave1 = [];
+        const wave2 = [];
+        const wave3 = [];
+
         for (let i = 0; i < activeNeurons.length; i++) {
           const gIdx = activeNeurons[i];
           if (gIdx >= 0 && gIdx < this.graphToSomaMap.length) {
             const sIdx = this.graphToSomaMap[gIdx];
             if (sIdx >= 0 && sIdx < actArr.length) {
-              actArr[sIdx] = 1.0;
-              this.glowingSomas.push(sIdx);
+              const tag = this.somaCircuits ? this.somaCircuits[sIdx] : 0;
+              if (tag === 1) {
+                wave0.push(sIdx);
+              } else if (tag === 0 || tag === 2) {
+                wave1.push(sIdx);
+              } else if (tag === 3 || tag === 4) {
+                wave2.push(sIdx);
+              } else {
+                wave3.push(sIdx);
+              }
             }
           }
         }
+
+        // Layer 0: Immediate visual retinal wave (0ms)
+        for (let i = 0; i < wave0.length; i++) {
+          actArr[wave0[i]] = 1.0;
+          this.glowingSomas.push(wave0[i]);
+        }
+        actAttr.needsUpdate = true;
+
+        // Layer 1: Central Brain & Mushroom Body (~18ms)
+        if (wave1.length > 0) {
+          setTimeout(() => {
+            if (this.connectomePointCloud && this.connectomePointCloud.geometry.attributes.activity) {
+              const curAct = this.connectomePointCloud.geometry.attributes.activity.array;
+              for (let i = 0; i < wave1.length; i++) {
+                curAct[wave1[i]] = 1.0;
+                this.glowingSomas.push(wave1[i]);
+              }
+              this.connectomePointCloud.geometry.attributes.activity.needsUpdate = true;
+            }
+          }, 18);
+        }
+
+        // Layer 2: Central Complex & Descending Motor (~36ms)
+        if (wave2.length > 0) {
+          setTimeout(() => {
+            if (this.connectomePointCloud && this.connectomePointCloud.geometry.attributes.activity) {
+              const curAct = this.connectomePointCloud.geometry.attributes.activity.array;
+              for (let i = 0; i < wave2.length; i++) {
+                curAct[wave2[i]] = 1.0;
+                this.glowingSomas.push(wave2[i]);
+              }
+              this.connectomePointCloud.geometry.attributes.activity.needsUpdate = true;
+            }
+          }, 36);
+        }
+
+        // Layer 3: Ventral Nerve Cord (~54ms)
+        if (wave3.length > 0) {
+          setTimeout(() => {
+            if (this.connectomePointCloud && this.connectomePointCloud.geometry.attributes.activity) {
+              const curAct = this.connectomePointCloud.geometry.attributes.activity.array;
+              for (let i = 0; i < wave3.length; i++) {
+                curAct[wave3[i]] = 1.0;
+                this.glowingSomas.push(wave3[i]);
+              }
+              this.connectomePointCloud.geometry.attributes.activity.needsUpdate = true;
+            }
+          }, 54);
+        }
       }
-      actAttr.needsUpdate = true;
-    }
+
 
     if (this.phoneLight) {
       if (oa > 4.5) {
