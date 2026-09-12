@@ -264,56 +264,120 @@
         <span class="tag" data-i18n="tag_kinetics">Kinetics</span>
       </div>
 
-      <!-- Hormonal Meters -->
-      <div class="hormone-meters">
-        <!-- Dopamine -->
-        <div class="hormone-card da-card">
-          <div class="hormone-top">
-            <span class="h-name" data-i18n="h_da">DOPAMINE (PAM11)</span>
-            <span class="h-reading mono"><span id="da-hz">0.0</span> Hz | <span id="da-nm">5.0</span> nM</span>
+      <!-- Modern Hero Live Neural Activity Card (Multi-Channel Neuro-Telemetry) -->
+      <div class="modern-neural-card">
+        <div class="live-activity-header">
+          <div class="live-title-group">
+            <span class="live-activity-title" data-i18n="live_neural_activity">LIVE NEURAL ACTIVITY</span>
+            <span class="live-pulse-dot" id="live-channel-pulse" title="Live Synaptic Stream"></span>
           </div>
-          <div class="progress-track"><div id="da-fill" class="progress-bar da-bar"></div></div>
-          <small class="h-hint" data-i18n="h_da_hint">Appetitive reward, pleasure & associative plasticity</small>
+          <!-- Channel Switcher Tabs for all values: DA, OA, 5-HT, E/I -->
+          <div class="channel-tabs" id="channel-tabs">
+            <button class="channel-tab-btn active" data-channel="da" title="Dopamine (PAM11)">DA</button>
+            <button class="channel-tab-btn" data-channel="oa" title="Octopamine (TDC2)">OA</button>
+            <button class="channel-tab-btn" data-channel="st" title="Serotonin (5-HT)">5-HT</button>
+            <button class="channel-tab-btn" data-channel="ei" title="E/I Balance (Dale's Law)">E/I</button>
+          </div>
         </div>
 
-        <!-- Octopamine -->
-        <div class="hormone-card oa-card">
-          <div class="hormone-top">
-            <span class="h-name" data-i18n="h_oa">OCTOPAMINE (TDC2)</span>
-            <span class="h-reading mono"><span id="oa-hz">0.0</span> Hz | <span id="oa-nm">2.0</span> nM</span>
+        <div class="hero-metrics-row">
+          <!-- Left: Active Channel Hero Metric -->
+          <div class="hero-stat-col">
+            <div class="hero-stat-label" id="hero-channel-label" data-i18n="dopamine_activity">DOPAMINE ACTIVITY</div>
+            <div class="hero-stat-value da-glow" id="hero-stat-display">
+              <span id="hero-channel-val" class="mono">0.0</span><span class="hero-unit" id="hero-channel-unit">Hz</span>
+            </div>
+            <div class="hero-stat-sub" id="hero-channel-sub" data-i18n="pam11_neurons_count">15 PAM11 neurons</div>
           </div>
-          <div class="progress-track"><div id="oa-fill" class="progress-bar oa-bar"></div></div>
-          <small class="h-hint" data-i18n="h_oa_hint">Insect adrenaline, acute stress & fight-or-flight</small>
+
+          <!-- Right: Fly Spikes -->
+          <div class="hero-stat-col">
+            <div class="hero-stat-label" data-i18n="fly_spikes">FLY SPIKES</div>
+            <div class="hero-stat-value spikes-val">
+              <span id="hero-spikes-val" class="mono">0</span>
+            </div>
+            <div class="hero-stat-sub" id="hero-neural-time" data-i18n="neural_time_sub">in 50 ms of neural time</div>
+          </div>
         </div>
 
-        <!-- Serotonin -->
-        <div class="hormone-card st-card">
-          <div class="hormone-top">
-            <span class="h-name" data-i18n="h_st">SEROTONIN (5-HT)</span>
-            <span class="h-reading mono"><span id="st-hz">0.0</span> Hz | <span id="st-nm">8.0</span> nM</span>
-          </div>
-          <div class="progress-track"><div id="st-fill" class="progress-bar st-bar"></div></div>
-          <small class="h-hint" data-i18n="h_st_hint">Baseline calm, motor patience & satiety</small>
+        <!-- Waveform Sub-chart Header -->
+        <div class="waveform-meta-row">
+          <span class="waveform-meta-title" id="waveform-meta-title" data-i18n="pam11_firing_rate">PAM11 FIRING RATE</span>
+          <span class="waveform-meta-scale mono" id="dopamine-scale-label">75–105 Hz · AUTO SCALE</span>
         </div>
 
-        <!-- E/I Balance (Dale's Law) -->
-        <div class="hormone-card ei-card">
-          <div class="hormone-top">
-            <span class="h-name" data-i18n="h_ei">E/I BALANCE (Dale's Law)</span>
-            <span class="h-reading mono"><span id="ei-val">64.4%</span> Exc | <span id="exc-spikes">0</span> E / <span id="inh-spikes">0</span> I</span>
+        <!-- Real-Time Waveform Oscilloscope -->
+        <div class="dopamine-waveform-wrap">
+          <div class="waveform-y-axis">
+            <span id="y-tick-max">105</span>
+            <span id="y-tick-mid">90</span>
           </div>
-          <div class="progress-track"><div id="ei-fill" class="progress-bar ei-bar"></div></div>
-          <small class="h-hint" data-i18n="h_ei_hint">Synaptic balance: ACh excitation vs GABA/Glu/Histamine inhibition</small>
+          <canvas id="dopamine-chart" width="310" height="50"></canvas>
         </div>
       </div>
 
-      <!-- Real-Time Dopamine Chart -->
-      <div class="chart-section">
-        <div class="chart-header">
-          <h3 data-i18n="chart_dopamine">DOPAMINE WAVEFORM (Hz)</h3>
-          <span class="mono chart-scale" data-i18n="chart_scale_frames">120 frames</span>
+      <!-- 4-Channel Modern Real-Time Telemetry Grid (ALL VALUES) -->
+      <div class="modern-channels-grid">
+        <!-- 1. Dopamine (PAM11) -->
+        <div class="modern-ch-card da-ch active" data-channel="da">
+          <div class="ch-top">
+            <span class="ch-badge da">DA</span>
+            <span class="ch-title" data-i18n="h_da_short">DOPAMINE</span>
+            <span class="ch-hz mono" id="da-hz">0.0 Hz</span>
+          </div>
+          <div class="ch-mid">
+            <span class="ch-conc mono"><span id="da-nm">5.0</span> nM</span>
+            <span class="ch-sub">PAM11 · Reward</span>
+          </div>
+          <div class="ch-track"><div id="da-fill" class="ch-bar da-bar"></div></div>
         </div>
-        <canvas id="dopamine-chart" width="340" height="54"></canvas>
+
+        <!-- 2. Octopamine (TDC2) -->
+        <div class="modern-ch-card oa-ch" data-channel="oa">
+          <div class="ch-top">
+            <span class="ch-badge oa">OA</span>
+            <span class="ch-title" data-i18n="h_oa_short">OCTOPAMINE</span>
+            <span class="ch-hz mono" id="oa-hz">0.0 Hz</span>
+          </div>
+          <div class="ch-mid">
+            <span class="ch-conc mono"><span id="oa-nm">2.0</span> nM</span>
+            <span class="ch-sub">TDC2 · Stress</span>
+          </div>
+          <div class="ch-track"><div id="oa-fill" class="ch-bar oa-bar"></div></div>
+        </div>
+
+        <!-- 3. Serotonin (5-HT) -->
+        <div class="modern-ch-card st-ch" data-channel="st">
+          <div class="ch-top">
+            <span class="ch-badge st">5-HT</span>
+            <span class="ch-title" data-i18n="h_st_short">SEROTONIN</span>
+            <span class="ch-hz mono" id="st-hz">0.0 Hz</span>
+          </div>
+          <div class="ch-mid">
+            <span class="ch-conc mono"><span id="st-nm">8.0</span> nM</span>
+            <span class="ch-sub">5-HT · Calm</span>
+          </div>
+          <div class="ch-track"><div id="st-fill" class="ch-bar st-bar"></div></div>
+        </div>
+
+        <!-- 4. E/I Balance (Dale's Law) -->
+        <div class="modern-ch-card ei-ch" data-channel="ei">
+          <div class="ch-top">
+            <span class="ch-badge ei">E/I</span>
+            <span class="ch-title" data-i18n="h_ei_short">E/I BALANCE</span>
+            <span class="ch-hz mono" id="ei-val">64.4%</span>
+          </div>
+          <div class="ch-mid">
+            <span class="ch-conc mono"><span id="exc-spikes">0</span>E / <span id="inh-spikes">0</span>I</span>
+            <span class="ch-sub">Dale's Law</span>
+          </div>
+          <div class="ch-track"><div id="ei-fill" class="ch-bar ei-bar"></div></div>
+        </div>
+      </div>
+
+      <!-- Hidden compatibility elements to maintain backwards compatibility with existing bindings -->
+      <div class="legacy-hidden-bindings" style="display: none;" aria-hidden="true">
+        <span id="hero-da-val">0.0</span>
       </div>
 
       <!-- Landmark Spike Raster Plot -->

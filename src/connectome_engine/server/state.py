@@ -158,6 +158,7 @@ class ServerStateManager:
                     "octopamine_hz": data["octopamine_hz"],
                     "serotonin_hz": data["serotonin_hz"],
                     "total_spikes": data["total_spikes"],
+                    "ei_balance": data.get("ei_balance_ratio", 0.644),
                 }
             )
 

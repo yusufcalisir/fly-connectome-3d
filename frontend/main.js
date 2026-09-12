@@ -78,6 +78,25 @@ const TRANSLATIONS = {
     chart_scale_frames: '120 frames',
     chart_scale_landmarks: '64 landmarks',
     label_plasticity: 'Learned Association Drift (KC ──► MBON):',
+    live_neural_activity: 'LIVE NEURAL ACTIVITY',
+    dopamine_activity: 'DOPAMINE ACTIVITY',
+    pam11_neurons_count: '15 PAM11 neurons',
+    pam11_firing_rate: 'PAM11 FIRING RATE',
+    octopamine_activity: 'OCTOPAMINE ACTIVITY',
+    tdc2_neurons_count: 'TDC2 stress circuit',
+    tdc2_firing_rate: 'TDC2 FIRING RATE',
+    serotonin_activity: 'SEROTONIN ACTIVITY',
+    serotonin_sub: '5-HT satiety / calm',
+    serotonin_firing_rate: '5-HT FIRING RATE',
+    ei_activity: 'E/I BALANCE',
+    ei_sub: "Dale's Law: ACh vs GABA",
+    ei_firing_rate: 'EXCITATION RATIO (E/I)',
+    fly_spikes: 'FLY SPIKES',
+    neural_time_sub: 'in 50 ms of neural time',
+    h_da_short: 'DOPAMINE',
+    h_oa_short: 'OCTOPAMINE',
+    h_st_short: 'SEROTONIN',
+    h_ei_short: 'E/I BALANCE',
     nav_3d: '3D View',
     nav_stimulus: 'Stimulus',
     nav_cockpit: 'Cockpit',
@@ -133,6 +152,25 @@ const TRANSLATIONS = {
     chart_cns_activity: 'CNS / CANLI SİNİRSEL AKTİVİTE',
     cns_drag_hint: '3D döndürmek için sürükleyin',
     label_plasticity: 'Öğrenilmiş Çağrışım Kayması (KC ──► MBON):',
+    live_neural_activity: 'CANLI NÖRAL AKTİVİTE',
+    dopamine_activity: 'DOPAMİN AKTİVİTESİ',
+    pam11_neurons_count: '15 PAM11 nöronu',
+    pam11_firing_rate: 'PAM11 ATEŞLEME HIZI',
+    octopamine_activity: 'OKTOPAMİN AKTİVİTESİ',
+    tdc2_neurons_count: 'TDC2 stres devresi',
+    tdc2_firing_rate: 'TDC2 ATEŞLEME HIZI',
+    serotonin_activity: 'SEROTONİN AKTİVİTESİ',
+    serotonin_sub: '5-HT doygunluk / sükunet',
+    serotonin_firing_rate: '5-HT ATEŞLEME HIZI',
+    ei_activity: 'E/I DENGESİ',
+    ei_sub: 'Dale Yasası: ACh vs GABA',
+    ei_firing_rate: 'UYANMA ORANI (E/I)',
+    fly_spikes: 'SİNEK SPİKELARI',
+    neural_time_sub: '50 ms nöral sürede',
+    h_da_short: 'DOPAMİN',
+    h_oa_short: 'OKTOPAMİN',
+    h_st_short: 'SEROTONİN',
+    h_ei_short: 'E/I DENGESİ',
     chart_scale_frames: '120 kare',
     chart_scale_landmarks: '64 referans',
     nav_3d: '3D Görünüm',
@@ -2448,6 +2486,131 @@ class CockpitVisualizers {
 
     this.cnsVisualizer = new CNSBrainVisualizer3D('cns-brain-canvas');
     this.headingDeg = 0;
+
+    this.activeChannel = 'da';
+    this.lastHistory = [];
+
+    this.channelConfigs = {
+      da: {
+        id: 'da',
+        name: 'Dopamine (PAM11)',
+        unit: 'Hz',
+        color: '#a3e635',
+        glow: '#bef264',
+        bgGrad: 'rgba(163, 230, 53, 0.22)',
+        labelKey: 'dopamine_activity',
+        subKey: 'pam11_neurons_count',
+        waveKey: 'pam11_firing_rate',
+        getValue: pt => pt.dopamine_hz || 0,
+      },
+      oa: {
+        id: 'oa',
+        name: 'Octopamine (TDC2)',
+        unit: 'Hz',
+        color: '#fb923c',
+        glow: '#fdba74',
+        bgGrad: 'rgba(251, 146, 60, 0.22)',
+        labelKey: 'octopamine_activity',
+        subKey: 'tdc2_neurons_count',
+        waveKey: 'tdc2_firing_rate',
+        getValue: pt => pt.octopamine_hz || 0,
+      },
+      st: {
+        id: 'st',
+        name: 'Serotonin (5-HT)',
+        unit: 'Hz',
+        color: '#38bdf8',
+        glow: '#7dd3fc',
+        bgGrad: 'rgba(56, 189, 248, 0.22)',
+        labelKey: 'serotonin_activity',
+        subKey: 'serotonin_sub',
+        waveKey: 'serotonin_firing_rate',
+        getValue: pt => pt.serotonin_hz || 0,
+      },
+      ei: {
+        id: 'ei',
+        name: "E/I Balance (Dale's Law)",
+        unit: '%',
+        color: '#34d399',
+        glow: '#6ee7b7',
+        bgGrad: 'rgba(52, 211, 153, 0.22)',
+        labelKey: 'ei_activity',
+        subKey: 'ei_sub',
+        waveKey: 'ei_firing_rate',
+        getValue: pt => {
+          let r = pt.ei_balance !== undefined ? pt.ei_balance : (pt.ei_balance_ratio !== undefined ? pt.ei_balance_ratio : 0.644);
+          return r * 100;
+        },
+      },
+    };
+  }
+
+  setChannel(channelId) {
+    if (!this.channelConfigs[channelId]) return;
+    this.activeChannel = channelId;
+    const cfg = this.channelConfigs[channelId];
+
+    // Update tab active state
+    document.querySelectorAll('.channel-tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.channel === channelId);
+    });
+
+    // Update grid card active state
+    document.querySelectorAll('.modern-ch-card').forEach(card => {
+      card.classList.toggle('active', card.dataset.channel === channelId);
+    });
+
+    // Pulse dot color & glow
+    const pulse = document.getElementById('live-channel-pulse');
+    if (pulse) {
+      pulse.style.background = cfg.color;
+      pulse.style.boxShadow = `0 0 10px ${cfg.color}`;
+    }
+
+    // Hero stat display color class
+    const heroStatDisplay = document.getElementById('hero-stat-display');
+    if (heroStatDisplay) {
+      heroStatDisplay.className = `hero-stat-value ${channelId}-glow`;
+    }
+
+    // Hero unit
+    const unitEl = document.getElementById('hero-channel-unit');
+    if (unitEl) {
+      unitEl.textContent = cfg.unit;
+    }
+
+    // Update texts with localization
+    this.refreshChannelTexts();
+
+    // Redraw waveform immediately if history exists
+    if (this.lastHistory && this.lastHistory.length > 0) {
+      this.drawDopamineWaveform(this.lastHistory);
+    }
+  }
+
+  refreshChannelTexts() {
+    const cfg = this.channelConfigs[this.activeChannel];
+    if (!cfg) return;
+    const lang = window.currentLang || 'en';
+    const dict = TRANSLATIONS[lang] || TRANSLATIONS.en;
+
+    const labelEl = document.getElementById('hero-channel-label');
+    if (labelEl) {
+      labelEl.setAttribute('data-i18n', cfg.labelKey);
+      labelEl.textContent = dict[cfg.labelKey] || cfg.labelKey;
+    }
+
+    const subEl = document.getElementById('hero-channel-sub');
+    if (subEl) {
+      subEl.setAttribute('data-i18n', cfg.subKey);
+      subEl.textContent = dict[cfg.subKey] || cfg.subKey;
+    }
+
+    const waveMetaEl = document.getElementById('waveform-meta-title');
+    if (waveMetaEl) {
+      waveMetaEl.setAttribute('data-i18n', cfg.waveKey);
+      waveMetaEl.textContent = dict[cfg.waveKey] || cfg.waveKey;
+    }
   }
 
   updateCNSActivity(activeNeurons = []) {
@@ -2523,39 +2686,69 @@ class CockpitVisualizers {
   }
 
   drawDopamineWaveform(history = []) {
+    if (!this.dopamineCtx || !this.dopamineCanvas) return;
+    this.lastHistory = history;
+
     const ctx = this.dopamineCtx;
     const w = this.dopamineCanvas.width;
     const h = this.dopamineCanvas.height;
 
     ctx.clearRect(0, 0, w, h);
 
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
-    ctx.lineWidth = 1;
-    for (let y = 20; y < h; y += 20) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(w, y);
-      ctx.stroke();
-    }
-
     if (!history || history.length < 2) return;
 
-    const maxHz = Math.max(40, ...history.map(pt => pt.dopamine_hz || 0));
+    const cfg = this.channelConfigs[this.activeChannel] || this.channelConfigs.da;
+    const vals = history.map(pt => cfg.getValue(pt));
+    const rawMin = Math.min(...vals);
+    const rawMax = Math.max(...vals);
+
+    let minVal, maxVal;
+    if (this.activeChannel === 'ei') {
+      minVal = Math.max(0, Math.floor(rawMin - 3));
+      maxVal = Math.min(100, Math.ceil(Math.max(minVal + 10, rawMax + 3)));
+    } else {
+      minVal = Math.max(0, Math.floor(rawMin - 4));
+      maxVal = Math.ceil(Math.max(minVal + 15, rawMax + 4));
+    }
+    const range = Math.max(0.5, maxVal - minVal);
+
+    // Update DOM scale and Y-axis tick indicators if present
+    const scaleEl = document.getElementById('dopamine-scale-label');
+    if (scaleEl) {
+      scaleEl.textContent = `${minVal}–${maxVal} ${cfg.unit} · AUTO SCALE`;
+    }
+    const tickMax = document.getElementById('y-tick-max');
+    if (tickMax) tickMax.textContent = maxVal;
+    const tickMid = document.getElementById('y-tick-mid');
+    if (tickMid) tickMid.textContent = Math.round((minVal + maxVal) / 2);
+
+    // Subtle horizontal reference line at midY
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.setLineDash([3, 4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, h * 0.5);
+    ctx.lineTo(w, h * 0.5);
+    ctx.stroke();
+    ctx.restore();
+
     const stepX = w / (history.length - 1);
 
+    // Soft luminous gradient under trace
     const grad = ctx.createLinearGradient(0, 0, 0, h);
-    grad.addColorStop(0, 'rgba(255, 157, 0, 0.35)');
-    grad.addColorStop(1, 'rgba(255, 157, 0, 0.0)');
+    grad.addColorStop(0, cfg.bgGrad);
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0.0)');
 
     ctx.beginPath();
     ctx.moveTo(0, h);
 
     for (let i = 0; i < history.length; i++) {
       const x = i * stepX;
-      const val = history[i].dopamine_hz || 0;
-      const y = h - (val / maxHz) * (h - 10) - 5;
-      if (i === 0) ctx.lineTo(x, y);
-      else ctx.lineTo(x, y);
+      const val = cfg.getValue(history[i]);
+      const normY = Math.max(0, Math.min(1, (val - minVal) / range));
+      const y = h - 6 - normY * (h - 12);
+      ctx.lineTo(x, y);
     }
 
     ctx.lineTo((history.length - 1) * stepX, h);
@@ -2563,17 +2756,45 @@ class CockpitVisualizers {
     ctx.fillStyle = grad;
     ctx.fill();
 
-    ctx.strokeStyle = '#ff9d00';
-    ctx.lineWidth = 2;
+    // Vibrant neon oscilloscope trace with glow
+    ctx.save();
+    ctx.strokeStyle = cfg.color;
+    ctx.lineWidth = 2.2;
+    ctx.shadowColor = cfg.color;
+    ctx.shadowBlur = 8;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
     ctx.beginPath();
     for (let i = 0; i < history.length; i++) {
       const x = i * stepX;
-      const val = history[i].dopamine_hz || 0;
-      const y = h - (val / maxHz) * (h - 10) - 5;
+      const val = cfg.getValue(history[i]);
+      const normY = Math.max(0, Math.min(1, (val - minVal) / range));
+      const y = h - 6 - normY * (h - 12);
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
     ctx.stroke();
+    ctx.restore();
+
+    // Glowing head cursor dot at current real-time point
+    const lastIdx = history.length - 1;
+    const lastX = lastIdx * stepX;
+    const lastVal = cfg.getValue(history[lastIdx]);
+    const lastNormY = Math.max(0, Math.min(1, (lastVal - minVal) / range));
+    const lastY = h - 6 - lastNormY * (h - 12);
+
+    ctx.save();
+    ctx.shadowColor = cfg.color;
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = cfg.glow;
+    ctx.beginPath();
+    ctx.arc(lastX - 2, lastY, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    ctx.restore();
   }
 
   drawSpikeRaster(history = []) {
@@ -2712,6 +2933,16 @@ class ConnectomeApp {
 
     if (this.stimulus) {
       this.stimulus.updateCardInfo();
+    }
+
+    if (this.visualizers && typeof this.visualizers.refreshChannelTexts === 'function') {
+      this.visualizers.refreshChannelTexts();
+    }
+
+    const heroTime = document.getElementById('hero-neural-time');
+    if (heroTime && this.lastTelemetrySnapshot?.latest) {
+      const stepMs = this.lastTelemetrySnapshot.latest.duration_ms || 50;
+      heroTime.textContent = lang === 'tr' ? `${Math.round(stepMs)} ms nöral sürede` : `in ${Math.round(stepMs)} ms of neural time`;
     }
 
     const statusEl = document.getElementById('engine-status');
@@ -2853,6 +3084,33 @@ class ConnectomeApp {
       const pos = initialPosBtn.getAttribute('data-pos');
       this.stimulus.setPosition(pos);
     }
+
+    // Multi-channel selection tabs (DA, OA, 5-HT, E/I)
+    document.querySelectorAll('.channel-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const ch = btn.getAttribute('data-channel');
+        if (ch && this.visualizers) {
+          this.visualizers.setChannel(ch);
+          this._updateActiveHeroChannel();
+        }
+      });
+    });
+
+    // Multi-channel grid cards click to switch active channel
+    document.querySelectorAll('.modern-ch-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const ch = card.getAttribute('data-channel');
+        if (ch && this.visualizers) {
+          this.visualizers.setChannel(ch);
+          this._updateActiveHeroChannel();
+        }
+      });
+    });
+  }
+
+  _updateActiveHeroChannel() {
+    if (!this.lastTelemetrySnapshot || !this.lastTelemetrySnapshot.latest) return;
+    this._handleTelemetrySnapshot(this.lastTelemetrySnapshot);
   }
 
   _initCustomPhotoUpload() {
@@ -3069,6 +3327,7 @@ class ConnectomeApp {
 
   _handleTelemetrySnapshot(snapshot) {
     if (!snapshot || !snapshot.latest) return;
+    this.lastTelemetrySnapshot = snapshot;
     const t = snapshot.latest;
 
     this.chamber.updateFromTelemetry(t);
@@ -3088,18 +3347,7 @@ class ConnectomeApp {
     const daHz = t.spike_counts?.dopamine_hz || 0;
     const oaHz = t.spike_counts?.octopamine_hz || 0;
     const stHz = t.spike_counts?.serotonin_hz || 0;
-
-    document.getElementById('da-hz').textContent = daHz.toFixed(1);
-    document.getElementById('da-nm').textContent = da.toFixed(2);
-    document.getElementById('da-fill').style.width = `${Math.min(100, (da / 35) * 100)}%`;
-
-    document.getElementById('oa-hz').textContent = oaHz.toFixed(1);
-    document.getElementById('oa-nm').textContent = oa.toFixed(2);
-    document.getElementById('oa-fill').style.width = `${Math.min(100, (oa / 30) * 100)}%`;
-
-    document.getElementById('st-hz').textContent = stHz.toFixed(1);
-    document.getElementById('st-nm').textContent = st.toFixed(2);
-    document.getElementById('st-fill').style.width = `${Math.min(100, (st / 25) * 100)}%`;
+    const totalSpk = t.spike_counts?.total_spikes || 0;
 
     // Dynamic E/I Balance (Dale's Law)
     const eiRatio = h.ei_balance !== undefined ? h.ei_balance : (t.ei_balance_ratio !== undefined ? t.ei_balance_ratio : 0.644);
@@ -3107,6 +3355,62 @@ class ConnectomeApp {
     const inhSpk = t.inhibitory_spikes || t.spike_counts?.inhibitory_spikes || 0;
     const eiPercent = (eiRatio * 100).toFixed(1);
 
+    // Active Channel Left Hero Metric (DA, OA, 5-HT, E/I)
+    const activeCh = (this.visualizers && this.visualizers.activeChannel) || 'da';
+    const heroValEl = document.getElementById('hero-channel-val');
+    if (heroValEl) {
+      if (activeCh === 'da') {
+        heroValEl.textContent = daHz.toFixed(1);
+      } else if (activeCh === 'oa') {
+        heroValEl.textContent = oaHz.toFixed(1);
+      } else if (activeCh === 'st') {
+        heroValEl.textContent = stHz.toFixed(1);
+      } else if (activeCh === 'ei') {
+        heroValEl.textContent = eiPercent;
+      }
+    }
+
+    // Right Hero Metric: Total Fly Spikes & Neural Duration
+    const heroSpk = document.getElementById('hero-spikes-val');
+    if (heroSpk) heroSpk.textContent = totalSpk.toLocaleString();
+
+    const heroTime = document.getElementById('hero-neural-time');
+    if (heroTime) {
+      const stepMs = t.duration_ms || 50;
+      const lang = window.currentLang || 'en';
+      heroTime.textContent = lang === 'tr' ? `${Math.round(stepMs)} ms nöral sürede` : `in ${Math.round(stepMs)} ms of neural time`;
+    }
+
+    // Legacy backwards-compatibility ID
+    const heroDa = document.getElementById('hero-da-val');
+    if (heroDa) heroDa.textContent = daHz.toFixed(1);
+
+    // 4-Channel Modern Real-Time Telemetry Grid (ALL VALUES)
+    // 1. Dopamine (PAM11)
+    const daHzEl = document.getElementById('da-hz');
+    if (daHzEl) daHzEl.textContent = `${daHz.toFixed(1)} Hz`;
+    const daNmEl = document.getElementById('da-nm');
+    if (daNmEl) daNmEl.textContent = da.toFixed(2);
+    const daFillEl = document.getElementById('da-fill');
+    if (daFillEl) daFillEl.style.width = `${Math.min(100, (da / 35) * 100)}%`;
+
+    // 2. Octopamine (TDC2)
+    const oaHzEl = document.getElementById('oa-hz');
+    if (oaHzEl) oaHzEl.textContent = `${oaHz.toFixed(1)} Hz`;
+    const oaNmEl = document.getElementById('oa-nm');
+    if (oaNmEl) oaNmEl.textContent = oa.toFixed(2);
+    const oaFillEl = document.getElementById('oa-fill');
+    if (oaFillEl) oaFillEl.style.width = `${Math.min(100, (oa / 30) * 100)}%`;
+
+    // 3. Serotonin (5-HT)
+    const stHzEl = document.getElementById('st-hz');
+    if (stHzEl) stHzEl.textContent = `${stHz.toFixed(1)} Hz`;
+    const stNmEl = document.getElementById('st-nm');
+    if (stNmEl) stNmEl.textContent = st.toFixed(2);
+    const stFillEl = document.getElementById('st-fill');
+    if (stFillEl) stFillEl.style.width = `${Math.min(100, (st / 25) * 100)}%`;
+
+    // 4. E/I Balance (Dale's Law)
     const eiValEl = document.getElementById('ei-val');
     const excEl = document.getElementById('exc-spikes');
     const inhEl = document.getElementById('inh-spikes');
@@ -3123,7 +3427,7 @@ class ConnectomeApp {
       } else if (eiRatio < 0.50) {
         eiFillEl.style.background = 'linear-gradient(90deg, #2979ff, #00e5ff)';
       } else {
-        eiFillEl.style.background = 'linear-gradient(90deg, #00e676, #00b0ff)';
+        eiFillEl.style.background = 'linear-gradient(90deg, #34d399, #00e5ff)';
       }
     }
 
