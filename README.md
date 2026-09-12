@@ -9,7 +9,8 @@
   [![Python 3.12](https://img.shields.io/badge/Python-3.12%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
   [![Connectome](https://img.shields.io/badge/Connectome-Janelia_MaleCNS_v1.0-FF6F00?style=for-the-badge&logo=target&logoColor=white)](https://flywire.ai/)
   [![Biophysics](https://img.shields.io/badge/Biophysics-100%25_Zero--Mock-2E7D32?style=for-the-badge&logo=speedtest&logoColor=white)](#-empirical-verification-zero-mock-biophysics-proof)
-  [![Tests](https://img.shields.io/badge/Tests-17%2F17_Passing-00C853?style=for-the-badge&logo=pytest&logoColor=white)](#-automated-testing--validation)
+  [![Tests](https://img.shields.io/badge/Tests-30%2F30_Passing-00C853?style=for-the-badge&logo=pytest&logoColor=white)](#-automated-testing--validation)
+  [![CI](https://img.shields.io/github/actions/workflow/status/yusufcalisir/fly-connectome-3d/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI)](https://github.com/yusufcalisir/fly-connectome-3d/actions)
   [![Three.js](https://img.shields.io/badge/Frontend-Three.js_r128-000000?style=for-the-badge&logo=three.js&logoColor=white)](https://threejs.org/)
   [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
   [![i18n](https://img.shields.io/badge/i18n-EN_%7C_TR-7C4DFF?style=for-the-badge&logo=translate&logoColor=white)](#-modern-bilingual-ui-en--tr)
@@ -95,7 +96,7 @@ http://127.0.0.1:8000/
 | Feature | Description |
 | :--- | :--- |
 | 🔬 **Official MaleCNS v1.0 Connectome** | Full wiring diagram containing **166,778 biological neurons** and **25,603,246 synapses** compiled into high-performance CSR matrices. |
-| ⚡ **Vectorized LIF Spiking Kernel** | Leaky Integrate-and-Fire simulation engine with sub-millisecond refractory clamping ($dt = 0.1\text{ ms}$; 500 integration sub-steps per 50 ms frame chunk). |
+| ⚡ **Vectorized LIF Spiking Kernel** | Leaky Integrate-and-Fire simulation engine using NumPy mini-chunk vectorization ($dt = 0.1\text{ ms}$; 10-substep mini-chunks). **70× speedup** over naive loop: 9,600 ms → 135 ms per 50 ms frame on the full 166K connectome. |
 | 🧪 **Continuous Neurochemical Kinetics** | Ordinary Differential Equations (ODEs) modeling circulating concentrations of **Dopamine** ($[\text{DA}]$), **Octopamine** ($[\text{OA}]$), and **Serotonin** ($[5\text{-HT}]$). |
 | 🧠 **Associative STDP Plasticity** | Experience-dependent synaptic weight modulation between Kenyon Cells ($KC$) and Mushroom Body Output Neurons ($MBON07 / MBON11$). |
 | 🧭 **Central Complex EPG Compass** | Ring-attractor heading integration ($0^\circ - 360^\circ$) driving a dynamic 3D torus in the central complex and an EPG compass HUD. |
@@ -272,6 +273,9 @@ The cockpit features a glassmorphic segmented switch pill in the top-right heade
 
 ```
 d:\brain\
+├── .github/
+│   └── workflows/
+│       └── ci.yml               # GitHub Actions CI: 5-job pipeline (unit, perf, connectome, server, lint)
 ├── frontend/
 │   ├── index.html               # Main cockpit HTML layout with data-i18n tags
 │   ├── styles.css               # Cyber-neuro glassmorphic dark design system
@@ -292,7 +296,16 @@ d:\brain\
 │           ├── lif_kernel.py    # Vectorized sparse CSR Leaky Integrate-and-Fire simulation
 │           ├── motor_decoder.py # Motor decoding: steering, throttle, moonwalking, GF jump
 │           └── visual_transduction.py # Retinal mapping (R1-R6, R8) & LC4 optical looming
-├── tests/                       # 17 Automated Unit & Integration Tests (100% Passing)
+├── tests/                       # 30 Automated Unit, Integration & Performance Tests (100% Passing)
+│   ├── test_snn_engine.py               # LIF biophysics core
+│   ├── test_lif_vectorization.py        # Mini-chunk vectorization correctness & 500ms perf budget
+│   ├── test_hormones.py                 # DA/OA/5-HT ODE kinetics
+│   ├── test_visual_looming.py           # LC4 looming detection
+│   ├── test_custom_photo_transduction.py# Spectral valence analysis
+│   ├── test_brain_integration.py        # End-to-end observe→decode loop
+│   ├── test_server_live.py              # REST & WebSocket API
+│   ├── test_snn_performance_regression.py# StateManager, stimulus sensitivity, history growth
+│   └── test_real_connectome_full.py     # Full 166K topology & synapse count verification
 ├── pyproject.toml               # Project metadata & Python package dependencies
 └── README.md                    # Comprehensive technical documentation
 ```
@@ -332,12 +345,26 @@ uv run pytest tests/ -v
 | :--- | :--- | :---: | :---: |
 | `test_real_connectome_full.py` | 166.7K graph topology, 25.6M synapses, PAM11 spike propagation | 2 | **PASSED** |
 | `test_snn_engine.py` | LIF membrane integration, threshold clamping, state checkpoints | 3 | **PASSED** |
+| `test_lif_vectorization.py` | Mini-chunk correctness, refractory, accumulator, **5K-neuron < 500ms** perf budget | 9 | **PASSED** |
 | `test_hormones.py` | Continuous ODE synthesis, natural decay kinetics, wirehead surge | 2 | **PASSED** |
 | `test_visual_looming.py` | Retinal transduction, LC4 looming shadow surge, baseline stability | 2 | **PASSED** |
 | `test_custom_photo_transduction.py` | Spectral decomposition, appetitive vs shadow discrimination | 2 | **PASSED** |
 | `test_brain_integration.py` | End-to-end 60 Hz observe-step-decode orchestration loop | 1 | **PASSED** |
 | `test_server_live.py` | Static asset serving, REST endpoints, live WebSocket exchange | 5 | **PASSED** |
-| **Total Test Suite** | **Comprehensive Full System Validation** | **17 / 17** | **100% PASSED** |
+| `test_snn_performance_regression.py` | StateManager thread-safety, snapshot structure, stimulus→telemetry sensitivity | 4 | **PASSED** |
+| **Total Test Suite** | **Comprehensive Full System Validation** | **30 / 30** | **100% PASSED** |
+
+### GitHub Actions CI
+
+Every push and PR to `main` automatically runs a **5-job parallel CI pipeline**:
+
+| Job | Trigger | What it runs |
+| :--- | :--- | :--- |
+| **unit-tests** | push + PR | All tests except real-connectome (< 15s) |
+| **performance-regression** | push + PR | LIF vectorization benchmarks |
+| **server-integration** | push + PR | FastAPI REST + WebSocket integration tests |
+| **lint** | push + PR | `ruff` E,W,F,I rules + `pyproject.toml` validation |
+| **real-connectome** | main push only | Full 166K neuron test (connectome data cached) |
 
 ---
 
