@@ -80,19 +80,32 @@ const TRANSLATIONS = {
     label_plasticity: 'Learned Association Drift (KC ──► MBON):',
     live_neural_activity: 'LIVE NEURAL ACTIVITY',
     dopamine_activity: 'DOPAMINE ACTIVITY',
+    pam11_neurons: '15 PAM11 neurons',
     pam11_neurons_count: '15 PAM11 neurons',
     pam11_firing_rate: 'PAM11 FIRING RATE',
     octopamine_activity: 'OCTOPAMINE ACTIVITY',
+    tdc2_neurons: 'TDC2 projection neurons',
     tdc2_neurons_count: 'TDC2 stress circuit',
     tdc2_firing_rate: 'TDC2 FIRING RATE',
-    serotonin_activity: 'SEROTONIN ACTIVITY',
+    serotonin_activity: 'SEROTONIN (5-HT) ACTIVITY',
+    csd_neurons: 'CSD serotonergic neurons',
     serotonin_sub: '5-HT satiety / calm',
+    st_firing_rate: '5-HT FIRING RATE',
     serotonin_firing_rate: '5-HT FIRING RATE',
+    ei_balance_title: 'E/I SYNAPTIC BALANCE',
     ei_activity: 'E/I BALANCE',
     ei_sub: "Dale's Law: ACh vs GABA",
-    ei_firing_rate: 'EXCITATION RATIO (E/I)',
+    ei_sub_dales: "Dale's Law: ACh vs GABA",
+    ei_firing_rate: 'EXCITATION DYNAMICS',
     fly_spikes: 'FLY SPIKES',
-    neural_time_sub: 'in 50 ms',
+    neural_time_sub: 'in 50 ms of neural time',
+    concentration: 'CONC',
+    reward_plasticity: 'Reward & Plasticity',
+    stress_flight: 'Stress & Fight/Flight',
+    satiety_calm: 'Satiety & Motor Calm',
+    synaptic_pool: 'SYNAPSE POOL',
+    label_plasticity_short: 'ACh vs GABA/Glu',
+    auto_scale: 'AUTO SCALE',
     h_da_short: 'DOPAMINE',
     h_oa_short: 'OCTOPAMINE',
     h_st_short: 'SEROTONIN',
@@ -158,19 +171,32 @@ const TRANSLATIONS = {
     label_plasticity: 'Öğrenilmiş Çağrışım Kayması (KC ──► MBON):',
     live_neural_activity: 'CANLI NÖRAL AKTİVİTE',
     dopamine_activity: 'DOPAMİN AKTİVİTESİ',
+    pam11_neurons: '15 PAM11 nöronu',
     pam11_neurons_count: '15 PAM11 nöronu',
     pam11_firing_rate: 'PAM11 ATEŞLEME HIZI',
     octopamine_activity: 'OKTOPAMİN AKTİVİTESİ',
+    tdc2_neurons: 'TDC2 projeksiyon nöronları',
     tdc2_neurons_count: 'TDC2 stres devresi',
     tdc2_firing_rate: 'TDC2 ATEŞLEME HIZI',
-    serotonin_activity: 'SEROTONİN AKTİVİTESİ',
+    serotonin_activity: 'SEROTONİN (5-HT) AKTİVİTESİ',
+    csd_neurons: 'CSD serotonerjik nöronlar',
     serotonin_sub: '5-HT doygunluk / sükunet',
+    st_firing_rate: '5-HT ATEŞLEME HIZI',
     serotonin_firing_rate: '5-HT ATEŞLEME HIZI',
+    ei_balance_title: 'E/I SİNAPTİK DENGESİ',
     ei_activity: 'E/I DENGESİ',
     ei_sub: 'Dale Yasası: ACh vs GABA',
-    ei_firing_rate: 'UYANMA ORANI (E/I)',
+    ei_sub_dales: 'Dale Yasası: ACh vs GABA',
+    ei_firing_rate: 'EKSİTASYON DİNAMİĞİ',
     fly_spikes: 'SİNEK SPİKELARI',
-    neural_time_sub: '50 ms içinde',
+    neural_time_sub: '50 ms nöral sürede',
+    concentration: 'DERİŞİM',
+    reward_plasticity: 'Ödül & Plastisite',
+    stress_flight: 'Stres & Kaçış Refleksi',
+    satiety_calm: 'Doygunluk & Motor Sükunet',
+    synaptic_pool: 'SİNAPTIK HAVUZ',
+    label_plasticity_short: 'ACh vs GABA/Glu',
+    auto_scale: 'OTO ÖLÇEK',
     h_da_short: 'DOPAMİN',
     h_oa_short: 'OKTOPAMİN',
     h_st_short: 'SEROTONİN',
@@ -2488,15 +2514,27 @@ class CockpitVisualizers {
 
     this.daCanvas = document.getElementById('da-waveform');
     this.daCtx = this.daCanvas ? this.daCanvas.getContext('2d') : null;
+    this.daScaleEl = document.getElementById('da-scale-label');
+    this.daYMaxEl = document.getElementById('da-y-max');
+    this.daYMidEl = document.getElementById('da-y-mid');
 
     this.oaCanvas = document.getElementById('oa-waveform');
     this.oaCtx = this.oaCanvas ? this.oaCanvas.getContext('2d') : null;
+    this.oaScaleEl = document.getElementById('oa-scale-label');
+    this.oaYMaxEl = document.getElementById('oa-y-max');
+    this.oaYMidEl = document.getElementById('oa-y-mid');
 
     this.stCanvas = document.getElementById('st-waveform');
     this.stCtx = this.stCanvas ? this.stCanvas.getContext('2d') : null;
+    this.stScaleEl = document.getElementById('st-scale-label');
+    this.stYMaxEl = document.getElementById('st-y-max');
+    this.stYMidEl = document.getElementById('st-y-mid');
 
     this.eiCanvas = document.getElementById('ei-waveform');
     this.eiCtx = this.eiCanvas ? this.eiCanvas.getContext('2d') : null;
+    this.eiScaleEl = document.getElementById('ei-scale-label');
+    this.eiYMaxEl = document.getElementById('ei-y-max');
+    this.eiYMidEl = document.getElementById('ei-y-mid');
 
     this.dopamineCanvas = document.getElementById('dopamine-chart');
     this.dopamineCtx = this.dopamineCanvas ? this.dopamineCanvas.getContext('2d') : null;
@@ -2581,8 +2619,14 @@ class CockpitVisualizers {
     ctx.fill();
   }
 
-  _drawSparkline(ctx, canvas, history, getValue, color, bgGrad, isPercent = false) {
+  _drawSparkline(ctx, canvas, history, getValue, color, bgGrad, isPercent = false, scaleEl = null, yMaxEl = null, yMidEl = null) {
     if (!ctx || !canvas) return;
+    if (canvas.clientWidth && Math.abs(canvas.width - canvas.clientWidth) > 2) {
+      canvas.width = canvas.clientWidth;
+    }
+    if (canvas.clientHeight && Math.abs(canvas.height - canvas.clientHeight) > 2) {
+      canvas.height = canvas.clientHeight;
+    }
     const w = canvas.width;
     const h = canvas.height;
     ctx.clearRect(0, 0, w, h);
@@ -2595,18 +2639,27 @@ class CockpitVisualizers {
 
     let minVal, maxVal;
     if (isPercent) {
-      minVal = Math.max(0, Math.floor(rawMin - 3));
-      maxVal = Math.min(100, Math.ceil(Math.max(minVal + 8, rawMax + 3)));
+      minVal = Math.max(0, Math.floor(rawMin - 2));
+      maxVal = Math.min(100, Math.ceil(Math.max(minVal + 6, rawMax + 2)));
     } else {
-      minVal = Math.max(0, Math.floor(rawMin - 3));
-      maxVal = Math.ceil(Math.max(minVal + 10, rawMax + 3));
+      minVal = Math.max(0, Math.floor(rawMin - 2));
+      maxVal = Math.ceil(Math.max(minVal + 8, rawMax + 2));
     }
     const range = Math.max(0.2, maxVal - minVal);
+    const midVal = Math.round((maxVal + minVal) / 2);
+
+    if (scaleEl) {
+      const isTr = (window.currentLang === 'tr');
+      scaleEl.textContent = `${minVal}–${maxVal} ${isPercent ? '%' : 'Hz'} · ${isTr ? 'OTO ÖLÇEK' : 'AUTO SCALE'}`;
+    }
+    if (yMaxEl) yMaxEl.textContent = `${maxVal}`;
+    if (yMidEl) yMidEl.textContent = `${midVal}`;
+
     const stepX = w / (history.length - 1);
 
     // Subtle mid reference line
     ctx.save();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
     ctx.setLineDash([2, 3]);
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -2626,7 +2679,7 @@ class CockpitVisualizers {
       const x = i * stepX;
       const val = getValue(history[i]);
       const normY = Math.max(0, Math.min(1, (val - minVal) / range));
-      const y = h - 4 - normY * (h - 8);
+      const y = h - 3 - normY * (h - 6);
       ctx.lineTo(x, y);
     }
     ctx.lineTo((history.length - 1) * stepX, h);
@@ -2648,7 +2701,7 @@ class CockpitVisualizers {
       const x = i * stepX;
       const val = getValue(history[i]);
       const normY = Math.max(0, Math.min(1, (val - minVal) / range));
-      const y = h - 4 - normY * (h - 8);
+      const y = h - 3 - normY * (h - 6);
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
@@ -2660,7 +2713,7 @@ class CockpitVisualizers {
     const lastX = lastIdx * stepX;
     const lastVal = getValue(history[lastIdx]);
     const lastNormY = Math.max(0, Math.min(1, (lastVal - minVal) / range));
-    const lastY = h - 4 - lastNormY * (h - 8);
+    const lastY = h - 3 - lastNormY * (h - 6);
 
     ctx.save();
     ctx.shadowColor = color;
@@ -2687,7 +2740,10 @@ class CockpitVisualizers {
       pt => pt.dopamine_hz || 0,
       '#a3e635',
       'rgba(163, 230, 53, 0.25)',
-      false
+      false,
+      this.daScaleEl,
+      this.daYMaxEl,
+      this.daYMidEl
     );
 
     // 2. Octopamine (TDC2) - neon orange #fb923c
@@ -2698,7 +2754,10 @@ class CockpitVisualizers {
       pt => pt.octopamine_hz || 0,
       '#fb923c',
       'rgba(251, 146, 60, 0.25)',
-      false
+      false,
+      this.oaScaleEl,
+      this.oaYMaxEl,
+      this.oaYMidEl
     );
 
     // 3. Serotonin (5-HT) - neon cyan #38bdf8
@@ -2709,7 +2768,10 @@ class CockpitVisualizers {
       pt => pt.serotonin_hz || 0,
       '#38bdf8',
       'rgba(56, 189, 248, 0.25)',
-      false
+      false,
+      this.stScaleEl,
+      this.stYMaxEl,
+      this.stYMidEl
     );
 
     // 4. E/I Balance (Dale's Law) - neon mint #34d399
@@ -2720,7 +2782,10 @@ class CockpitVisualizers {
       pt => ((pt.ei_balance !== undefined ? pt.ei_balance : (pt.ei_balance_ratio || 0.644)) * 100),
       '#34d399',
       'rgba(52, 211, 153, 0.25)',
-      true
+      true,
+      this.eiScaleEl,
+      this.eiYMaxEl,
+      this.eiYMidEl
     );
   }
 
@@ -2864,6 +2929,10 @@ class ConnectomeApp {
 
     if (this.visualizers && typeof this.visualizers.refreshChannelTexts === 'function') {
       this.visualizers.refreshChannelTexts();
+    }
+
+    if (this.visualizers && this.visualizers.lastHistory && this.visualizers.lastHistory.length >= 2) {
+      this.visualizers.drawDopamineWaveform(this.visualizers.lastHistory);
     }
 
     const heroTime = document.getElementById('hero-neural-time');

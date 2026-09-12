@@ -274,80 +274,132 @@
           <div class="live-spikes-summary">
             <span class="spikes-metric-label" data-i18n="fly_spikes">FLY SPIKES</span>
             <span class="spikes-metric-val mono" id="hero-spikes-val">0</span>
-            <span class="spikes-metric-sub" id="hero-neural-time" data-i18n="neural_time_sub">in 50 ms</span>
+            <span class="spikes-metric-sub" id="hero-neural-time" data-i18n="neural_time_sub">in 50 ms of neural time</span>
           </div>
         </div>
 
         <div class="channels-vertical-list">
           <!-- 1. DOPAMINE (PAM11) -->
-          <div class="channel-row da-row">
-            <div class="ch-meta-col">
-              <div class="ch-label-line">
-                <span class="ch-badge da">DA</span>
-                <span class="ch-name" data-i18n="h_da">DOPAMINE (PAM11)</span>
+          <div class="telemetry-block da-block">
+            <div class="telemetry-row-top">
+              <div class="telemetry-col-main">
+                <span class="telemetry-tag da" data-i18n="dopamine_activity">DOPAMINE ACTIVITY</span>
+                <div class="telemetry-val da-glow mono"><span id="da-hz">0.0</span> <span class="telemetry-unit">Hz</span></div>
+                <div class="telemetry-sub" data-i18n="pam11_neurons">15 PAM11 neurons</div>
               </div>
-              <div class="ch-sub-line">15 PAM11 · <span data-i18n="h_da_sub">Reward & Plasticity</span></div>
+              <div class="telemetry-col-sec">
+                <span class="telemetry-sec-label" data-i18n="concentration">CONC</span>
+                <div class="telemetry-sec-val mono"><span id="da-nm">5.00</span> <span class="telemetry-sec-unit">nM</span></div>
+                <div class="telemetry-sub" data-i18n="reward_plasticity">Reward & Plasticity</div>
+              </div>
             </div>
-            <div class="ch-readout-col">
-              <div class="ch-val da-glow mono"><span id="da-hz">0.0</span> <span class="ch-unit">Hz</span></div>
-              <div class="ch-conc mono"><span id="da-nm">5.00</span> nM</div>
-            </div>
-            <div class="ch-wave-col">
-              <canvas id="da-waveform" width="125" height="30"></canvas>
+            <div class="waveform-box">
+              <div class="waveform-meta-row">
+                <span class="waveform-title" data-i18n="pam11_firing_rate">PAM11 FIRING RATE</span>
+                <span class="waveform-scale mono" id="da-scale-label">0–30 Hz · AUTO SCALE</span>
+              </div>
+              <div class="oscilloscope-container">
+                <div class="oscilloscope-y-axis mono">
+                  <span id="da-y-max">30</span>
+                  <span id="da-y-mid">15</span>
+                </div>
+                <div class="oscilloscope-canvas-wrap">
+                  <canvas id="da-waveform" width="310" height="30"></canvas>
+                </div>
+              </div>
             </div>
           </div>
 
           <!-- 2. OCTOPAMINE (TDC2) -->
-          <div class="channel-row oa-row">
-            <div class="ch-meta-col">
-              <div class="ch-label-line">
-                <span class="ch-badge oa">OA</span>
-                <span class="ch-name" data-i18n="h_oa">OCTOPAMINE (TDC2)</span>
+          <div class="telemetry-block oa-block">
+            <div class="telemetry-row-top">
+              <div class="telemetry-col-main">
+                <span class="telemetry-tag oa" data-i18n="octopamine_activity">OCTOPAMINE ACTIVITY</span>
+                <div class="telemetry-val oa-glow mono"><span id="oa-hz">0.0</span> <span class="telemetry-unit">Hz</span></div>
+                <div class="telemetry-sub" data-i18n="tdc2_neurons">TDC2 projection neurons</div>
               </div>
-              <div class="ch-sub-line">TDC2 · <span data-i18n="h_oa_sub">Stress & Flight</span></div>
+              <div class="telemetry-col-sec">
+                <span class="telemetry-sec-label" data-i18n="concentration">CONC</span>
+                <div class="telemetry-sec-val mono"><span id="oa-nm">2.00</span> <span class="telemetry-sec-unit">nM</span></div>
+                <div class="telemetry-sub" data-i18n="stress_flight">Stress & Fight/Flight</div>
+              </div>
             </div>
-            <div class="ch-readout-col">
-              <div class="ch-val oa-glow mono"><span id="oa-hz">0.0</span> <span class="ch-unit">Hz</span></div>
-              <div class="ch-conc mono"><span id="oa-nm">2.00</span> nM</div>
-            </div>
-            <div class="ch-wave-col">
-              <canvas id="oa-waveform" width="125" height="30"></canvas>
+            <div class="waveform-box">
+              <div class="waveform-meta-row">
+                <span class="waveform-title" data-i18n="tdc2_firing_rate">TDC2 FIRING RATE</span>
+                <span class="waveform-scale mono" id="oa-scale-label">0–20 Hz · AUTO SCALE</span>
+              </div>
+              <div class="oscilloscope-container">
+                <div class="oscilloscope-y-axis mono">
+                  <span id="oa-y-max">20</span>
+                  <span id="oa-y-mid">10</span>
+                </div>
+                <div class="oscilloscope-canvas-wrap">
+                  <canvas id="oa-waveform" width="310" height="30"></canvas>
+                </div>
+              </div>
             </div>
           </div>
 
           <!-- 3. SEROTONIN (5-HT) -->
-          <div class="channel-row st-row">
-            <div class="ch-meta-col">
-              <div class="ch-label-line">
-                <span class="ch-badge st">5-HT</span>
-                <span class="ch-name" data-i18n="h_st">SEROTONIN (5-HT)</span>
+          <div class="telemetry-block st-block">
+            <div class="telemetry-row-top">
+              <div class="telemetry-col-main">
+                <span class="telemetry-tag st" data-i18n="serotonin_activity">SEROTONIN (5-HT) ACTIVITY</span>
+                <div class="telemetry-val st-glow mono"><span id="st-hz">0.0</span> <span class="telemetry-unit">Hz</span></div>
+                <div class="telemetry-sub" data-i18n="csd_neurons">CSD serotonergic neurons</div>
               </div>
-              <div class="ch-sub-line">5-HT · <span data-i18n="h_st_sub">Satiety & Motor Calm</span></div>
+              <div class="telemetry-col-sec">
+                <span class="telemetry-sec-label" data-i18n="concentration">CONC</span>
+                <div class="telemetry-sec-val mono"><span id="st-nm">8.00</span> <span class="telemetry-sec-unit">nM</span></div>
+                <div class="telemetry-sub" data-i18n="satiety_calm">Satiety & Motor Calm</div>
+              </div>
             </div>
-            <div class="ch-readout-col">
-              <div class="ch-val st-glow mono"><span id="st-hz">0.0</span> <span class="ch-unit">Hz</span></div>
-              <div class="ch-conc mono"><span id="st-nm">8.00</span> nM</div>
-            </div>
-            <div class="ch-wave-col">
-              <canvas id="st-waveform" width="125" height="30"></canvas>
+            <div class="waveform-box">
+              <div class="waveform-meta-row">
+                <span class="waveform-title" data-i18n="st_firing_rate">5-HT FIRING RATE</span>
+                <span class="waveform-scale mono" id="st-scale-label">0–15 Hz · AUTO SCALE</span>
+              </div>
+              <div class="oscilloscope-container">
+                <div class="oscilloscope-y-axis mono">
+                  <span id="st-y-max">15</span>
+                  <span id="st-y-mid">8</span>
+                </div>
+                <div class="oscilloscope-canvas-wrap">
+                  <canvas id="st-waveform" width="310" height="30"></canvas>
+                </div>
+              </div>
             </div>
           </div>
 
           <!-- 4. E/I BALANCE (Dale's Law) -->
-          <div class="channel-row ei-row">
-            <div class="ch-meta-col">
-              <div class="ch-label-line">
-                <span class="ch-badge ei">E/I</span>
-                <span class="ch-name" data-i18n="h_ei">E/I BALANCE</span>
+          <div class="telemetry-block ei-block">
+            <div class="telemetry-row-top">
+              <div class="telemetry-col-main">
+                <span class="telemetry-tag ei" data-i18n="ei_balance_title">E/I SYNAPTIC BALANCE</span>
+                <div class="telemetry-val ei-glow mono"><span id="ei-val">64.4%</span></div>
+                <div class="telemetry-sub" data-i18n="ei_sub_dales">Dale's Law: ACh vs GABA</div>
               </div>
-              <div class="ch-sub-line"><span data-i18n="h_ei_sub">Dale's Law: ACh vs GABA</span></div>
+              <div class="telemetry-col-sec">
+                <span class="telemetry-sec-label" data-i18n="synaptic_pool">SYNAPSE POOL</span>
+                <div class="telemetry-sec-val mono"><span id="exc-spikes">0</span>E / <span id="inh-spikes">0</span>I</div>
+                <div class="telemetry-sub" data-i18n="label_plasticity_short">ACh vs GABA/Glu</div>
+              </div>
             </div>
-            <div class="ch-readout-col">
-              <div class="ch-val ei-glow mono"><span id="ei-val">64.4%</span></div>
-              <div class="ch-conc mono"><span id="exc-spikes">0</span>E / <span id="inh-spikes">0</span>I</div>
-            </div>
-            <div class="ch-wave-col">
-              <canvas id="ei-waveform" width="125" height="30"></canvas>
+            <div class="waveform-box">
+              <div class="waveform-meta-row">
+                <span class="waveform-title" data-i18n="ei_firing_rate">EXCITATION DYNAMICS</span>
+                <span class="waveform-scale mono" id="ei-scale-label">50–80% · AUTO SCALE</span>
+              </div>
+              <div class="oscilloscope-container">
+                <div class="oscilloscope-y-axis mono">
+                  <span id="ei-y-max">80</span>
+                  <span id="ei-y-mid">65</span>
+                </div>
+                <div class="oscilloscope-canvas-wrap">
+                  <canvas id="ei-waveform" width="310" height="30"></canvas>
+                </div>
+              </div>
             </div>
           </div>
         </div>
