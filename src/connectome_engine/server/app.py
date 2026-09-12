@@ -200,6 +200,43 @@ async def get_telemetry():
 
 
 # ---------------------------------------------------------------------------
+# Connectome 3D Soma Coordinates & Metadata Endpoints
+# ---------------------------------------------------------------------------
+@app.get("/api/connectome/soma-coordinates")
+async def get_soma_coordinates():
+    """Stream binary buffer of 141K real neuron soma coordinates."""
+    data_dir = Path(__file__).resolve().parents[3] / "data" / "malecns_v1"
+    bin_path = data_dir / "soma_coordinates_141k.bin"
+    if not bin_path.exists():
+        raise HTTPException(status_code=404, detail="Soma coordinates binary file not found")
+    return FileResponse(
+        str(bin_path),
+        media_type="application/octet-stream",
+        headers={
+            "Cache-Control": "public, max-age=31536000, immutable",
+            "Access-Control-Allow-Origin": "*",
+        },
+    )
+
+
+@app.get("/api/connectome/soma-metadata")
+async def get_soma_metadata():
+    """Return JSON metadata of soma coordinates, bounds, and circuit distribution."""
+    data_dir = Path(__file__).resolve().parents[3] / "data" / "malecns_v1"
+    meta_path = data_dir / "soma_metadata.json"
+    if not meta_path.exists():
+        raise HTTPException(status_code=404, detail="Soma metadata JSON file not found")
+    return FileResponse(
+        str(meta_path),
+        media_type="application/json",
+        headers={
+            "Cache-Control": "public, max-age=3600",
+            "Access-Control-Allow-Origin": "*",
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
 # WebSocket endpoint
 # ---------------------------------------------------------------------------
 @app.websocket("/ws/telemetry")

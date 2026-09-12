@@ -41,6 +41,7 @@ class ServerStateManager:
             "color_temperature_k": 5500.0,
             "looming_threat_detected": False,
             "active_landmarks": [],
+            "active_neurons": [],
             "hormones": {
                 "dopamine_nm": 5.0,
                 "octopamine_nm": 2.0,

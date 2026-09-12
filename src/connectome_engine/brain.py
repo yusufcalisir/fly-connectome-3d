@@ -1,6 +1,6 @@
 """Central unified Brain Engine orchestrating sensory inputs, SNN dynamics, hormones, and motor decoding."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 import scipy.sparse as sp
@@ -50,6 +50,9 @@ class CompleteObservationTelemetry:
     # Biological E/I spike partition (Dale's Principle)
     excitatory_spikes: int = 0
     inhibitory_spikes: int = 0
+
+    # Active spiking neuron indices across the connectome for 3D point cloud wave
+    active_neurons: list = field(default_factory=list)
 
 
 class ConnectomeBrain:
@@ -202,4 +205,5 @@ class ConnectomeBrain:
             color_temperature_k=vis_telemetry.color_temperature_k,
             looming_threat_detected=vis_telemetry.looming_threat_detected,
             active_landmarks=active_landmarks,
+            active_neurons=spiking_arr.tolist(),
         )
