@@ -4,7 +4,7 @@ import asyncio
 import base64
 import io
 import traceback
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, nullcontext
 from pathlib import Path
 from typing import Dict, Any, Optional
 import numpy as np
@@ -13,7 +13,8 @@ from PIL import Image
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
+from starlette.websockets import WebSocketState
 from pydantic import BaseModel
 
 from .state import ServerStateManager
@@ -159,19 +160,28 @@ async def trigger_wirehead(req: WireheadRequest):
 @app.post("/api/observe")
 async def submit_frame(req: FrameSubmissionRequest):
     """Submit a virtual screen observation frame and step the biological brain."""
-    try:
-        snapshot = _process_frame(req.image_base64, req.duration_ms)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Observation failed: {e}")
+    if _FRAME_LOCK is not None and _FRAME_LOCK.locked():
+        # Previous frame still stepping SNN; drop frame to prevent queue backlog
+        return STATE_MANAGER.get_snapshot()
 
-    # Broadcast to active WebSockets
-    for ws in list(CONNECTED_SOCKETS):
+    lock = _FRAME_LOCK if _FRAME_LOCK is not None else nullcontext()
+    async with lock:
         try:
-            await ws.send_json(snapshot)
-        except Exception:
-            CONNECTED_SOCKETS.discard(ws)
+            snapshot = await asyncio.to_thread(_process_frame, req.image_base64, req.duration_ms)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Observation failed: {e}")
 
-    return snapshot
+        # Broadcast to active WebSockets
+        for ws in list(CONNECTED_SOCKETS):
+            try:
+                if ws.application_state == WebSocketState.CONNECTED:
+                    await ws.send_json(snapshot)
+                else:
+                    CONNECTED_SOCKETS.discard(ws)
+            except Exception:
+                CONNECTED_SOCKETS.discard(ws)
+
+        return snapshot
 
 
 @app.get("/api/telemetry")
@@ -190,9 +200,17 @@ async def websocket_telemetry(websocket: WebSocket):
     CONNECTED_SOCKETS.add(websocket)
     try:
         # Send initial snapshot immediately on connect
-        await websocket.send_json(STATE_MANAGER.get_snapshot())
+        if websocket.application_state == WebSocketState.CONNECTED:
+            await websocket.send_json(STATE_MANAGER.get_snapshot())
 
         while True:
+            # Check for disconnect before blocking on receive
+            if (
+                websocket.client_state == WebSocketState.DISCONNECTED
+                or websocket.application_state == WebSocketState.DISCONNECTED
+            ):
+                break
+
             # Receive client command with a timeout so we can send keep-alive pings
             # when the observation loop is paused or slow.
             try:
@@ -200,10 +218,16 @@ async def websocket_telemetry(websocket: WebSocket):
             except asyncio.TimeoutError:
                 # No message in 10 s → send a lightweight ping to keep the connection alive
                 try:
-                    await websocket.send_json({"ping": True})
+                    if websocket.application_state == WebSocketState.CONNECTED:
+                        await websocket.send_json({"ping": True})
+                    else:
+                        break
                 except Exception:
                     break  # socket is genuinely dead
                 continue
+            except (WebSocketDisconnect, RuntimeError, ConnectionResetError, OSError):
+                # Client closed socket, refreshed tab, or socket died cleanly
+                break
 
             cmd = data.get("command")
 
@@ -222,7 +246,10 @@ async def websocket_telemetry(websocket: WebSocket):
                             snapshot = await asyncio.to_thread(_process_frame, img_b64, dur)
                             for ws in list(CONNECTED_SOCKETS):
                                 try:
-                                    await ws.send_json(snapshot)
+                                    if ws.application_state == WebSocketState.CONNECTED:
+                                        await ws.send_json(snapshot)
+                                    else:
+                                        CONNECTED_SOCKETS.discard(ws)
                                 except Exception:
                                     CONNECTED_SOCKETS.discard(ws)
                         except Exception as exc:
@@ -236,8 +263,8 @@ async def websocket_telemetry(websocket: WebSocket):
             elif cmd == "resume":
                 STATE_MANAGER.is_paused = False
 
-    except WebSocketDisconnect:
-        pass  # clean client-initiated close – nothing to log
+    except (WebSocketDisconnect, RuntimeError, ConnectionResetError, OSError):
+        pass  # clean client-initiated close or disconnect – nothing to log
     except Exception as exc:
         print(f"[WS] Unexpected WebSocket error: {exc}")
         traceback.print_exc()
@@ -246,8 +273,14 @@ async def websocket_telemetry(websocket: WebSocket):
 
 
 # ---------------------------------------------------------------------------
-# Static file serving
+# Static file serving & favicon
 # ---------------------------------------------------------------------------
+@app.get("/favicon.ico")
+async def favicon():
+    """Return 204 No Content for favicon to prevent 404 logs."""
+    return Response(status_code=204)
+
+
 if FRONTEND_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 

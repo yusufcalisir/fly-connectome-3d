@@ -75,3 +75,23 @@ def test_websocket_telemetry_connection(client):
 
         # Send wirehead command
         ws.send_json({"command": "wirehead", "current_mv": 20.0})
+
+
+def test_favicon_endpoint(client):
+    """Verify favicon.ico returns 204 No Content instead of 404."""
+    res = client.get("/favicon.ico")
+    assert res.status_code == 204
+
+
+def test_websocket_disconnect_graceful(client):
+    """Verify that abrupt WebSocket disconnection does not crash or corrupt the server."""
+    with client.websocket_connect("/ws/telemetry") as ws:
+        data = ws.receive_json()
+        assert "latest" in data
+        # Connection exits here (closing socket abruptly)
+
+    # Server should still be healthy and handle observe & telemetry requests cleanly
+    res = client.get("/api/telemetry")
+    assert res.status_code == 200
+    assert "latest" in res.json()
+

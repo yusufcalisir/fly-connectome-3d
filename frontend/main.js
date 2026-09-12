@@ -2116,6 +2116,15 @@ class ConnectomeApp {
   }
 
   _initWebSocket() {
+    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
+
+    if (this._wsReconnectTimer) {
+      clearTimeout(this._wsReconnectTimer);
+      this._wsReconnectTimer = null;
+    }
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host || '127.0.0.1:8000';
     const wsUrl = `${protocol}//${host}/ws/telemetry`;
@@ -2124,6 +2133,10 @@ class ConnectomeApp {
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
+        if (this._wsReconnectTimer) {
+          clearTimeout(this._wsReconnectTimer);
+          this._wsReconnectTimer = null;
+        }
         console.log('[Connectome WS] Connected to biophysical engine');
         const statusEl = document.getElementById('engine-status');
         if (statusEl) {
@@ -2148,7 +2161,12 @@ class ConnectomeApp {
 
       this.ws.onclose = () => {
         console.log('[Connectome WS] Disconnected. Reconnecting in 2s...');
-        setTimeout(() => this._initWebSocket(), 2000);
+        if (!this._wsReconnectTimer) {
+          this._wsReconnectTimer = setTimeout(() => {
+            this._wsReconnectTimer = null;
+            this._initWebSocket();
+          }, 2000);
+        }
       };
     } catch (e) {
       console.warn('[Connectome WS] WebSocket init failed:', e);
