@@ -876,7 +876,7 @@ class ObservationChamber3D {
     this.scene.add(this.rigGroup);
 
     this.camera = new THREE.PerspectiveCamera(42, w / h, 0.1, 100);
-    this.camera.position.set(2.4, 1.9, 2.6);
+    this.camera.position.set(2.2, 1.55, 0.50);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
     this.renderer.setSize(w, h);
@@ -894,7 +894,7 @@ class ObservationChamber3D {
       this.controls.minDistance = 0.8;
       this.controls.maxDistance = 10.0;
       this.controls.maxPolarAngle = Math.PI / 2 - 0.02;
-      this.controls.target.set(0, 1.1, 0.5);
+      this.controls.target.set(0.0, 1.18, 0.80);
     }
 
     const ambientLight = new THREE.AmbientLight(0x162035, 1.4);
@@ -1432,10 +1432,10 @@ class ObservationChamber3D {
 
   _buildVirtualSmartphone() {
     const phoneGroup = new THREE.Group();
-    phoneGroup.position.set(0.25, 1.22, 1.25);
+    phoneGroup.position.set(0.0, 1.24, 1.18);
 
-    phoneGroup.rotation.y = Math.PI - 0.7;
-    phoneGroup.rotation.x = 0.15;
+    phoneGroup.rotation.y = Math.PI - 0.08;
+    phoneGroup.rotation.x = -0.08;
 
     const bodyGeo = new THREE.BoxGeometry(0.86, 1.52, 0.045);
     const bodyMat = new THREE.MeshStandardMaterial({
@@ -1482,12 +1482,12 @@ class ObservationChamber3D {
     const standMat = new THREE.MeshStandardMaterial({ color: 0x222a38, metalness: 0.85, roughness: 0.3 });
     const standStemGeo = new THREE.CylinderGeometry(0.04, 0.05, 1.2, 16);
     const standStem = new THREE.Mesh(standStemGeo, standMat);
-    standStem.position.set(0.25, 0.55, 1.25);
+    standStem.position.set(0.0, 0.55, 1.18);
     this.rigGroup.add(standStem);
 
     const standBaseGeo = new THREE.CylinderGeometry(0.35, 0.4, 0.06, 24);
     const standBase = new THREE.Mesh(standBaseGeo, standMat);
-    standBase.position.set(0.25, 0.03, 1.25);
+    standBase.position.set(0.0, 0.03, 1.18);
     this.rigGroup.add(standBase);
 
     this.phoneGroup = phoneGroup;
@@ -1554,34 +1554,33 @@ class ObservationChamber3D {
 
     if (activePreset === 'fly') {
       if (isMobile) {
-        // Mobile portrait: positioned at 3/4 angle with phone screen and full fly fitting completely
-        this.camera.position.set(2.5, 1.65, 0.6);
-        this.controls.target.set(0.08, 0.92, 0.55);
+        this.camera.position.set(2.3, 1.50, 0.40);
+        this.controls.target.set(0.0, 1.05, 0.80);
         this.camera.fov = 48;
       } else {
-        this.camera.position.set(2.4, 1.9, 2.6);
-        this.controls.target.set(0.1, 1.15, 0.5);
+        this.camera.position.set(2.2, 1.55, 0.50);
+        this.controls.target.set(0.0, 1.18, 0.80);
         this.camera.fov = 42;
       }
     } else if (activePreset === 'phone') {
       if (isMobile) {
-        this.camera.position.set(-0.25, 1.35, -0.85);
-        this.controls.target.set(0.16, 0.95, 0.98);
-        this.camera.fov = 46;
+        this.camera.position.set(0.0, 1.36, 0.05);
+        this.controls.target.set(0.0, 1.18, 1.18);
+        this.camera.fov = 48;
       } else {
-        this.camera.position.set(-0.2, 1.48, -0.65);
-        this.controls.target.set(0.2, 1.22, 1.25);
-        this.camera.fov = 42;
+        this.camera.position.set(0.0, 1.38, 0.08);
+        this.controls.target.set(0.0, 1.24, 1.18);
+        this.camera.fov = 44;
       }
     } else if (activePreset === 'brain') {
       if (isMobile) {
-        this.camera.position.set(0.38, 1.25, 1.15);
-        this.controls.target.set(0, 0.98, 0.45);
+        this.camera.position.set(0.45, 1.28, 0.98);
+        this.controls.target.set(0.0, 1.15, 0.58);
         this.camera.fov = 46;
       } else {
-        this.camera.position.set(0.32, 1.35, 1.05);
-        this.controls.target.set(0, 1.24, 0.58);
-        this.camera.fov = 42;
+        this.camera.position.set(0.40, 1.35, 0.95);
+        this.controls.target.set(0.0, 1.25, 0.58);
+        this.camera.fov = 40;
       }
     }
     this.camera.updateProjectionMatrix();
