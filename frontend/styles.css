@@ -46,23 +46,37 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 0 20px;
+  gap: 10px;
   z-index: 20;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.app-header::-webkit-scrollbar {
+  display: none;
 }
 
 .brand {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .pulse-indicator {
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: var(--c-dopamine);
   box-shadow: 0 0 10px var(--c-dopamine);
   animation: pulse-glow 1.5s infinite alternate;
+  flex-shrink: 0;
 }
 
 @keyframes pulse-glow {
@@ -71,9 +85,16 @@ body {
 }
 
 .brand h1 {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 800;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.2px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .brand h1 span {
@@ -89,25 +110,43 @@ body {
   padding: 2px 8px;
   border-radius: 12px;
   letter-spacing: 0.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .header-status {
-  display: flex;
-  gap: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .stat-pill {
+  display: inline-flex;
+  align-items: center;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-glass);
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 11.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  gap: 4px;
+  line-height: 1;
 }
 
 .stat-pill .label {
   color: var(--text-dim);
   font-weight: 600;
-  margin-right: 4px;
+  margin-right: 0;
+  white-space: nowrap;
+  display: inline;
+}
+
+.stat-pill .value {
+  white-space: nowrap;
+  display: inline;
 }
 
 .stat-pill .value.live {
@@ -117,16 +156,19 @@ body {
 
 /* Modern Language Switcher Pill */
 .lang-switch-pill {
-  display: flex;
+  display: inline-flex;
   background: rgba(12, 17, 26, 0.75);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(0, 240, 255, 0.22);
   border-radius: 20px;
-  padding: 2px 4px 2px 8px;
+  padding: 2px 4px 2px 7px;
   gap: 3px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   align-items: center;
+  flex-shrink: 0;
+  white-space: nowrap;
+  line-height: 1;
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
@@ -685,12 +727,46 @@ body {
 
   .app-header {
     height: 52px;
-    padding: 0 14px;
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .brand {
+    gap: 7px;
   }
 
   .brand h1 {
-    font-size: 16px;
-    letter-spacing: 1px;
+    font-size: 14.5px;
+    letter-spacing: 0.8px;
+  }
+
+  .header-status {
+    gap: 6px;
+  }
+
+  .stat-pill {
+    padding: 3px 8px;
+    font-size: 10.5px;
+    border-radius: 12px;
+    gap: 3px;
+  }
+
+  .stat-pill .label {
+    font-size: 9.5px;
+  }
+
+  .stat-pill .value {
+    font-size: 10px;
+  }
+
+  .lang-switch-pill {
+    padding: 2px 3px 2px 6px;
+    gap: 2px;
+  }
+
+  .lang-pill-btn {
+    padding: 2px 6px;
+    font-size: 10px;
   }
 
   .badge {
@@ -839,22 +915,56 @@ body {
 
 /* Mobile Phones (<= 640px) */
 @media (max-width: 640px) {
-  .header-status .stat-pill:nth-child(2),
-  .header-status .stat-pill:nth-child(3) {
-    display: none;
+  .app-header {
+    height: 52px;
+    padding: 0 8px;
+    gap: 6px;
   }
 
-  .app-header {
-    padding: 0 10px;
+  .brand {
+    gap: 5px;
+  }
+
+  .pulse-indicator {
+    width: 7px;
+    height: 7px;
   }
 
   .brand h1 {
-    font-size: 14px;
+    font-size: 12.5px;
+    letter-spacing: 0.4px;
+  }
+
+  .header-status {
+    gap: 4px;
   }
 
   .stat-pill {
-    padding: 2px 8px;
+    padding: 2.5px 6px;
+    font-size: 9.5px;
+    gap: 2.5px;
+  }
+
+  .stat-pill .label {
+    font-size: 8.5px;
+  }
+
+  .stat-pill .value {
+    font-size: 9px;
+  }
+
+  .lang-switch-pill {
+    padding: 1.5px 2px 1.5px 5px;
+    gap: 2px;
+  }
+
+  .lang-icon {
     font-size: 10px;
+  }
+
+  .lang-pill-btn {
+    padding: 2px 5px;
+    font-size: 9.5px;
   }
 
   .stimulus-card {
@@ -905,11 +1015,49 @@ body {
 
 /* Ultra-Compact Phones (<= 360px) */
 @media (max-width: 360px) {
-  .action-bar {
-    grid-template-columns: 1fr;
+  .app-header {
+    padding: 0 6px;
+    gap: 4px;
   }
 
-  .brand h1 span {
-    display: none;
+  .brand {
+    gap: 4px;
+  }
+
+  .brand h1 {
+    font-size: 11px;
+    letter-spacing: 0.2px;
+  }
+
+  .header-status {
+    gap: 3px;
+  }
+
+  .stat-pill {
+    padding: 2px 4px;
+    font-size: 8.5px;
+    gap: 1.5px;
+  }
+
+  .stat-pill .label {
+    font-size: 7.5px;
+  }
+
+  .stat-pill .value {
+    font-size: 8px;
+  }
+
+  .lang-switch-pill {
+    padding: 1px 2px 1px 4px;
+    gap: 1.5px;
+  }
+
+  .lang-pill-btn {
+    padding: 1.5px 4px;
+    font-size: 8.5px;
+  }
+
+  .action-bar {
+    grid-template-columns: 1fr;
   }
 }
