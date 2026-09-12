@@ -3,7 +3,6 @@
 import asyncio
 import base64
 import io
-import time
 import traceback
 from contextlib import asynccontextmanager, nullcontext
 from pathlib import Path
@@ -42,8 +41,6 @@ GLOBAL_BRAIN: Optional[ConnectomeBrain] = None
 # Async lock – prevents concurrent frame processing across coroutines.
 # Initialized in the lifespan handler so it belongs to the correct event loop.
 _FRAME_LOCK: Optional[asyncio.Lock] = None
-_FRAME_COUNT: int = 0
-_LAST_LOG_TIME: float = 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -140,7 +137,7 @@ class FrameSubmissionRequest(BaseModel):
 # ---------------------------------------------------------------------------
 def _process_frame(image_base64: str, duration_ms: float = 50.0) -> Dict[str, Any]:
     """Process an incoming retinal frame, step the biophysical brain, and update state."""
-    global GLOBAL_BRAIN, _FRAME_COUNT, _LAST_LOG_TIME
+    global GLOBAL_BRAIN
     if GLOBAL_BRAIN is None:
         raise RuntimeError("Brain not initialized")
 
@@ -156,24 +153,6 @@ def _process_frame(image_base64: str, duration_ms: float = 50.0) -> Dict[str, An
         manual_dopamine_boost_mv=manual_boost,
     )
     STATE_MANAGER.push_telemetry(telemetry)
-
-    _FRAME_COUNT += 1
-    now = time.time()
-    if now - _LAST_LOG_TIME >= 1.0:
-        _LAST_LOG_TIME = now
-        steer_dir = "R" if telemetry.steering_deflection > 0.05 else ("L" if telemetry.steering_deflection < -0.05 else "C")
-        total_spk = max(1, telemetry.total_spikes)
-        exc_pct = (telemetry.excitatory_spikes / total_spk) * 100
-        inh_pct = (telemetry.inhibitory_spikes / total_spk) * 100
-        active_count = len(telemetry.active_neurons)
-        print(
-            f"[SNN 166.7K] ⚡ Sim: {telemetry.sim_time_ms:7.1f}ms | "
-            f"Spikes: {telemetry.total_spikes:5d} (E: {exc_pct:4.1f}% / I: {inh_pct:4.1f}%) | "
-            f"DA: {telemetry.dopamine_conc_nm:4.1f}nM | "
-            f"Steer: {telemetry.steering_deflection:+0.2f} ({steer_dir}) | "
-            f"Active: {active_count:5d} somas",
-            flush=True,
-        )
 
     return STATE_MANAGER.get_snapshot()
 
