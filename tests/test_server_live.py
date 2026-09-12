@@ -39,6 +39,9 @@ def test_telemetry_get_endpoint(client):
     assert "latest" in data
     assert "history" in data
     assert "dopamine_hz" in data["latest"]
+    assert "spike_counts" in data["latest"]
+    assert "excitatory_spikes" in data["latest"]["spike_counts"]
+    assert "inhibitory_spikes" in data["latest"]["spike_counts"]
 
 
 def test_wirehead_endpoint(client):
@@ -64,7 +67,11 @@ def test_observe_endpoint(client):
     assert "hormones" in latest
     assert "motor" in latest
     assert latest["hormones"]["dopamine_nm"] > 0
+    assert "ei_balance" in latest["hormones"]
     assert "compass_heading_deg" in latest["motor"]
+    assert "spike_counts" in latest
+    assert "excitatory_spikes" in latest["spike_counts"]
+    assert "inhibitory_spikes" in latest["spike_counts"]
 
 
 def test_websocket_telemetry_connection(client):
@@ -73,6 +80,8 @@ def test_websocket_telemetry_connection(client):
         # Initial snapshot
         initial_data = ws.receive_json()
         assert "latest" in initial_data
+        assert "spike_counts" in initial_data["latest"]
+        assert "excitatory_spikes" in initial_data["latest"]["spike_counts"]
 
         # Send wirehead command
         ws.send_json({"command": "wirehead", "current_mv": 20.0})

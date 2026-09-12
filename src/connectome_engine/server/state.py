@@ -58,6 +58,8 @@ class ServerStateManager:
             },
             "spike_counts": {
                 "total_spikes": 0,
+                "excitatory_spikes": 0,
+                "inhibitory_spikes": 0,
                 "dopamine_hz": 0.0,
                 "octopamine_hz": 0.0,
                 "serotonin_hz": 0.0,
@@ -99,6 +101,8 @@ class ServerStateManager:
                 },
                 "spike_counts": {
                     "total_spikes": data["total_spikes"],
+                    "excitatory_spikes": data.get("excitatory_spikes", 0),
+                    "inhibitory_spikes": data.get("inhibitory_spikes", 0),
                     "dopamine_hz": data["dopamine_hz"],
                     "octopamine_hz": data["octopamine_hz"],
                     "serotonin_hz": data["serotonin_hz"],

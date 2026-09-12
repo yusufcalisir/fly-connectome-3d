@@ -863,10 +863,12 @@ body {
 .da-card .h-name { color: var(--c-dopamine); }
 .oa-card .h-name { color: var(--c-octopamine); }
 .st-card .h-name { color: var(--c-serotonin); }
+.ei-card .h-name { color: #00e5ff; }
 
 .da-bar { background: var(--c-dopamine); }
 .oa-bar { background: var(--c-octopamine); }
 .st-bar { background: var(--c-serotonin); }
+.ei-bar { background: linear-gradient(90deg, #00e676, #00b0ff); transition: width 0.15s ease-out, background 0.3s ease; }
 
 .h-hint {
   display: block;

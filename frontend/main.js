@@ -60,6 +60,8 @@ const TRANSLATIONS = {
     h_oa_hint: 'Insect adrenaline, acute stress & fight-or-flight',
     h_st: 'SEROTONIN (5-HT)',
     h_st_hint: 'Baseline calm, motor patience & satiety',
+    h_ei: "E/I BALANCE (Dale's Law)",
+    h_ei_hint: "Synaptic balance: ACh excitation vs GABA/Glu/Histamine inhibition",
     chart_dopamine: 'DOPAMINE WAVEFORM (Hz)',
     chart_raster: 'SPIKE RASTER STREAM (Matrix Waterfall)',
     badge_biophysics: 'MaleCNS v1.0 Biophysics',
@@ -105,6 +107,8 @@ const TRANSLATIONS = {
     h_oa_hint: 'Böcek adrenalini, ani stres ve kaçış',
     h_st: 'SEROTONİN (5-HT)',
     h_st_hint: 'Dinginlik, hareket sabrı ve tokluk',
+    h_ei: "E/I DENGESİ (Dale Yasası)",
+    h_ei_hint: "Sinaptik denge: Asetilkolin eksitasyonu vs GABA/Glutamat/Histamin inhibisyonu",
     chart_dopamine: 'DOPAMİN DALGA FORMU (Hz)',
     chart_raster: 'SPİKE ŞELALESİ (Matris Akışı)',
     label_plasticity: 'Öğrenilmiş Çağrışım Kayması (KC ──► MBON):',
@@ -2280,6 +2284,32 @@ class ConnectomeApp {
     document.getElementById('st-hz').textContent = stHz.toFixed(1);
     document.getElementById('st-nm').textContent = st.toFixed(2);
     document.getElementById('st-fill').style.width = `${Math.min(100, (st / 25) * 100)}%`;
+
+    // Dynamic E/I Balance (Dale's Law)
+    const eiRatio = h.ei_balance !== undefined ? h.ei_balance : (t.ei_balance_ratio !== undefined ? t.ei_balance_ratio : 0.644);
+    const excSpk = t.excitatory_spikes || t.spike_counts?.excitatory_spikes || 0;
+    const inhSpk = t.inhibitory_spikes || t.spike_counts?.inhibitory_spikes || 0;
+    const eiPercent = (eiRatio * 100).toFixed(1);
+
+    const eiValEl = document.getElementById('ei-val');
+    const excEl = document.getElementById('exc-spikes');
+    const inhEl = document.getElementById('inh-spikes');
+    const eiFillEl = document.getElementById('ei-fill');
+
+    if (eiValEl) eiValEl.textContent = `${eiPercent}%`;
+    if (excEl) excEl.textContent = excSpk.toLocaleString();
+    if (inhEl) inhEl.textContent = inhSpk.toLocaleString();
+
+    if (eiFillEl) {
+      eiFillEl.style.width = `${Math.min(100, Math.max(0, eiRatio * 100))}%`;
+      if (eiRatio > 0.80) {
+        eiFillEl.style.background = 'linear-gradient(90deg, #ff9100, #ff1744)';
+      } else if (eiRatio < 0.50) {
+        eiFillEl.style.background = 'linear-gradient(90deg, #2979ff, #00e5ff)';
+      } else {
+        eiFillEl.style.background = 'linear-gradient(90deg, #00e676, #00b0ff)';
+      }
+    }
 
     const m = t.motor || {};
     const steer = m.steering_deflection || 0;
