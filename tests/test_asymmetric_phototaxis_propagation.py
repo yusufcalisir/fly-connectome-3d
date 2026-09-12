@@ -5,14 +5,21 @@ contrasting bilateral optomotor currents, DNa02 descending activity, and
 physical left/right steering deflection.
 """
 
+from pathlib import Path
+
 import numpy as np
+import pytest
 
 from connectome_engine.brain import ConnectomeBrain
 from connectome_engine.data.circuits import load_malecns_v1_connectome
 
 
 def _make_test_brain() -> ConnectomeBrain:
-    num_nodes, adj, circuits, _ids = load_malecns_v1_connectome()
+    data_dir = Path(__file__).resolve().parents[1] / "data" / "malecns_v1"
+    graph_path = data_dir / "malecns_v1_graph.npz"
+    if not graph_path.exists():
+        pytest.skip("MaleCNS v1.0 dataset not found locally.")
+    num_nodes, adj, circuits, _ids = load_malecns_v1_connectome(data_dir)
     return ConnectomeBrain(num_nodes, adj, circuits)
 
 

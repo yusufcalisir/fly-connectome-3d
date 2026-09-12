@@ -3,8 +3,11 @@
 Zero mock, zero random numbers. Validates exact connectome annotations and circuit extraction.
 """
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
+import pytest
 
 from connectome_engine.data.circuits import (
     IndexedCircuits,
@@ -81,7 +84,11 @@ def test_extract_circuits_synthetic_partitioning():
 
 def test_malecns_v1_ground_truth_hemispheres():
     """Verify exact real connectome biological counts from Janelia MaleCNS v1.0."""
-    num_nodes, _adj, circuits, neuron_ids = load_malecns_v1_connectome()
+    data_dir = Path(__file__).resolve().parents[1] / "data" / "malecns_v1"
+    graph_path = data_dir / "malecns_v1_graph.npz"
+    if not graph_path.exists():
+        pytest.skip("MaleCNS v1.0 dataset not found locally.")
+    num_nodes, _adj, circuits, neuron_ids = load_malecns_v1_connectome(data_dir)
 
     assert num_nodes == 166700
     assert len(neuron_ids) == 166700
