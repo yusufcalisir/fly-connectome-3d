@@ -1,0 +1,51 @@
+{
+  "total_somas": 141781,
+  "matched_in_graph": 139662,
+  "em_bounds_min": [
+    2468.0,
+    4758.0,
+    10154.0
+  ],
+  "em_bounds_max": [
+    93668.0,
+    68996.0,
+    134531.0
+  ],
+  "em_center": [
+    48068.0,
+    29250.0,
+    27157.0
+  ],
+  "scale_factor": 4.824561403508772e-06,
+  "three_bounds_min": [
+    -0.2199999988079071,
+    -0.19175702333450317,
+    -0.518032431602478
+  ],
+  "three_bounds_max": [
+    0.2199999988079071,
+    0.11816316097974777,
+    0.08203201740980148
+  ],
+  "circuit_counts": {
+    "central_brain": 28763,
+    "optic_lobe": 90810,
+    "mushroom_body": 4150,
+    "central_complex": 1383,
+    "descending_motor": 1341,
+    "vnc_motor_cord": 15334
+  },
+  "polarity_counts": {
+    "excitatory": 88609,
+    "inhibitory": 51053,
+    "unknown": 2119
+  },
+  "circuit_colors": {
+    "central_brain": "#38bdf8",
+    "optic_lobe": "#00f0ff",
+    "mushroom_body": "#10b981",
+    "central_complex": "#f59e0b",
+    "descending_motor": "#ef4444",
+    "vnc_motor_cord": "#a855f7"
+  }
+}
