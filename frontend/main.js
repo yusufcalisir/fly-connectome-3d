@@ -2182,7 +2182,11 @@ class ConnectomeApp {
 
     this.chamber.updateFromTelemetry(t);
 
-    document.getElementById('sim-time').textContent = `${(t.sim_time_ms || 0).toFixed(1)} ms`;
+    const simMs = t.sim_time_ms || 0;
+    document.getElementById('sim-time').textContent =
+      simMs >= 100000
+        ? `${(simMs / 1000).toFixed(1)}s`
+        : `${simMs.toFixed(simMs >= 1000 ? 0 : 1)} ms`;
     document.getElementById('total-spikes').textContent = (t.spike_counts?.total_spikes || 0).toLocaleString();
 
     const h = t.hormones || {};
