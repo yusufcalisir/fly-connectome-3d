@@ -2102,7 +2102,7 @@ class CNSBrainVisualizer3D {
 
     // Interactive 3D controls & auto-rotation
     this.autoRotate = true;
-    this.rotationSpeed = 0.0048;
+    this.rotationSpeed = 0.0035;
     this.basePitch = 0.28; // Forward pitch so dorsal surface & optic lobes tilt toward viewer
     this.isDragging = false;
     this.prevPointerX = 0;
@@ -2136,14 +2136,14 @@ class CNSBrainVisualizer3D {
 
       this.scene = new THREE.Scene();
 
-      // Camera positioned to view Drosophila connectome from an elevated 3/4 dorsal angle
-      this.camera = new THREE.PerspectiveCamera(38, width / height, 0.05, 50);
-      this.camera.position.set(0, 0.45, 0.82);
-      this.camera.lookAt(0, 0, 0);
+      // Camera positioned closer to fill the viewport and showcase fine connectome anatomy
+      this.camera = new THREE.PerspectiveCamera(36, width / height, 0.05, 50);
+      this.camera.position.set(0, 0.36, 0.58);
+      this.camera.lookAt(0, 0, -0.06);
 
       this.brainGroup = new THREE.Group();
-      this.brainGroup.rotation.x = -0.45;
-      this.brainGroup.rotation.z = -0.10;
+      this.brainGroup.rotation.x = -0.34;
+      this.brainGroup.rotation.z = -0.05;
       this.scene.add(this.brainGroup);
 
       this.isWebGL = true;
@@ -2202,6 +2202,7 @@ class CNSBrainVisualizer3D {
     if (!this.isWebGL || !somaData) return;
     const { count, positions, circuitTags, graphToSomaMap } = somaData;
     this.somaCount = count;
+    this.circuitTags = circuitTags;
     this.graphToSomaMap = graphToSomaMap;
     this._loaded = true;
 
@@ -2212,21 +2213,22 @@ class CNSBrainVisualizer3D {
       centeredPos[i * 3 + 1] = positions[i * 3 + 1] - (-0.0368);
       centeredPos[i * 3 + 2] = positions[i * 3 + 2] - (-0.2180);
     }
+    this.centeredPositions = centeredPos;
 
-    // Bioluminescent palette matching Drosophila neuroanatomy:
-    // 0: Central Brain -> deep cyan / electric blue [0.15, 0.65, 0.95]
-    // 1: Optic Lobe    -> bright electric cyan     [0.00, 0.88, 1.00]
-    // 2: Mushroom Body -> amber / golden honey     [1.00, 0.65, 0.15]
-    // 3: Central Comp. -> emerald / mint green     [0.10, 0.95, 0.55]
-    // 4: Motor / GF    -> fiery coral orange       [1.00, 0.35, 0.25]
-    // 5: VNC Thoracic  -> radiant violet           [0.65, 0.35, 1.00]
+    // Rich bioluminescent palette matching Drosophila neuroanatomy:
+    // 0: Central Brain -> deep electric blue       [0.15, 0.65, 0.95]
+    // 1: Optic Lobe    -> crisp cyan               [0.00, 0.88, 1.00]
+    // 2: Mushroom Body -> warm amber / honey gold  [1.00, 0.65, 0.15]
+    // 3: Central Comp. -> mint / emerald green     [0.10, 0.95, 0.55]
+    // 4: Motor / GF    -> fiery coral red          [1.00, 0.28, 0.22]
+    // 5: VNC Thoracic  -> radiant violet           [0.68, 0.35, 1.00]
     const palette = [
       [0.15, 0.65, 0.95],
       [0.00, 0.88, 1.00],
       [1.00, 0.65, 0.15],
       [0.10, 0.95, 0.55],
-      [1.00, 0.35, 0.25],
-      [0.65, 0.35, 1.00],
+      [1.00, 0.28, 0.22],
+      [0.68, 0.35, 1.00],
     ];
 
     const colors = new Float32Array(count * 3);
@@ -2249,7 +2251,7 @@ class CNSBrainVisualizer3D {
     const pointShaderMat = new THREE.ShaderMaterial({
       vertexColors: true,
       uniforms: {
-        baseSize: { value: 0.012 },
+        baseSize: { value: 0.0045 },
       },
       vertexShader: `
         #ifndef USE_COLOR
@@ -2263,8 +2265,9 @@ class CNSBrainVisualizer3D {
           vColor = color;
           vActivity = activity;
           vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-          float size = (baseSize + activity * 0.038) * (200.0 / -mvPosition.z);
-          gl_PointSize = clamp(size, 1.0, 36.0);
+          // Crisp resting points (~1.6px - 2.2px); active firing flares expand dynamically (~5.0px - 7.0px)
+          float size = (baseSize + activity * 0.0090) * (260.0 / -mvPosition.z);
+          gl_PointSize = clamp(size, 1.4, 7.5);
           gl_Position = projectionMatrix * mvPosition;
         }
       `,
@@ -2275,12 +2278,19 @@ class CNSBrainVisualizer3D {
           float dist = length(gl_PointCoord - vec2(0.5));
           if (dist > 0.5) discard;
           float radial = smoothstep(0.5, 0.06, dist);
-          // Ethereal semi-transparent resting somas + intense 100% alpha on firing
-          float alpha = radial * (0.35 + vActivity * 0.65);
-          // Active somas flare white-cyan bloom
-          vec3 spikeColor = vec3(1.0, 1.0, 1.0);
-          vec3 finalColor = mix(vColor * 0.85, spikeColor, vActivity * 0.92);
-          gl_FragColor = vec4(finalColor, alpha);
+
+          // Perfectly balanced resting silhouette: clearly visible, translucent holographic anatomy
+          float restAlpha = radial * 0.065;
+          vec3 restColor = vColor * 0.70;
+
+          // Momentary firing flare: intense, brilliant bioluminescent sparks with glowing core
+          float activeAlpha = radial * 0.92;
+          vec3 activeColor = mix(vColor * 1.9, vec3(1.0, 1.0, 1.0), 0.45);
+
+          vec3 finalColor = mix(restColor, activeColor, vActivity);
+          float finalAlpha = mix(restAlpha, activeAlpha, vActivity);
+
+          gl_FragColor = vec4(finalColor, finalAlpha);
         }
       `,
       transparent: true,
@@ -2346,15 +2356,48 @@ class CNSBrainVisualizer3D {
 
     if (!this.isWebGL || !this.pointCloud || !this.graphToSomaMap || !this.activityArray) return;
 
-    for (let i = 0; i < activeNeurons.length; i++) {
+    // Subsample background telemetry spikes for a gentle biological shimmer
+    const totalActive = activeNeurons.length;
+    if (totalActive === 0) return;
+
+    const maxSparksPerTick = 120;
+    const stride = totalActive > maxSparksPerTick ? Math.ceil(totalActive / maxSparksPerTick) : 1;
+    for (let i = 0; i < totalActive; i += stride) {
       const gIdx = activeNeurons[i];
       if (gIdx >= 0 && gIdx < this.graphToSomaMap.length) {
         const sIdx = this.graphToSomaMap[gIdx];
         if (sIdx >= 0 && sIdx < this.somaCount) {
-          this.activityArray[sIdx] = 1.0;
+          this.activityArray[sIdx] = 0.75 + Math.random() * 0.25;
           this.activeSomaQueue.push(sIdx);
         }
       }
+    }
+  }
+
+  flashCircuit(circuitTag, filterFn = null, count = 220) {
+    if (!this.isWebGL || !this.pointCloud || !this.circuitTags || !this.activityArray) return;
+
+    const candidates = [];
+    const n = this.somaCount;
+    for (let i = 0; i < n; i++) {
+      if (this.circuitTags[i] === circuitTag) {
+        if (!filterFn || filterFn(this.centeredPositions, i)) {
+          candidates.push(i);
+        }
+      }
+    }
+
+    if (candidates.length === 0) return;
+
+    const sparks = Math.min(count, candidates.length);
+    const step = Math.max(1, Math.floor(candidates.length / sparks));
+    for (let j = 0; j < candidates.length; j += step) {
+      const sIdx = candidates[j];
+      this.activityArray[sIdx] = 1.0;
+      this.activeSomaQueue.push(sIdx);
+    }
+    if (this.pointCloud.geometry.attributes.activity) {
+      this.pointCloud.geometry.attributes.activity.needsUpdate = true;
     }
   }
 
@@ -2365,14 +2408,14 @@ class CNSBrainVisualizer3D {
         this.brainGroup.rotation.y += this.rotationSpeed;
       }
 
-      // Smooth decay of active firing somas with biological latency
+      // Smooth biological spike decay (~180ms transient)
       if (this.pointCloud && this.activeSomaQueue.length > 0) {
         const nextQueue = [];
         const actAttr = this.pointCloud.geometry.attributes.activity;
         for (let i = 0; i < this.activeSomaQueue.length; i++) {
           const sIdx = this.activeSomaQueue[i];
-          this.activityArray[sIdx] *= 0.84;
-          if (this.activityArray[sIdx] > 0.04) {
+          this.activityArray[sIdx] *= 0.78;
+          if (this.activityArray[sIdx] > 0.03) {
             nextQueue.push(sIdx);
           } else {
             this.activityArray[sIdx] = 0.0;
@@ -2410,6 +2453,12 @@ class CockpitVisualizers {
   updateCNSActivity(activeNeurons = []) {
     if (this.cnsVisualizer) {
       this.cnsVisualizer.updateActivity(activeNeurons);
+    }
+  }
+
+  flashCircuit(circuitTag, filterFn = null, count = 160) {
+    if (this.cnsVisualizer) {
+      this.cnsVisualizer.flashCircuit(circuitTag, filterFn, count);
     }
   }
 
@@ -2695,6 +2744,22 @@ class ConnectomeApp {
             name,
             valence,
           });
+
+          // Momentarily flash corresponding sensory/neuropil circuit
+          if (this.visualizers) {
+            if (preset === 'predator' || preset === 'looming') {
+              this.visualizers.flashCircuit(4, null, 180); // Giant Fiber / Escape Motor
+              this.visualizers.flashCircuit(1, null, 100); // Optic Lobe
+            } else if (preset === 'sugar') {
+              this.visualizers.flashCircuit(2, null, 160); // Mushroom Body / Dopamine
+              this.visualizers.flashCircuit(1, null, 90);  // Optic Lobe
+            } else if (preset === 'mate') {
+              this.visualizers.flashCircuit(0, null, 140); // Central Brain Courtship (P1)
+              this.visualizers.flashCircuit(1, null, 90);  // Optic Lobe
+            } else {
+              this.visualizers.flashCircuit(1, null, 140); // Optic Lobes
+            }
+          }
         }
       });
     });
@@ -2710,6 +2775,21 @@ class ConnectomeApp {
             command: 'target_position',
             position: pos,
           });
+
+          // Momentarily trigger localized sensory hemisphere
+          if (this.visualizers) {
+            if (pos === 'left') {
+              // Left Optic Lobe hemisphere (x < -0.02)
+              this.visualizers.flashCircuit(1, (p, i) => p[i * 3 + 0] < -0.02, 180);
+            } else if (pos === 'right') {
+              // Right Optic Lobe hemisphere (x > 0.02)
+              this.visualizers.flashCircuit(1, (p, i) => p[i * 3 + 0] > 0.02, 180);
+            } else {
+              // Center: Central Complex navigation compass + both lobes
+              this.visualizers.flashCircuit(3, null, 180);
+              this.visualizers.flashCircuit(1, null, 120);
+            }
+          }
         }
       });
     });
@@ -2718,6 +2798,10 @@ class ConnectomeApp {
     if (wireheadBtn) {
       wireheadBtn.addEventListener('click', () => {
         this.triggerWirehead(20.0);
+        if (this.visualizers) {
+          // Momentarily ignite Mushroom Body (PAM11 Dopaminergic cluster) in honey gold
+          this.visualizers.flashCircuit(2, null, 220);
+        }
       });
     }
 
@@ -2728,6 +2812,10 @@ class ConnectomeApp {
         this.sendWsCommand({
           command: 'threat_trigger',
         });
+        if (this.visualizers) {
+          // Momentarily ignite Giant Fiber & Descending Escape Motor circuit in fiery coral red
+          this.visualizers.flashCircuit(4, null, 240);
+        }
       });
     }
 
@@ -2738,6 +2826,10 @@ class ConnectomeApp {
         this.sendWsCommand({
           command: 'leg_swipe',
         });
+        if (this.visualizers) {
+          // Momentarily ignite VNC Thoracic cord neuromeres in vibrant violet
+          this.visualizers.flashCircuit(5, null, 220);
+        }
       });
     }
 
@@ -3075,14 +3167,27 @@ class ConnectomeApp {
 
     const badgeRetreat = document.getElementById('badge-retreat');
     if (badgeRetreat) {
-      if (m.moonwalker_retreat) badgeRetreat.classList.add('active');
-      else badgeRetreat.classList.remove('active');
+      if (m.moonwalker_retreat) {
+        badgeRetreat.classList.add('active');
+        if (this.visualizers) {
+          this.visualizers.flashCircuit(4, null, 90);
+          this.visualizers.flashCircuit(5, null, 110);
+        }
+      } else {
+        badgeRetreat.classList.remove('active');
+      }
     }
 
     const badgeJump = document.getElementById('badge-jump');
     if (badgeJump) {
-      if (m.giant_fiber_jump) badgeJump.classList.add('active');
-      else badgeJump.classList.remove('active');
+      if (m.giant_fiber_jump) {
+        badgeJump.classList.add('active');
+        if (this.visualizers) {
+          this.visualizers.flashCircuit(4, null, 160);
+        }
+      } else {
+        badgeJump.classList.remove('active');
+      }
     }
 
     const heading = m.compass_heading_deg || 0;
