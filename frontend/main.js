@@ -722,6 +722,7 @@ class ObservationChamber3D {
     this._buildNeuropilCompartments();
     this._buildVirtualSmartphone();
     this._setupEventListeners();
+    this._setCameraPreset('fly');
   }
 
   _initScene() {
@@ -731,6 +732,9 @@ class ObservationChamber3D {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x05070c);
     this.scene.fog = new THREE.FogExp2(0x05070c, 0.035);
+
+    this.rigGroup = new THREE.Group();
+    this.scene.add(this.rigGroup);
 
     this.camera = new THREE.PerspectiveCamera(42, w / h, 0.1, 100);
     this.camera.position.set(2.4, 1.9, 2.6);
@@ -820,7 +824,7 @@ class ObservationChamber3D {
     sensorR.rotation.y = -0.4;
     nozzleGroup.add(sensorR);
 
-    this.scene.add(nozzleGroup);
+    this.rigGroup.add(nozzleGroup);
 
     const ballGeo = new THREE.SphereGeometry(0.55, 48, 48);
     const ballMat = new THREE.MeshStandardMaterial({
@@ -832,7 +836,7 @@ class ObservationChamber3D {
     this.treadmillBall.position.set(0, 0.55, 0);
     this.treadmillBall.castShadow = true;
     this.treadmillBall.receiveShadow = true;
-    this.scene.add(this.treadmillBall);
+    this.rigGroup.add(this.treadmillBall);
 
     const manipGroup = new THREE.Group();
     manipGroup.position.set(-1.1, 0.6, 0.2);
@@ -861,7 +865,7 @@ class ObservationChamber3D {
     pipette.rotation.z = -0.95;
     manipGroup.add(pipette);
 
-    this.scene.add(manipGroup);
+    this.rigGroup.add(manipGroup);
 
     const scopeGroup = new THREE.Group();
     scopeGroup.position.set(0, 3.2, 0.2);
@@ -877,7 +881,7 @@ class ObservationChamber3D {
     ringLightMesh.rotation.x = Math.PI / 2;
     scopeGroup.add(ringLightMesh);
 
-    this.scene.add(scopeGroup);
+    this.rigGroup.add(scopeGroup);
 
     const domeGeo = new THREE.SphereGeometry(3.6, 32, 24, 0, Math.PI * 2, 0, Math.PI / 2);
     const domeMat = new THREE.MeshPhysicalMaterial({
@@ -1198,7 +1202,7 @@ class ObservationChamber3D {
       });
     }
 
-    this.scene.add(this.flyGroup);
+    this.rigGroup.add(this.flyGroup);
   }
 
   _buildNeuropilCompartments() {
@@ -1291,8 +1295,8 @@ class ObservationChamber3D {
     const phoneGroup = new THREE.Group();
     phoneGroup.position.set(0.25, 1.22, 1.25);
 
-    phoneGroup.rotation.y = Math.PI + 0.28;
-    phoneGroup.rotation.x = 0.18;
+    phoneGroup.rotation.y = Math.PI - 0.7;
+    phoneGroup.rotation.x = 0.15;
 
     const bodyGeo = new THREE.BoxGeometry(0.86, 1.52, 0.045);
     const bodyMat = new THREE.MeshStandardMaterial({
@@ -1336,14 +1340,21 @@ class ObservationChamber3D {
     const standStemGeo = new THREE.CylinderGeometry(0.04, 0.05, 1.2, 16);
     const standStem = new THREE.Mesh(standStemGeo, standMat);
     standStem.position.set(0.25, 0.55, 1.25);
-    this.scene.add(standStem);
+    this.rigGroup.add(standStem);
 
     const standBaseGeo = new THREE.CylinderGeometry(0.35, 0.4, 0.06, 24);
     const standBase = new THREE.Mesh(standBaseGeo, standMat);
     standBase.position.set(0.25, 0.03, 1.25);
-    this.scene.add(standBase);
+    this.rigGroup.add(standBase);
 
-    this.scene.add(phoneGroup);
+    this.phoneGroup = phoneGroup;
+    this.rigGroup.add(phoneGroup);
+  }
+
+  _isMobileViewport() {
+    const w = this.container ? this.container.clientWidth : window.innerWidth;
+    const h = this.container ? this.container.clientHeight : window.innerHeight;
+    return (w / (h || 1) < 1.0) || w <= 768;
   }
 
   _setupEventListeners() {
@@ -1352,7 +1363,7 @@ class ObservationChamber3D {
       const h = this.container.clientHeight;
       if (w && h && this.camera && this.renderer) {
         this.camera.aspect = w / h;
-        this.camera.updateProjectionMatrix();
+        this._setCameraPreset(this.currentPreset || 'fly');
         this.renderer.setSize(w, h);
       }
     });
@@ -1388,17 +1399,50 @@ class ObservationChamber3D {
 
   _setCameraPreset(preset) {
     if (!this.camera || !this.controls) return;
+    if (preset) this.currentPreset = preset;
+    const activePreset = this.currentPreset || 'fly';
+    const isMobile = this._isMobileViewport();
 
-    if (preset === 'fly') {
-      this.camera.position.set(2.4, 1.9, 2.6);
-      this.controls.target.set(0.1, 1.15, 0.5);
-    } else if (preset === 'phone') {
-      this.camera.position.set(-0.2, 1.48, -0.65);
-      this.controls.target.set(0.2, 1.22, 1.25);
-    } else if (preset === 'brain') {
-      this.camera.position.set(0.32, 1.35, 1.05);
-      this.controls.target.set(0, 1.24, 0.58);
+    // Scale the whole laboratory rig: shrink to 0.76 on mobile so both the fly and the screen fit completely
+    if (this.rigGroup) {
+      const scale = isMobile ? 0.76 : 1.0;
+      this.rigGroup.scale.set(scale, scale, scale);
     }
+
+    if (activePreset === 'fly') {
+      if (isMobile) {
+        // Mobile portrait: positioned at 3/4 angle with phone screen and full fly fitting completely
+        this.camera.position.set(2.5, 1.65, 0.6);
+        this.controls.target.set(0.08, 0.92, 0.55);
+        this.camera.fov = 48;
+      } else {
+        this.camera.position.set(2.4, 1.9, 2.6);
+        this.controls.target.set(0.1, 1.15, 0.5);
+        this.camera.fov = 42;
+      }
+    } else if (activePreset === 'phone') {
+      if (isMobile) {
+        this.camera.position.set(-0.25, 1.35, -0.85);
+        this.controls.target.set(0.16, 0.95, 0.98);
+        this.camera.fov = 46;
+      } else {
+        this.camera.position.set(-0.2, 1.48, -0.65);
+        this.controls.target.set(0.2, 1.22, 1.25);
+        this.camera.fov = 42;
+      }
+    } else if (activePreset === 'brain') {
+      if (isMobile) {
+        this.camera.position.set(0.38, 1.25, 1.15);
+        this.controls.target.set(0, 0.98, 0.45);
+        this.camera.fov = 46;
+      } else {
+        this.camera.position.set(0.32, 1.35, 1.05);
+        this.controls.target.set(0, 1.24, 0.58);
+        this.camera.fov = 42;
+      }
+    }
+    this.camera.updateProjectionMatrix();
+    this.controls.update();
   }
 
   triggerLegSwipe() {
