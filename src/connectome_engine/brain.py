@@ -54,6 +54,13 @@ class CompleteObservationTelemetry:
     # Active spiking neuron indices across the connectome for 3D point cloud wave
     active_neurons: list = field(default_factory=list)
 
+    # Hemispheric Vision & Bilateral Optomotor Signals
+    left_luminance: float = 0.0
+    right_luminance: float = 0.0
+    hemispheric_asymmetry: float = 0.0
+    dna02_left_spikes: int = 0
+    dna02_right_spikes: int = 0
+
 
 class ConnectomeBrain:
     """Master controller wrapping the complete neural and biophysical pipeline."""
@@ -74,8 +81,10 @@ class ConnectomeBrain:
         )
         self.hormones = HormoneDynamicsEngine()
         self.visual = VisualTransductionEngine(
-            num_r1_r6=len(circuits.r1_r6_photoreceptors),
-            num_r8=len(circuits.r8_photoreceptors),
+            num_r1_r6_left=len(circuits.r1_r6_left) if len(circuits.r1_r6_left) > 0 else 1112,
+            num_r1_r6_right=len(circuits.r1_r6_right) if len(circuits.r1_r6_right) > 0 else 2265,
+            num_r8_left=len(circuits.r8_left) if len(circuits.r8_left) > 0 else 625,
+            num_r8_right=len(circuits.r8_right) if len(circuits.r8_right) > 0 else 704,
             num_looming_lc4=len(circuits.looming_threat_lc4),
         )
         self.motor = MotorBehavioralDecoder()
@@ -107,16 +116,45 @@ class ConnectomeBrain:
         # Clear and inject fresh currents
         self.snn.clear_injected_currents()
 
-        if len(self.circuits.r1_r6_photoreceptors) > 0:
+        # Bilateral R1-R6 Outer Photoreceptors (Hemispheric Retinotopic Partitioning)
+        if len(self.circuits.r1_r6_left) > 0 and len(vis_telemetry.r1_r6_left_currents) > 0:
             self.snn.inject_current(
-                self.circuits.r1_r6_photoreceptors,
-                vis_telemetry.r1_r6_currents[: len(self.circuits.r1_r6_photoreceptors)],
+                self.circuits.r1_r6_left,
+                vis_telemetry.r1_r6_left_currents[: len(self.circuits.r1_r6_left)],
+            )
+        if len(self.circuits.r1_r6_right) > 0 and len(vis_telemetry.r1_r6_right_currents) > 0:
+            self.snn.inject_current(
+                self.circuits.r1_r6_right,
+                vis_telemetry.r1_r6_right_currents[: len(self.circuits.r1_r6_right)],
             )
 
-        if len(self.circuits.r8_photoreceptors) > 0:
+        # Bilateral R8 Inner Chromatic Photoreceptors
+        if len(self.circuits.r8_left) > 0 and len(vis_telemetry.r8_left_currents) > 0:
             self.snn.inject_current(
-                self.circuits.r8_photoreceptors,
-                vis_telemetry.r8_currents[: len(self.circuits.r8_photoreceptors)],
+                self.circuits.r8_left,
+                vis_telemetry.r8_left_currents[: len(self.circuits.r8_left)],
+            )
+        if len(self.circuits.r8_right) > 0 and len(vis_telemetry.r8_right_currents) > 0:
+            self.snn.inject_current(
+                self.circuits.r8_right,
+                vis_telemetry.r8_right_currents[: len(self.circuits.r8_right)],
+            )
+
+        # Bilateral Optomotor Descending Motor Drive (DNa02 Steering Neurons)
+        # Asymmetric visual luminance drives ipsilateral turning (positive phototaxis)
+        asym = vis_telemetry.hemispheric_asymmetry
+        l_steer_drive = float(np.clip(-asym * 5.0 + (vis_telemetry.left_luminance - vis_telemetry.right_luminance) * 3.0, -4.0, 7.0))
+        r_steer_drive = float(np.clip(asym * 5.0 + (vis_telemetry.right_luminance - vis_telemetry.left_luminance) * 3.0, -4.0, 7.0))
+
+        if len(self.circuits.dna02_left) > 0 and l_steer_drive != 0.0:
+            self.snn.inject_current(
+                self.circuits.dna02_left,
+                np.full(len(self.circuits.dna02_left), l_steer_drive, dtype=np.float32),
+            )
+        if len(self.circuits.dna02_right) > 0 and r_steer_drive != 0.0:
+            self.snn.inject_current(
+                self.circuits.dna02_right,
+                np.full(len(self.circuits.dna02_right), r_steer_drive, dtype=np.float32),
             )
 
         # If looming predator detected, blast current directly into LC4 threat circuit
@@ -137,7 +175,7 @@ class ConnectomeBrain:
         # 2. Advance Biophysical SNN
         snn_telemetry = self.snn.step_chunk(chunk_ms=duration_ms)
 
-        # 3. Read Circuit Spikes — use numpy for O(n) instead of O(n*m) Python loops
+        # 3. Read Circuit Spikes — Vectorized biological rate counting
         if snn_telemetry.total_spikes > 0:
             spiking_arr = np.array(list(snn_telemetry.spiking_neuron_indices), dtype=np.int32)
         else:
@@ -148,11 +186,16 @@ class ConnectomeBrain:
                 return 0
             return int(np.isin(circuit_idx, spiking_arr).sum())
 
+        def _count_spikes(circuit_idx: np.ndarray) -> int:
+            if len(circuit_idx) == 0:
+                return 0
+            return int(self.snn.last_chunk_spike_counts[circuit_idx].sum())
+
         pam11_spk = _count_hits(self.circuits.pam11_dopamine_reward)
         threat_spk = _count_hits(self.circuits.looming_threat_lc4)
         kc_spk = _count_hits(self.circuits.kenyon_cells)
-        dna02_l_spk = _count_hits(self.circuits.dna02_left)
-        dna02_r_spk = _count_hits(self.circuits.dna02_right)
+        dna02_l_spk = _count_spikes(self.circuits.dna02_left)
+        dna02_r_spk = _count_spikes(self.circuits.dna02_right)
         dnp09_spk = _count_hits(self.circuits.dnp09_forward)
         mdn_spk = _count_hits(self.circuits.mdn_moonwalker)
         gf_spk = _count_hits(self.circuits.giant_fiber_escape)
@@ -169,13 +212,14 @@ class ConnectomeBrain:
             duration_ms=duration_ms,
         )
 
-        # 5. Decode Motor Kinematics
+        # 5. Decode Motor Kinematics (with Sensory-Motor Phototaxis Integration)
         motor_telemetry = self.motor.decode(
             dna02_left_spikes=dna02_l_spk,
             dna02_right_spikes=dna02_r_spk,
             dnp09_forward_spikes=dnp09_spk,
             mdn_reverse_spikes=mdn_spk,
             giant_fiber_spikes=gf_spk,
+            visual_asymmetry=vis_telemetry.hemispheric_asymmetry,
         )
 
         # Landmark raster — vectorized
@@ -206,4 +250,9 @@ class ConnectomeBrain:
             looming_threat_detected=vis_telemetry.looming_threat_detected,
             active_landmarks=active_landmarks,
             active_neurons=spiking_arr.tolist(),
+            left_luminance=vis_telemetry.left_luminance,
+            right_luminance=vis_telemetry.right_luminance,
+            hemispheric_asymmetry=vis_telemetry.hemispheric_asymmetry,
+            dna02_left_spikes=dna02_l_spk,
+            dna02_right_spikes=dna02_r_spk,
         )

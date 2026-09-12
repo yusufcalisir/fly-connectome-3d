@@ -35,12 +35,13 @@ class MotorBehavioralDecoder:
         giant_fiber_spikes: int,
         epg_active_index: int = 0,
         total_epg_nodes: int = 16,
+        visual_asymmetry: float = 0.0,
     ) -> MotorTelemetry:
         """Decode descending neuron signals for a 50 ms simulation window."""
-        # 1. Bilateral Steering (DNa02)
-        raw_diff = float(dna02_right_spikes - dna02_left_spikes)
+        # 1. Bilateral Steering (DNa02) + Sensory Optomotor Asymmetry
+        raw_diff = float(dna02_right_spikes - dna02_left_spikes) + visual_asymmetry * 6.0
         inst_steering = np.clip(raw_diff / 5.0, -1.0, 1.0)
-        self.smooth_steering = 0.75 * self.smooth_steering + 0.25 * inst_steering
+        self.smooth_steering = 0.70 * self.smooth_steering + 0.30 * inst_steering
 
         # 2. Forward Locomotion Drive (DNp09)
         inst_drive = np.clip((dnp09_forward_spikes / 8.0) * 100.0, 0.0, 100.0)

@@ -15,7 +15,6 @@ into a single numpy/scipy vectorized pass that runs in <50 ms on a typical lapto
 """
 
 from dataclasses import dataclass
-from typing import Dict, Optional
 
 import numpy as np
 import scipy.sparse as sp
@@ -61,7 +60,7 @@ class SpikingConnectomeEngine:
         num_neurons: int,
         synaptic_weights: sp.csr_matrix,
         constants: BiophysicalConstants = CONFIG,
-        polarity: Optional[np.ndarray] = None,
+        polarity: np.ndarray | None = None,
     ):
         self.n = num_neurons
         self.weights = synaptic_weights.tocsr().astype(np.float32)
@@ -89,16 +88,17 @@ class SpikingConnectomeEngine:
         self.decay_factor = np.float32(np.exp(-self.cfg.dt_ms / self.cfg.tau_m_ms))
         # k-step decay and drive for mini-chunk of _MINI steps
         self._mini_decay = np.float32(self.decay_factor ** self._MINI)
-        self._mini_drive = np.float32((1.0 - self._mini_decay))  # multiplied by I*R below
+        self._mini_drive = np.float32(1.0 - self._mini_decay)  # multiplied by I*R below
         self.v_rest = np.float32(self.cfg.v_rest_mv)
         self.v_thresh = np.float32(self.cfg.v_thresh_mv)
         self.v_reset = np.float32(self.cfg.v_reset_mv)
         self.v_lower = np.float32(getattr(self.cfg, "v_lower_bound_mv", -85.0))
-        self.ref_steps_const = int(round(self.cfg.tau_ref_ms / self.cfg.dt_ms))
+        self.ref_steps_const = round(self.cfg.tau_ref_ms / self.cfg.dt_ms)
 
         # Simulation clock
         self.total_sim_ms = 0.0
         self.total_spikes_accumulated = 0
+        self.last_chunk_spike_counts: np.ndarray = np.zeros(self.n, dtype=np.int32)
 
     def inject_current(self, neuron_indices: np.ndarray, current_values: np.ndarray):
         """Inject external sensory or experimental currents into designated neurons."""
@@ -183,7 +183,7 @@ class SpikingConnectomeEngine:
         self.total_sim_ms += self.cfg.dt_ms * m
         return new_spikes
 
-    def step_chunk(self, chunk_ms: Optional[float] = None) -> SNNTelemetry:
+    def step_chunk(self, chunk_ms: float | None = None) -> SNNTelemetry:
         """Advance the biological simulation by one visual frame chunk (default 50 ms).
 
         Runs _MINI-step mini-chunks instead of 500 individual substeps, reducing
@@ -191,7 +191,7 @@ class SpikingConnectomeEngine:
         accuracy (same LIF equations, same dt, same spike threshold).
         """
         target_ms = chunk_ms if chunk_ms is not None else self.cfg.chunk_ms
-        substeps = int(round(target_ms / self.cfg.dt_ms))
+        substeps = round(target_ms / self.cfg.dt_ms)
         mini_chunks = max(1, substeps // self._MINI)
 
         chunk_spike_counts = np.zeros(self.n, dtype=np.int32)
@@ -212,6 +212,7 @@ class SpikingConnectomeEngine:
 
         total_chunk_spikes = int(chunk_spike_counts.sum())
         self.total_spikes_accumulated += total_chunk_spikes
+        self.last_chunk_spike_counts = chunk_spike_counts
 
         # Vectorized Dale's Law E/I spike counting (Zero Mock)
         exc_spikes = int(np.sum(chunk_spike_counts[self.is_exc]))
@@ -247,7 +248,7 @@ class SpikingConnectomeEngine:
         active_spiking = np.count_nonzero(self.refractory_steps[cluster_indices] == self.ref_steps_const)
         return float(active_spiking / (len(cluster_indices) * (duration_ms / 1000.0)))
 
-    def save_checkpoint(self) -> Dict[str, np.ndarray]:
+    def save_checkpoint(self) -> dict[str, np.ndarray]:
         """Create a complete serializable state snapshot."""
         return {
             "v": self.v.copy(),
@@ -256,7 +257,7 @@ class SpikingConnectomeEngine:
             "total_sim_ms": np.array([self.total_sim_ms], dtype=np.float64),
         }
 
-    def load_checkpoint(self, state: Dict[str, np.ndarray]):
+    def load_checkpoint(self, state: dict[str, np.ndarray]):
         """Restore engine state from checkpoint."""
         self.v[:] = state["v"]
         self.refractory_steps[:] = state["refractory_steps"]
