@@ -1535,16 +1535,20 @@ class ObservationChamber3D {
       geometry.setAttribute('activity', new THREE.BufferAttribute(activity, 1));
 
       const pointShaderMat = new THREE.ShaderMaterial({
+        vertexColors: true,
         uniforms: {
           baseSize: { value: 0.010 },
         },
         vertexShader: `
+          #ifndef USE_COLOR
+          attribute vec3 color;
+          #endif
           attribute float activity;
           varying vec3 vColor;
           varying float vActivity;
           uniform float baseSize;
           void main() {
-            vColor = color;
+            vColor = color.rgb;
             vActivity = activity;
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
             gl_PointSize = (baseSize + activity * 0.024) * (260.0 / -mvPosition.z);
