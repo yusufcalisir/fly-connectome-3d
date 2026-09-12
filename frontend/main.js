@@ -77,6 +77,7 @@ const TRANSLATIONS = {
     badge_somas: '141.8K Somas 3D',
     chart_scale_frames: '120 frames',
     chart_scale_landmarks: '64 landmarks',
+    label_plasticity: 'Learned Association Drift (KC ──► MBON):',
     nav_3d: '3D View',
     nav_stimulus: 'Stimulus',
     nav_cockpit: 'Cockpit',
