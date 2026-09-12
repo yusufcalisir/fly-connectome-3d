@@ -78,6 +78,15 @@ class ServerStateManager:
                 "octopamine_hz": 0.0,
                 "serotonin_hz": 0.0,
             },
+            "vnc_legs": {
+                "t1_left_hz": 0.0,
+                "t1_right_hz": 0.0,
+                "t2_left_hz": 0.0,
+                "t2_right_hz": 0.0,
+                "t3_left_hz": 0.0,
+                "t3_right_hz": 0.0,
+                "tripod_phase": 0.0,
+            },
         }
         self.history_records.append(
             {
@@ -128,6 +137,15 @@ class ServerStateManager:
                     "dopamine_hz": data["dopamine_hz"],
                     "octopamine_hz": data["octopamine_hz"],
                     "serotonin_hz": data["serotonin_hz"],
+                },
+                "vnc_legs": {
+                    "t1_left_hz": data.get("t1_left_hz", 0.0),
+                    "t1_right_hz": data.get("t1_right_hz", 0.0),
+                    "t2_left_hz": data.get("t2_left_hz", 0.0),
+                    "t2_right_hz": data.get("t2_right_hz", 0.0),
+                    "t3_left_hz": data.get("t3_left_hz", 0.0),
+                    "t3_right_hz": data.get("t3_right_hz", 0.0),
+                    "tripod_phase": data.get("tripod_phase", 0.0),
                 },
             }
             self.latest_telemetry = structured

@@ -61,6 +61,15 @@ class CompleteObservationTelemetry:
     dna02_left_spikes: int = 0
     dna02_right_spikes: int = 0
 
+    # VNC Thoracic Hexapod Leg Motor Pools & CPG Dynamics
+    t1_left_hz: float = 0.0
+    t1_right_hz: float = 0.0
+    t2_left_hz: float = 0.0
+    t2_right_hz: float = 0.0
+    t3_left_hz: float = 0.0
+    t3_right_hz: float = 0.0
+    tripod_phase: float = 0.0
+
 
 class ConnectomeBrain:
     """Master controller wrapping the complete neural and biophysical pipeline."""
@@ -88,6 +97,7 @@ class ConnectomeBrain:
             num_looming_lc4=len(circuits.looming_threat_lc4),
         )
         self.motor = MotorBehavioralDecoder()
+        self.cpg_phase: float = 0.0
 
         # Landmark subset for raster display (64 neurons)
         self.landmark_indices = np.r_[
@@ -222,6 +232,61 @@ class ConnectomeBrain:
             visual_asymmetry=vis_telemetry.hemispheric_asymmetry,
         )
 
+        # 6. VNC Leg Motor Pools & Hexapod Tripod CPG
+        dt_s = max(1e-4, duration_ms / 1000.0)
+        t1_l_spk = _count_spikes(self.circuits.vnc_t1_left)
+        t1_r_spk = _count_spikes(self.circuits.vnc_t1_right)
+        t2_l_spk = _count_spikes(self.circuits.vnc_t2_left)
+        t2_r_spk = _count_spikes(self.circuits.vnc_t2_right)
+        t3_l_spk = _count_spikes(self.circuits.vnc_t3_left)
+        t3_r_spk = _count_spikes(self.circuits.vnc_t3_right)
+
+        def _calc_hz(spk: int, pool_size: int) -> float:
+            if pool_size <= 0:
+                return 0.0
+            return float((spk / pool_size) / dt_s)
+
+        t1_l_hz = _calc_hz(t1_l_spk, len(self.circuits.vnc_t1_left))
+        t1_r_hz = _calc_hz(t1_r_spk, len(self.circuits.vnc_t1_right))
+        t2_l_hz = _calc_hz(t2_l_spk, len(self.circuits.vnc_t2_left))
+        t2_r_hz = _calc_hz(t2_r_spk, len(self.circuits.vnc_t2_right))
+        t3_l_hz = _calc_hz(t3_l_spk, len(self.circuits.vnc_t3_left))
+        t3_r_hz = _calc_hz(t3_r_spk, len(self.circuits.vnc_t3_right))
+
+        # Alternating Tripod CPG Phase Advancement
+        # Canonical insect tripod gait: 3.0 to 11.0 Hz stepping frequency proportional to forward drive
+        drive_pct = motor_telemetry.forward_drive_pct
+        if motor_telemetry.moonwalker_retreat:
+            cpg_omega = -2.0 * np.pi * 4.0  # Reverse stepping (rad/s)
+        elif drive_pct > 2.0:
+            step_freq_hz = 3.0 + (drive_pct / 100.0) * 8.0
+            cpg_omega = 2.0 * np.pi * step_freq_hz
+        else:
+            cpg_omega = 0.0
+
+        self.cpg_phase = float((self.cpg_phase + cpg_omega * dt_s) % (2.0 * np.pi))
+
+        # Asymmetric Optomotor Modulation for Leg Motor Pools
+        # Turning left: Right outer legs step faster/wider to pivot left
+        # Turning right: Left outer legs step faster/wider to pivot right
+        steer = motor_telemetry.steering_deflection
+        if steer < -0.05:
+            mod = abs(steer)
+            t1_r_hz *= (1.0 + 0.45 * mod)
+            t2_r_hz *= (1.0 + 0.45 * mod)
+            t3_r_hz *= (1.0 + 0.45 * mod)
+            t1_l_hz *= max(0.2, 1.0 - 0.30 * mod)
+            t2_l_hz *= max(0.2, 1.0 - 0.30 * mod)
+            t3_l_hz *= max(0.2, 1.0 - 0.30 * mod)
+        elif steer > 0.05:
+            mod = abs(steer)
+            t1_l_hz *= (1.0 + 0.45 * mod)
+            t2_l_hz *= (1.0 + 0.45 * mod)
+            t3_l_hz *= (1.0 + 0.45 * mod)
+            t1_r_hz *= max(0.2, 1.0 - 0.30 * mod)
+            t2_r_hz *= max(0.2, 1.0 - 0.30 * mod)
+            t3_r_hz *= max(0.2, 1.0 - 0.30 * mod)
+
         # Landmark raster — vectorized
         active_landmarks = self.landmark_indices[np.isin(self.landmark_indices, spiking_arr)].tolist()
 
@@ -255,4 +320,11 @@ class ConnectomeBrain:
             hemispheric_asymmetry=vis_telemetry.hemispheric_asymmetry,
             dna02_left_spikes=dna02_l_spk,
             dna02_right_spikes=dna02_r_spk,
+            t1_left_hz=t1_l_hz,
+            t1_right_hz=t1_r_hz,
+            t2_left_hz=t2_l_hz,
+            t2_right_hz=t2_r_hz,
+            t3_left_hz=t3_l_hz,
+            t3_right_hz=t3_r_hz,
+            tripod_phase=self.cpg_phase,
         )
