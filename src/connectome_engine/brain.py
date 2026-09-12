@@ -47,6 +47,10 @@ class CompleteObservationTelemetry:
     # Raster activity for top landmark neurons (indices of active cells in chunk)
     active_landmarks: list
 
+    # Biological E/I spike partition (Dale's Principle)
+    excitatory_spikes: int = 0
+    inhibitory_spikes: int = 0
+
 
 class ConnectomeBrain:
     """Master controller wrapping the complete neural and biophysical pipeline."""
@@ -150,14 +154,14 @@ class ConnectomeBrain:
         mdn_spk = _count_hits(self.circuits.mdn_moonwalker)
         gf_spk = _count_hits(self.circuits.giant_fiber_escape)
 
-        # 4. Step Hormonal Kinetics
+        # 4. Step Hormonal Kinetics with real biological E/I spike counts
         hormone_telemetry = self.hormones.update(
             pam11_spikes=pam11_spk,
             num_pam11=len(self.circuits.pam11_dopamine_reward),
             threat_spikes=threat_spk,
             num_threat_nodes=len(self.circuits.looming_threat_lc4),
-            total_excitatory_spikes=int(snn_telemetry.total_spikes * 0.7),
-            total_inhibitory_spikes=int(snn_telemetry.total_spikes * 0.3),
+            total_excitatory_spikes=snn_telemetry.excitatory_spikes,
+            total_inhibitory_spikes=snn_telemetry.inhibitory_spikes,
             kc_spikes=kc_spk,
             duration_ms=duration_ms,
         )
@@ -186,6 +190,8 @@ class ConnectomeBrain:
             serotonin_conc_nm=hormone_telemetry.serotonin_conc_nm,
             ei_balance_ratio=hormone_telemetry.excitatory_inhibitory_ratio,
             learned_knowledge_index=hormone_telemetry.learned_knowledge_index,
+            excitatory_spikes=snn_telemetry.excitatory_spikes,
+            inhibitory_spikes=snn_telemetry.inhibitory_spikes,
             steering_deflection=motor_telemetry.steering_deflection,
             forward_drive_pct=motor_telemetry.forward_drive_pct,
             moonwalker_retreat=motor_telemetry.moonwalker_retreat,
