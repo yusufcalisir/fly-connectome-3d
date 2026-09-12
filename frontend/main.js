@@ -3,13 +3,15 @@
  *
  * Implements:
  * 1. Three.js 3D Observation Chamber with anatomical Drosophila rig & floating smartphone
- * 2. Real-time canvas stimulus generator (Watermelon, Looming Shadow, Spider, Foliage)
- * 3. Bidirectional WebSocket telemetry streaming to ConnectomeBrain engine
- * 4. Central Complex EPG compass HUD and live neurochemical oscilloscope waveforms
+ * 2. 3D Anatomical Neuropil Compartments inside fly head (Optic Lobes, Mushroom Body, Central Complex, Descending Tract)
+ * 3. Real-time canvas stimulus generator with Custom Photo Upload & Spectral Valence Analysis
+ * 4. Choreographed Front-Leg Screen Touch & Swipe kinematics
+ * 5. Bidirectional WebSocket telemetry streaming to ConnectomeBrain engine
+ * 6. Central Complex EPG compass HUD and live neurochemical oscilloscope waveforms
  */
 
 // ============================================================================
-// 1. STIMULUS GENERATOR (VIRTUAL PHONE DISPLAY)
+// 1. STIMULUS GENERATOR (VIRTUAL PHONE DISPLAY & SPECTRAL VALENCE ANALYSIS)
 // ============================================================================
 
 class StimulusGenerator {
@@ -20,6 +22,10 @@ class StimulusGenerator {
     this.time = 0;
     this.loomingProgress = 0;
     this.isLoomingActive = false;
+
+    // Custom image state
+    this.customImage = null;
+    this.customImageValence = null;
 
     this.presetsInfo = {
       fruit: {
@@ -46,6 +52,12 @@ class StimulusGenerator {
         tag: 'BASELINE',
         tagClass: '',
       },
+      custom: {
+        title: 'Custom User Photo',
+        desc: 'User-provided visual stimulus mapped directly onto retina.',
+        tag: 'CUSTOM',
+        tagClass: '',
+      },
     };
   }
 
@@ -61,6 +73,75 @@ class StimulusGenerator {
       const tagEl = document.getElementById('stimulus-type-tag');
       tagEl.textContent = info.tag;
       tagEl.className = 'overlay-tag ' + info.tagClass;
+    }
+  }
+
+  loadCustomImage(imgElement, fileName = 'User Upload') {
+    this.customImage = imgElement;
+    this.preset = 'custom';
+    this.loomingProgress = 0;
+    this.isLoomingActive = false;
+
+    // Analyze spectral valence of custom image
+    this._analyzeSpectralValence(imgElement);
+
+    const tagEl = document.getElementById('stimulus-type-tag');
+    document.getElementById('current-photo-title').textContent = fileName;
+    document.getElementById('current-photo-desc').textContent = this.customImageValence.desc;
+    tagEl.textContent = this.customImageValence.tag;
+    tagEl.className = 'overlay-tag ' + this.customImageValence.tagClass;
+  }
+
+  _analyzeSpectralValence(img) {
+    // Sample image pixels onto offscreen scratch canvas
+    const scratch = document.createElement('canvas');
+    scratch.width = 90;
+    scratch.height = 160;
+    const sctx = scratch.getContext('2d');
+    sctx.drawImage(img, 0, 0, 90, 160);
+    const data = sctx.getImageData(0, 0, 90, 160).data;
+
+    let totalR = 0, totalG = 0, totalB = 0;
+    let totalLum = 0;
+    const count = data.length / 4;
+
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      totalR += r;
+      totalG += g;
+      totalB += b;
+      totalLum += (0.299 * r + 0.587 * g + 0.114 * b);
+    }
+
+    const meanR = totalR / count;
+    const meanG = totalG / count;
+    const meanB = totalB / count;
+    const meanLum = totalLum / count;
+
+    // Biological Valence Classification
+    if (meanR > 1.25 * meanG && meanR > 80) {
+      // High red/magenta wavelength: sugary fruit / floral nectar
+      this.customImageValence = {
+        tag: 'APPETITIVE CUE',
+        tagClass: 'appetitive',
+        desc: `Spectral analysis: High red wavelength (R/G=${(meanR / Math.max(1, meanG)).toFixed(2)}). Triggers PAM11 reward pathway.`,
+      };
+    } else if (meanLum < 45) {
+      // High dark contrast / looming shadow
+      this.customImageValence = {
+        tag: 'THREAT / LOOM',
+        tagClass: 'threat',
+        desc: `Spectral analysis: Low luminance (Y=${meanLum.toFixed(1)}). Triggers LC4 threat & Giant Fiber jump circuits.`,
+      };
+    } else {
+      // Natural ambient foliage
+      this.customImageValence = {
+        tag: 'NATURAL CALM',
+        tagClass: '',
+        desc: `Spectral analysis: Balanced spectrum (Y=${meanLum.toFixed(1)}). Promotes 5-HT serotonergic baseline stability.`,
+      };
     }
   }
 
@@ -91,47 +172,44 @@ class StimulusGenerator {
       case 'neutral':
         this._renderNeutral(ctx, w, h);
         break;
+      case 'custom':
+        this._renderCustom(ctx, w, h);
+        break;
     }
 
     ctx.restore();
   }
 
   _renderFruit(ctx, w, h) {
-    // Rich juicy watermelon slice on dark phone background
     const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
     bgGrad.addColorStop(0, '#0c0512');
     bgGrad.addColorStop(1, '#1b081e');
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, w, h);
 
-    // Glowing appetitive ambient aura
     const aura = ctx.createRadialGradient(w / 2, h / 2, 10, w / 2, h / 2, 70);
     aura.addColorStop(0, 'rgba(255, 30, 80, 0.35)');
     aura.addColorStop(1, 'rgba(255, 30, 80, 0.0)');
     ctx.fillStyle = aura;
     ctx.fillRect(0, 0, w, h);
 
-    // Watermelon rind (green arc)
     ctx.save();
     ctx.translate(w / 2, h / 2 + 15);
     const bob = Math.sin(this.time * 2.5) * 3;
     ctx.translate(0, bob);
 
-    // Dark green outer rind
     ctx.beginPath();
     ctx.arc(0, 0, 36, 0.15 * Math.PI, 0.85 * Math.PI, false);
     ctx.lineWidth = 9;
     ctx.strokeStyle = '#1e7534';
     ctx.stroke();
 
-    // White inner rind
     ctx.beginPath();
     ctx.arc(0, 0, 32, 0.16 * Math.PI, 0.84 * Math.PI, false);
     ctx.lineWidth = 4;
     ctx.strokeStyle = '#e6f7df';
     ctx.stroke();
 
-    // Vibrant red watermelon flesh
     ctx.beginPath();
     ctx.moveTo(0, 0);
     ctx.arc(0, 0, 30, 0.18 * Math.PI, 0.82 * Math.PI, false);
@@ -139,10 +217,7 @@ class StimulusGenerator {
     ctx.fillStyle = '#ff1744';
     ctx.fill();
 
-    // Black seeds
-    const seeds = [
-      [-12, 14], [12, 14], [0, 20], [-8, 22], [8, 22], [0, 10]
-    ];
+    const seeds = [[-12, 14], [12, 14], [0, 20], [-8, 22], [8, 22], [0, 10]];
     ctx.fillStyle = '#111';
     for (const [sx, sy] of seeds) {
       ctx.beginPath();
@@ -150,7 +225,6 @@ class StimulusGenerator {
       ctx.fill();
     }
 
-    // Dripping sweet sugar droplet
     const dripY = 32 + ((this.time * 25) % 35);
     ctx.fillStyle = 'rgba(255, 100, 150, 0.9)';
     ctx.beginPath();
@@ -161,24 +235,21 @@ class StimulusGenerator {
   }
 
   _renderShadow(ctx, w, h, dt) {
-    // Looming threat stimulus: expanding dark shadow on bright high-contrast arena
     ctx.fillStyle = '#f0f4f8';
     ctx.fillRect(0, 0, w, h);
 
     if (this.isLoomingActive) {
       this.loomingProgress += dt * 1.5;
       if (this.loomingProgress > 1.2) {
-        this.loomingProgress = 0.05; // Loop the looming cycle
+        this.loomingProgress = 0.05;
       }
     } else {
       this.loomingProgress = 0.15;
     }
 
-    // Exponential looming expansion radius: r = r0 * e^(k * t)
     const maxR = Math.hypot(w, h) * 0.7;
     const currentR = 5 + Math.pow(this.loomingProgress, 2.4) * maxR;
 
-    // Dark predator shadow casting sudden looming contrast
     const shadowGrad = ctx.createRadialGradient(w / 2, h / 2, currentR * 0.7, w / 2, h / 2, currentR);
     shadowGrad.addColorStop(0, '#020306');
     shadowGrad.addColorStop(0.85, '#090b12');
@@ -189,7 +260,6 @@ class StimulusGenerator {
     ctx.arc(w / 2, h / 2, currentR, 0, Math.PI * 2);
     ctx.fill();
 
-    // Alert indicators on screen
     if (this.loomingProgress > 0.4) {
       ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
       ctx.font = 'bold 10px monospace';
@@ -199,7 +269,6 @@ class StimulusGenerator {
   }
 
   _renderSpider(ctx, w, h) {
-    // High-contrast predator on dim surface
     ctx.fillStyle = '#10141a';
     ctx.fillRect(0, 0, w, h);
 
@@ -208,31 +277,26 @@ class StimulusGenerator {
     const crawl = Math.sin(this.time * 6) * 4;
     ctx.translate(0, crawl);
 
-    // Spider abdomen & cephalothorax
     ctx.fillStyle = '#1c1b24';
     ctx.strokeStyle = '#852028';
     ctx.lineWidth = 1.5;
 
-    // Abdomen
     ctx.beginPath();
     ctx.ellipse(0, 12, 14, 20, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
-    // Cephalothorax
     ctx.beginPath();
     ctx.ellipse(0, -6, 10, 11, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
-    // Glowing venomous red chelicerae eyes
     ctx.fillStyle = '#ff1133';
     ctx.beginPath();
     ctx.arc(-3, -12, 2, 0, Math.PI * 2);
     ctx.arc(3, -12, 2, 0, Math.PI * 2);
     ctx.fill();
 
-    // 8 Articulated crawling legs
     ctx.strokeStyle = '#2d2d38';
     ctx.lineWidth = 2;
     for (let i = 0; i < 4; i++) {
@@ -240,14 +304,12 @@ class StimulusGenerator {
       const legPhase = this.time * 8 + i * 1.2;
       const legOffset = Math.sin(legPhase) * 6;
 
-      // Left leg
       ctx.beginPath();
       ctx.moveTo(-7, sideY);
       ctx.lineTo(-24, sideY - 10 + legOffset);
       ctx.lineTo(-38, sideY + 12 + legOffset);
       ctx.stroke();
 
-      // Right leg
       ctx.beginPath();
       ctx.moveTo(7, sideY);
       ctx.lineTo(24, sideY - 10 - legOffset);
@@ -259,7 +321,6 @@ class StimulusGenerator {
   }
 
   _renderNeutral(ctx, w, h) {
-    // Natural swaying green leaves (ambient baseline)
     const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
     bgGrad.addColorStop(0, '#06170d');
     bgGrad.addColorStop(1, '#0e2d19');
@@ -268,7 +329,6 @@ class StimulusGenerator {
 
     ctx.save();
     for (let i = 0; i < 5; i++) {
-      const sway = Math.sin(this.time * 2 + i) * 6;
       const lx = 20 + i * 15;
       const ly = 30 + i * 22;
 
@@ -281,7 +341,6 @@ class StimulusGenerator {
       ctx.ellipse(0, 0, 18, 9, 0.4, 0, Math.PI * 2);
       ctx.fill();
 
-      // Vein
       ctx.strokeStyle = 'rgba(255,255,255,0.15)';
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -294,13 +353,38 @@ class StimulusGenerator {
     ctx.restore();
   }
 
+  _renderCustom(ctx, w, h) {
+    if (!this.customImage) return;
+
+    ctx.fillStyle = '#05070a';
+    ctx.fillRect(0, 0, w, h);
+
+    // Draw custom image maintaining aspect ratio and centering
+    const imgW = this.customImage.naturalWidth || this.customImage.width;
+    const imgH = this.customImage.naturalHeight || this.customImage.height;
+
+    const scale = Math.max(w / imgW, h / imgH);
+    const renderW = imgW * scale;
+    const renderH = imgH * scale;
+    const offsetX = (w - renderW) / 2;
+    const offsetY = (h - renderH) / 2;
+
+    ctx.drawImage(this.customImage, offsetX, offsetY, renderW, renderH);
+
+    // Subtle scanline overlay for cyber-microscopy aesthetic
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+    for (let y = 0; y < h; y += 4) {
+      ctx.fillRect(0, y, w, 1);
+    }
+  }
+
   getBase64Frame() {
     return this.canvas.toDataURL('image/png');
   }
 }
 
 // ============================================================================
-// 2. THREE.JS 3D OBSERVATION CHAMBER & ANATOMICAL DROSOPHILA RIG
+// 2. THREE.JS 3D OBSERVATION CHAMBER, NEUROPILS & DROSOPHILA RIG
 // ============================================================================
 
 class ObservationChamber3D {
@@ -316,6 +400,7 @@ class ObservationChamber3D {
 
     // 3D Objects
     this.flyGroup = null;
+    this.head = null;
     this.leftWing = null;
     this.rightWing = null;
     this.legs = [];
@@ -324,6 +409,9 @@ class ObservationChamber3D {
     this.phoneLight = null;
     this.phoneTexture = null;
 
+    // 3D Anatomical Neuropils
+    this.neuropils = {};
+
     // Kinematic states
     this.forwardDrive = 0.0;
     this.steeringDeflection = 0.0;
@@ -331,9 +419,14 @@ class ObservationChamber3D {
     this.jumpY = 0;
     this.jumpVy = 0;
 
+    // Front-leg screen swipe state
+    this.isSwiping = false;
+    this.swipeProgress = 0.0;
+
     this._initScene();
     this._buildEnvironment();
     this._buildProceduralFly();
+    this._buildNeuropilCompartments();
     this._buildVirtualSmartphone();
     this._setupEventListeners();
   }
@@ -342,16 +435,13 @@ class ObservationChamber3D {
     const w = this.container.clientWidth || 600;
     const h = this.container.clientHeight || 500;
 
-    // Scene
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x06080d);
     this.scene.fog = new THREE.FogExp2(0x06080d, 0.04);
 
-    // Camera
     this.camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
     this.camera.position.set(0, 3.2, 5.5);
 
-    // Renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     this.renderer.setSize(w, h);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -361,18 +451,16 @@ class ObservationChamber3D {
     this.renderer.toneMappingExposure = 1.2;
     this.container.appendChild(this.renderer.domElement);
 
-    // Controls (OrbitControls from CDN)
     if (window.THREE && window.THREE.OrbitControls) {
       this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
       this.controls.enableDamping = true;
       this.controls.dampingFactor = 0.08;
-      this.controls.minDistance = 1.8;
+      this.controls.minDistance = 1.2;
       this.controls.maxDistance = 12.0;
       this.controls.maxPolarAngle = Math.PI / 2 - 0.05;
       this.controls.target.set(0, 0.9, 0);
     }
 
-    // Lighting
     const ambientLight = new THREE.AmbientLight(0x1a243b, 1.2);
     this.scene.add(ambientLight);
 
@@ -389,7 +477,6 @@ class ObservationChamber3D {
   }
 
   _buildEnvironment() {
-    // Circular cybernetic observation stage
     const floorGeo = new THREE.CylinderGeometry(3.5, 3.8, 0.25, 48);
     const floorMat = new THREE.MeshStandardMaterial({
       color: 0x0c111a,
@@ -401,7 +488,6 @@ class ObservationChamber3D {
     floor.receiveShadow = true;
     this.scene.add(floor);
 
-    // Neon concentric ring grid on stage
     const ringGeo = new THREE.RingGeometry(1.4, 1.44, 48);
     const ringMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, side: THREE.DoubleSide });
     const ring = new THREE.Mesh(ringGeo, ringMat);
@@ -416,13 +502,11 @@ class ObservationChamber3D {
     outerRing.position.y = 0.005;
     this.scene.add(outerRing);
 
-    // Spherical air-cushioned treadmill ball (classic Seelig & Jayaraman neurobiology setup)
     const ballGeo = new THREE.SphereGeometry(0.55, 32, 32);
     const ballMat = new THREE.MeshStandardMaterial({
       color: 0x182030,
       roughness: 0.6,
       metalness: 0.3,
-      wireframe: false,
     });
     this.treadmillBall = new THREE.Mesh(ballGeo, ballMat);
     this.treadmillBall.position.set(0, 0.42, 0);
@@ -430,7 +514,6 @@ class ObservationChamber3D {
     this.treadmillBall.receiveShadow = true;
     this.scene.add(this.treadmillBall);
 
-    // Translucent glass dome
     const domeGeo = new THREE.SphereGeometry(3.5, 32, 24, 0, Math.PI * 2, 0, Math.PI / 2);
     const domeMat = new THREE.MeshPhysicalMaterial({
       color: 0x88ccff,
@@ -449,11 +532,10 @@ class ObservationChamber3D {
 
   _buildProceduralFly() {
     this.flyGroup = new THREE.Group();
-    this.flyGroup.position.set(0, 1.05, 0); // Positioned atop spherical treadmill
+    this.flyGroup.position.set(0, 1.05, 0);
 
-    // Materials
     const chitinMat = new THREE.MeshStandardMaterial({
-      color: 0x3d2716, // Rich dark amber drosophila cuticle
+      color: 0x3d2716,
       roughness: 0.35,
       metalness: 0.3,
     });
@@ -465,7 +547,7 @@ class ObservationChamber3D {
     });
 
     const eyeMat = new THREE.MeshStandardMaterial({
-      color: 0xaa0022, // Deep ruby red drosophila compound eye
+      color: 0xaa0022,
       emissive: 0x44000b,
       roughness: 0.2,
       metalness: 0.4,
@@ -489,7 +571,7 @@ class ObservationChamber3D {
     thorax.castShadow = true;
     this.flyGroup.add(thorax);
 
-    // 2. Abdomen (curved posterior)
+    // 2. Abdomen
     const abdomenGeo = new THREE.SphereGeometry(0.42, 18, 14);
     abdomenGeo.scale(0.8, 0.75, 1.6);
     this.abdomen = new THREE.Mesh(abdomenGeo, abdomenMat);
@@ -498,16 +580,26 @@ class ObservationChamber3D {
     this.abdomen.castShadow = true;
     this.flyGroup.add(this.abdomen);
 
-    // 3. Head Capsule (articulated)
+    // 3. Head Capsule (translucent to expose inner neuropils)
     this.head = new THREE.Group();
     this.head.position.set(0, 0.08, 0.55);
 
+    const headCuticleMat = new THREE.MeshPhysicalMaterial({
+      color: 0x3d2716,
+      transparent: true,
+      opacity: 0.85,
+      roughness: 0.3,
+      metalness: 0.2,
+      transmission: 0.45,
+      ior: 1.35,
+    });
+
     const headGeo = new THREE.SphereGeometry(0.24, 16, 12);
     headGeo.scale(1.2, 1.0, 0.9);
-    const headMesh = new THREE.Mesh(headGeo, chitinMat);
+    const headMesh = new THREE.Mesh(headGeo, headCuticleMat);
     this.head.add(headMesh);
 
-    // 4. Compound Eyes (Left & Right)
+    // 4. Compound Eyes
     const eyeGeo = new THREE.SphereGeometry(0.14, 14, 12);
     eyeGeo.scale(0.9, 1.3, 1.1);
 
@@ -521,14 +613,14 @@ class ObservationChamber3D {
     rightEye.rotation.set(0.1, -0.35, 0.2);
     this.head.add(rightEye);
 
-    // 5. Proboscis (feeding mouthparts)
+    // 5. Proboscis
     const proboscisGeo = new THREE.CylinderGeometry(0.03, 0.06, 0.22, 10);
     const proboscis = new THREE.Mesh(proboscisGeo, chitinMat);
     proboscis.position.set(0, -0.22, 0.08);
     proboscis.rotation.x = 0.35;
     this.head.add(proboscis);
 
-    // 6. Neural Sparks (inside head capsule)
+    // 6. Neural Spark Particle System
     const sparkGeo = new THREE.BufferGeometry();
     const sparkCount = 64;
     const positions = new Float32Array(sparkCount * 3);
@@ -538,8 +630,6 @@ class ObservationChamber3D {
       positions[i * 3 + 0] = (Math.random() - 0.5) * 0.28;
       positions[i * 3 + 1] = (Math.random() - 0.5) * 0.22;
       positions[i * 3 + 2] = (Math.random() - 0.5) * 0.22;
-
-      // Cyan / Golden bio-luminescence
       colors[i * 3 + 0] = 0.0;
       colors[i * 3 + 1] = 0.95;
       colors[i * 3 + 2] = 0.85;
@@ -560,9 +650,9 @@ class ObservationChamber3D {
 
     this.flyGroup.add(this.head);
 
-    // 7. Wings (Translucent with venation silhouette)
+    // 7. Wings
     const wingGeo = new THREE.PlaneGeometry(0.48, 1.25);
-    wingGeo.translate(0, 0.6, 0); // Rotate from base hinge
+    wingGeo.translate(0, 0.6, 0);
 
     this.leftWing = new THREE.Mesh(wingGeo, wingMat);
     this.leftWing.position.set(-0.16, 0.28, -0.15);
@@ -580,7 +670,7 @@ class ObservationChamber3D {
     this.legs = [];
     const legConfigs = [
       { side: -1, z: 0.22, name: 'pro_L' },
-      { side: 1, z: 0.22, name: 'pro_R' },
+      { side: 1, z: 0.22, name: 'pro_R' }, // Front right leg for screen touch
       { side: -1, z: -0.02, name: 'meso_L' },
       { side: 1, z: -0.02, name: 'meso_R' },
       { side: -1, z: -0.28, name: 'meta_L' },
@@ -597,14 +687,12 @@ class ObservationChamber3D {
       const legRoot = new THREE.Group();
       legRoot.position.set(cfg.side * 0.26, -0.12, cfg.z);
 
-      // Femur
       const femurGeo = new THREE.CylinderGeometry(0.025, 0.02, 0.38, 8);
       femurGeo.translate(0, -0.19, 0);
       const femur = new THREE.Mesh(femurGeo, legMat);
       femur.rotation.z = cfg.side * 0.7;
       femur.rotation.x = (cfg.z > 0 ? 0.3 : -0.3);
 
-      // Tibia / Tarsus
       const tibiaGeo = new THREE.CylinderGeometry(0.018, 0.012, 0.45, 8);
       tibiaGeo.translate(0, -0.22, 0);
       const tibia = new THREE.Mesh(tibiaGeo, legMat);
@@ -618,22 +706,119 @@ class ObservationChamber3D {
       this.legs.push({
         group: legRoot,
         femur: femur,
+        tibia: tibia,
         side: cfg.side,
         phase: i * 1.05,
+        name: cfg.name,
         defaultRotZ: femur.rotation.z,
+        defaultPosX: legRoot.position.x,
+        defaultPosY: legRoot.position.y,
+        defaultPosZ: legRoot.position.z,
       });
     }
 
     this.scene.add(this.flyGroup);
   }
 
+  _buildNeuropilCompartments() {
+    // 3D Anatomical Neuropil Models inside Drosophila Head Capsule
+    // 1. Optic Lobes (Medulla & Lobula complexes: bilateral cyan glow)
+    const opticMat = new THREE.MeshStandardMaterial({
+      color: 0x00f0ff,
+      emissive: 0x00aacc,
+      emissiveIntensity: 0.4,
+      transparent: true,
+      opacity: 0.65,
+      roughness: 0.2,
+      wireframe: false,
+    });
+
+    const opticGeo = new THREE.SphereGeometry(0.08, 12, 10);
+    opticGeo.scale(0.8, 1.4, 1.1);
+
+    const leftOptic = new THREE.Mesh(opticGeo, opticMat);
+    leftOptic.position.set(-0.16, 0.04, 0.06);
+    this.head.add(leftOptic);
+
+    const rightOptic = new THREE.Mesh(opticGeo, opticMat);
+    rightOptic.position.set(0.16, 0.04, 0.06);
+    this.head.add(rightOptic);
+
+    // 2. Mushroom Body (Calyx and alpha/beta lobes: Dopaminergic Emerald Glow)
+    const mbMat = new THREE.MeshStandardMaterial({
+      color: 0x10b981,
+      emissive: 0x059669,
+      emissiveIntensity: 0.5,
+      transparent: true,
+      opacity: 0.75,
+      roughness: 0.25,
+    });
+
+    const mbGroup = new THREE.Group();
+    // Calyx dorsal spheres
+    const calyxGeo = new THREE.SphereGeometry(0.045, 10, 8);
+    const calyxL = new THREE.Mesh(calyxGeo, mbMat);
+    calyxL.position.set(-0.05, 0.09, -0.03);
+    const calyxR = new THREE.Mesh(calyxGeo, mbMat);
+    calyxR.position.set(0.05, 0.09, -0.03);
+    mbGroup.add(calyxL, calyxR);
+
+    // Vertical & Medial Lobes
+    const lobeGeo = new THREE.CylinderGeometry(0.015, 0.02, 0.12, 8);
+    const lobeL = new THREE.Mesh(lobeGeo, mbMat);
+    lobeL.position.set(-0.03, 0.02, 0.02);
+    lobeL.rotation.z = -0.3;
+    const lobeR = new THREE.Mesh(lobeGeo, mbMat);
+    lobeR.position.set(0.03, 0.02, 0.02);
+    lobeR.rotation.z = 0.3;
+    mbGroup.add(lobeL, lobeR);
+
+    this.head.add(mbGroup);
+
+    // 3. Central Complex (Ellipsoid Body Torus: Amber Compass Ring)
+    const ccMat = new THREE.MeshStandardMaterial({
+      color: 0xffaa00,
+      emissive: 0xff8800,
+      emissiveIntensity: 0.6,
+      transparent: true,
+      opacity: 0.8,
+      roughness: 0.2,
+    });
+    const ccGeo = new THREE.TorusGeometry(0.04, 0.012, 8, 24);
+    const centralComplex = new THREE.Mesh(ccGeo, ccMat);
+    centralComplex.position.set(0, 0.04, 0.03);
+    centralComplex.rotation.x = Math.PI / 2 - 0.2;
+    this.head.add(centralComplex);
+
+    // 4. Giant Fiber & Descending Tract (Cervical connectives: Alert Crimson)
+    const gfMat = new THREE.MeshStandardMaterial({
+      color: 0xef4444,
+      emissive: 0xb91c1c,
+      emissiveIntensity: 0.3,
+      transparent: true,
+      opacity: 0.7,
+      roughness: 0.3,
+    });
+    const gfGeo = new THREE.CylinderGeometry(0.012, 0.018, 0.24, 8);
+    const gfTract = new THREE.Mesh(gfGeo, gfMat);
+    gfTract.position.set(0, -0.06, -0.08);
+    gfTract.rotation.x = 0.45;
+    this.head.add(gfTract);
+
+    this.neuropils = {
+      opticMat: opticMat,
+      mbMat: mbMat,
+      ccMat: ccMat,
+      centralComplex: centralComplex,
+      gfMat: gfMat,
+    };
+  }
+
   _buildVirtualSmartphone() {
-    // 3D Smartphone held at 35° tilt directly in front of the fly
     const phoneGroup = new THREE.Group();
     phoneGroup.position.set(0, 1.25, 1.35);
-    phoneGroup.rotation.x = -0.35; // Tilted towards the fly's compound eyes
+    phoneGroup.rotation.x = -0.35;
 
-    // Phone body chassis
     const bodyGeo = new THREE.BoxGeometry(0.85, 1.5, 0.06);
     const bodyMat = new THREE.MeshStandardMaterial({
       color: 0x111622,
@@ -644,7 +829,6 @@ class ObservationChamber3D {
     phoneBody.castShadow = true;
     phoneGroup.add(phoneBody);
 
-    // Screen mapped from HTML5 Canvas texture
     this.phoneTexture = new THREE.CanvasTexture(this.stimulusCanvas);
     this.phoneTexture.minFilter = THREE.LinearFilter;
     this.phoneTexture.magFilter = THREE.LinearFilter;
@@ -658,12 +842,10 @@ class ObservationChamber3D {
     this.phoneScreenMesh.position.z = 0.032;
     phoneGroup.add(this.phoneScreenMesh);
 
-    // Screen light casting glow directly onto fly's eyes
     this.phoneLight = new THREE.PointLight(0xff2255, 1.5, 2.5);
     this.phoneLight.position.set(0, 0, 0.2);
     phoneGroup.add(this.phoneLight);
 
-    // Modern smartphone camera notch & speaker slit
     const notchGeo = new THREE.BoxGeometry(0.18, 0.04, 0.02);
     const notchMat = new THREE.MeshBasicMaterial({ color: 0x05070a });
     const notch = new THREE.Mesh(notchGeo, notchMat);
@@ -684,7 +866,6 @@ class ObservationChamber3D {
       }
     });
 
-    // Camera view toggle buttons
     const btnFly = document.getElementById('view-fly');
     const btnPhone = document.getElementById('view-phone');
     const btnBrain = document.getElementById('view-brain');
@@ -718,17 +899,22 @@ class ObservationChamber3D {
     if (!this.camera || !this.controls) return;
 
     if (preset === 'fly') {
-      // Perspective viewing fly and phone together
       this.camera.position.set(1.8, 2.2, 3.4);
       this.controls.target.set(0, 1.1, 0.4);
     } else if (preset === 'phone') {
-      // Over the fly's shoulder looking at the phone screen
       this.camera.position.set(0, 1.45, -0.4);
       this.controls.target.set(0, 1.25, 1.35);
     } else if (preset === 'brain') {
-      // Close up macro view into the fly's head capsule
-      this.camera.position.set(0.4, 1.3, 0.95);
-      this.controls.target.set(0, 1.15, 0.55);
+      // Macro zoom into the head capsule to inspect glowing neuropils
+      this.camera.position.set(0.28, 1.25, 0.92);
+      this.controls.target.set(0, 1.14, 0.55);
+    }
+  }
+
+  triggerLegSwipe() {
+    if (!this.isSwiping) {
+      this.isSwiping = true;
+      this.swipeProgress = 0.0;
     }
   }
 
@@ -739,36 +925,62 @@ class ObservationChamber3D {
     this.forwardDrive = (motor.forward_drive_pct || 0) / 100;
     this.steeringDeflection = motor.steering_deflection || 0;
 
-    // Check Giant Fiber escape jump reflex
+    // Giant Fiber jump trigger
     if (motor.giant_fiber_jump && !this.jumpTriggered) {
       this.jumpTriggered = true;
-      this.jumpVy = 0.16; // Upward impulse
+      this.jumpVy = 0.16;
     }
 
-    // Update brain spark particles intensity
-    const totalSpikes = telemetry.spike_counts?.total_spikes || 0;
+    // Neuropil bioluminescent modulation
+    const h = telemetry.hormones || {};
+    const da = h.dopamine_nm || 5.0;
+    const oa = h.octopamine_nm || 2.0;
+    const spikes = telemetry.spike_counts?.total_spikes || 0;
+
+    if (this.neuropils.mbMat) {
+      // Mushroom body glows gold/green with dopamine
+      this.neuropils.mbMat.emissiveIntensity = 0.3 + Math.min(2.5, (da / 15) * 1.5);
+    }
+    if (this.neuropils.opticMat) {
+      // Optic lobes flash with photon flux and total spikes
+      this.neuropils.opticMat.emissiveIntensity = 0.3 + Math.min(2.0, (spikes / 100) * 1.2);
+    }
+    if (this.neuropils.gfMat) {
+      // Giant fiber flashes red when octopamine is elevated or looming detected
+      this.neuropils.gfMat.emissiveIntensity = (oa > 10.0 || motor.giant_fiber_jump) ? 2.5 : 0.2;
+    }
+    if (this.neuropils.centralComplex) {
+      // Central complex ring rotates with EPG compass angle
+      const headingRad = (motor.compass_heading_deg || 0) * (Math.PI / 180);
+      this.neuropils.centralComplex.rotation.z = headingRad;
+    }
+
+    // Motivated touch interaction: high dopamine triggers physical screen swipe
+    if (da > 22.0 && !this.isSwiping && Math.random() < 0.15) {
+      this.triggerLegSwipe();
+    }
+
+    // Brain sparks intensity
     if (this.brainSparkSystem) {
       const p = this.brainSparkSystem.geometry.attributes.position;
       const count = p.count;
       for (let i = 0; i < count; i++) {
-        if (Math.random() < Math.min(totalSpikes / 60, 0.4)) {
+        if (Math.random() < Math.min(spikes / 60, 0.4)) {
           p.setY(i, (Math.random() - 0.5) * 0.26);
         }
       }
       p.needsUpdate = true;
-      this.brainSparkSystem.material.size = 0.03 + Math.min(totalSpikes * 0.001, 0.06);
+      this.brainSparkSystem.material.size = 0.03 + Math.min(spikes * 0.001, 0.06);
     }
 
-    // Dynamic phone light color based on stimulus
-    if (this.phoneLight && telemetry.hormones) {
-      const da = telemetry.hormones.dopamine_nm || 5.0;
-      const oa = telemetry.hormones.octopamine_nm || 2.0;
+    // Dynamic phone light color
+    if (this.phoneLight) {
       if (oa > 4.5) {
-        this.phoneLight.color.setHex(0xff1122); // High stress threat
+        this.phoneLight.color.setHex(0xff1122);
       } else if (da > 8.0) {
-        this.phoneLight.color.setHex(0x00f0ff); // Rewarding
+        this.phoneLight.color.setHex(0x00f0ff);
       } else {
-        this.phoneLight.color.setHex(0x22cc88); // Natural
+        this.phoneLight.color.setHex(0x22cc88);
       }
     }
   }
@@ -779,63 +991,84 @@ class ObservationChamber3D {
     const dt = this.clock.getDelta();
     const time = this.clock.getElapsedTime();
 
-    // 1. Update phone screen texture
     if (this.phoneTexture) {
       this.phoneTexture.needsUpdate = true;
     }
 
-    // 2. Animate legs according to tripod gait & forward drive
+    // Leg locomotion & tripod gait
     if (this.legs && this.legs.length) {
       const stepFreq = 4.0 + this.forwardDrive * 12.0;
       for (const leg of this.legs) {
-        const angle = Math.sin(time * stepFreq + leg.phase) * (0.15 + this.forwardDrive * 0.25);
-        leg.femur.rotation.x = angle + (leg.side * this.steeringDeflection * 0.3);
+        if (leg.name === 'pro_R' && this.isSwiping) {
+          // Dedicated Front-Right Leg Screen Swipe Kinematics
+          this.swipeProgress += dt * 2.2;
+          const p = this.swipeProgress;
+
+          if (p < 1.0) {
+            // Lift and extend forward towards phone screen
+            const lift = Math.sin(p * Math.PI);
+            leg.group.position.x = leg.defaultPosX + 0.12 * lift;
+            leg.group.position.y = leg.defaultPosY + 0.28 * lift;
+            leg.group.position.z = leg.defaultPosZ + 0.55 * lift; // Reach to phone glass
+
+            leg.femur.rotation.x = -0.9 * lift;
+            leg.tibia.rotation.z = -0.4 * lift;
+          } else {
+            // Reset to treadmill
+            leg.group.position.set(leg.defaultPosX, leg.defaultPosY, leg.defaultPosZ);
+            leg.femur.rotation.z = leg.defaultRotZ;
+            this.isSwiping = false;
+            this.swipeProgress = 0;
+          }
+        } else {
+          // Standard walking gait
+          const angle = Math.sin(time * stepFreq + leg.phase) * (0.15 + this.forwardDrive * 0.25);
+          leg.femur.rotation.x = angle + (leg.side * this.steeringDeflection * 0.3);
+        }
       }
     }
 
-    // 3. Rotate treadmill sphere under fly's feet
+    // Treadmill ball rotation
     if (this.treadmillBall) {
       this.treadmillBall.rotation.x += this.forwardDrive * 0.08;
       this.treadmillBall.rotation.y += this.steeringDeflection * 0.04;
     }
 
-    // 4. Wing flutter
+    // Wing flutter
     if (this.leftWing && this.rightWing) {
       if (this.jumpTriggered || this.forwardDrive > 0.6) {
         const flutter = Math.sin(time * 65) * 0.45;
         this.leftWing.rotation.z = 0.3 + flutter;
         this.rightWing.rotation.z = -0.3 - flutter;
       } else {
-        // Subtle resting breath
         const breath = Math.sin(time * 3) * 0.04;
         this.leftWing.rotation.z = 0.2 + breath;
         this.rightWing.rotation.z = -0.2 - breath;
       }
     }
 
-    // 5. Giant Fiber Escape Jump Physics
+    // Giant Fiber Escape Jump Physics
     if (this.jumpTriggered) {
       this.jumpY += this.jumpVy;
-      this.jumpVy -= 0.009; // Gravity
+      this.jumpVy -= 0.009;
       if (this.jumpY <= 0) {
         this.jumpY = 0;
         this.jumpVy = 0;
         this.jumpTriggered = false;
       }
       this.flyGroup.position.y = 1.05 + this.jumpY;
-      this.flyGroup.position.z = -this.jumpY * 0.8; // Backward leap!
+      this.flyGroup.position.z = -this.jumpY * 0.8;
     } else {
       this.flyGroup.position.y = 1.05;
       this.flyGroup.position.z = 0;
     }
 
-    // 6. Abdomen breathing contraction
+    // Abdomen breathing contraction
     if (this.abdomen) {
       const abdPulse = 1.0 + Math.sin(time * 4) * 0.03;
       this.abdomen.scale.set(0.8 * abdPulse, 0.75 * abdPulse, 1.6);
     }
 
-    // 7. Update Controls & Render
     if (this.controls) {
       this.controls.update();
     }
@@ -873,20 +1106,17 @@ class CockpitVisualizers {
 
     ctx.clearRect(0, 0, w, h);
 
-    // Background circle
     ctx.fillStyle = 'rgba(10, 15, 25, 0.85)';
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.fill();
 
-    // 16 Wedge sectors of Protocerebral Bridge (PB) / Ellipsoid Body (EB)
     const sectors = 16;
     for (let i = 0; i < sectors; i++) {
       const a1 = (i / sectors) * Math.PI * 2;
       const a2 = ((i + 1) / sectors) * Math.PI * 2;
       const sectorDeg = (i / sectors) * 360;
 
-      // Angular distance to active compass heading
       const diff = Math.abs((((sectorDeg - headingDeg) + 180) % 360) - 180);
       const intensity = Math.max(0.1, 1.0 - diff / 60);
 
@@ -897,20 +1127,17 @@ class CockpitVisualizers {
       ctx.fillStyle = `rgba(0, 240, 255, ${intensity * 0.85})`;
       ctx.fill();
 
-      // Divider line
       ctx.strokeStyle = 'rgba(20, 30, 45, 0.9)';
       ctx.lineWidth = 1;
       ctx.stroke();
     }
 
-    // Outer Neon Ring
     ctx.strokeStyle = '#00f0ff';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Active Compass Needle (Ring Attractor Bump)
     const rad = (headingDeg - 90) * (Math.PI / 180);
     const nx = cx + Math.cos(rad) * (radius - 8);
     const ny = cy + Math.sin(rad) * (radius - 8);
@@ -922,7 +1149,6 @@ class CockpitVisualizers {
     ctx.lineTo(nx, ny);
     ctx.stroke();
 
-    // Center hub
     ctx.fillStyle = '#ff9d00';
     ctx.beginPath();
     ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
@@ -936,7 +1162,6 @@ class CockpitVisualizers {
 
     ctx.clearRect(0, 0, w, h);
 
-    // Dark grid lines
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
     ctx.lineWidth = 1;
     for (let y = 20; y < h; y += 20) {
@@ -948,11 +1173,9 @@ class CockpitVisualizers {
 
     if (!history || history.length < 2) return;
 
-    // Plot dopamine Hz curve
     const maxHz = Math.max(40, ...history.map(pt => pt.dopamine_hz || 0));
     const stepX = w / (history.length - 1);
 
-    // Fill gradient
     const grad = ctx.createLinearGradient(0, 0, 0, h);
     grad.addColorStop(0, 'rgba(255, 157, 0, 0.35)');
     grad.addColorStop(1, 'rgba(255, 157, 0, 0.0)');
@@ -973,7 +1196,6 @@ class CockpitVisualizers {
     ctx.fillStyle = grad;
     ctx.fill();
 
-    // Stroke line
     ctx.strokeStyle = '#ff9d00';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -1006,7 +1228,6 @@ class CockpitVisualizers {
       const spikes = pt.total_spikes || 0;
       const x = c * colWidth;
 
-      // Deterministic pseudo-raster visualization from spike count
       const activeUnits = Math.min(rows, Math.floor(spikes / 3));
       for (let r = 0; r < activeUnits; r++) {
         const neuronId = (r * 17 + c * 7) % rows;
@@ -1031,21 +1252,22 @@ class ConnectomeApp {
 
     this.ws = null;
     this.isStreaming = false;
-    this.frameInterval = null;
 
     this._initDomBindings();
+    this._initCustomPhotoUpload();
     this._initWebSocket();
     this._startObservationLoop();
   }
 
   _initDomBindings() {
-    // Stimulus buttons
+    // Preset buttons
     document.querySelectorAll('.stim-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', () => {
+        if (btn.id === 'upload-btn') return; // Handled separately
         document.querySelectorAll('.stim-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         const preset = btn.getAttribute('data-preset');
-        this.stimulus.setPreset(preset);
+        if (preset) this.stimulus.setPreset(preset);
       });
     });
 
@@ -1064,6 +1286,68 @@ class ConnectomeApp {
         this.stimulus.triggerLoomingPulse();
       });
     }
+
+    // Front-leg swipe screen button
+    const swipeBtn = document.getElementById('swipe-btn');
+    if (swipeBtn) {
+      swipeBtn.addEventListener('click', () => {
+        this.chamber.triggerLegSwipe();
+      });
+    }
+  }
+
+  _initCustomPhotoUpload() {
+    const fileInput = document.getElementById('photo-upload-input');
+    const uploadBtn = document.getElementById('upload-btn');
+    const previewContainer = document.querySelector('.screen-preview-container');
+
+    if (uploadBtn && fileInput) {
+      uploadBtn.addEventListener('click', () => {
+        fileInput.click();
+      });
+
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) this._handleImageFile(file);
+      });
+    }
+
+    // Drag and Drop onto virtual phone screen
+    if (previewContainer) {
+      previewContainer.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        previewContainer.classList.add('dragover');
+      });
+
+      previewContainer.addEventListener('dragleave', () => {
+        previewContainer.classList.remove('dragover');
+      });
+
+      previewContainer.addEventListener('drop', (e) => {
+        e.preventDefault();
+        previewContainer.classList.remove('dragover');
+        const file = e.dataTransfer.files && e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+          this._handleImageFile(file);
+        }
+      });
+    }
+  }
+
+  _handleImageFile(file) {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        document.querySelectorAll('.stim-btn').forEach(b => b.classList.remove('active'));
+        const uploadBtn = document.getElementById('upload-btn');
+        if (uploadBtn) uploadBtn.classList.add('active');
+
+        this.stimulus.loadCustomImage(img, file.name);
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
   }
 
   _initWebSocket() {
@@ -1103,12 +1387,8 @@ class ConnectomeApp {
   }
 
   _startObservationLoop() {
-    // 20 FPS observation loop (every 50ms matching biological simulation chunk)
     setInterval(() => {
-      // 1. Render stimulus canvas frame
       this.stimulus.render(0.05);
-
-      // 2. Transmit frame to engine
       const frameB64 = this.stimulus.getBase64Frame();
 
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -1118,7 +1398,6 @@ class ConnectomeApp {
           duration_ms: 50.0,
         }));
       } else {
-        // Fallback REST endpoint
         fetch('/api/observe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1154,7 +1433,7 @@ class ConnectomeApp {
     if (!snapshot || !snapshot.latest) return;
     const t = snapshot.latest;
 
-    // 1. Update 3D Chamber
+    // 1. Update 3D Chamber & Neuropils
     this.chamber.updateFromTelemetry(t);
 
     // 2. Header metrics
@@ -1195,7 +1474,6 @@ class ConnectomeApp {
     document.getElementById('drive-val').textContent = `${drive.toFixed(0)}%`;
     document.getElementById('drive-fill').style.width = `${Math.max(0, Math.min(100, drive))}%`;
 
-    // Alert pills
     const badgeRetreat = document.getElementById('badge-retreat');
     if (badgeRetreat) {
       if (m.moonwalker_retreat) badgeRetreat.classList.add('active');

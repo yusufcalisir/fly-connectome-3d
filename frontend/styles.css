@@ -281,18 +281,34 @@ body {
   font-weight: 600;
 }
 
+.upload-stim-btn {
+  border-style: dashed;
+  border-color: rgba(6, 182, 212, 0.4);
+  color: var(--c-serotonin);
+}
+
+.upload-stim-btn:hover {
+  border-color: var(--c-serotonin);
+  background: rgba(6, 182, 212, 0.1);
+}
+
+.screen-preview-container.dragover {
+  outline: 2px dashed #00f0ff;
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.6);
+}
+
 .action-bar {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
 }
 
 .btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px;
-  border-radius: 10px;
+  gap: 6px;
+  padding: 8px 6px;
+  border-radius: 8px;
   cursor: pointer;
   border: none;
   transition: transform 0.1s, box-shadow 0.2s;
@@ -304,17 +320,17 @@ body {
 }
 
 .btn-icon {
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .btn-text strong {
   display: block;
-  font-size: 12px;
+  font-size: 11px;
   letter-spacing: 0.5px;
 }
 
 .btn-text small {
-  font-size: 9px;
+  font-size: 8px;
   opacity: 0.8;
   display: block;
 }
@@ -329,6 +345,12 @@ body {
   background: linear-gradient(135deg, #ef4444, #b91c1c);
   color: #fff;
   box-shadow: 0 4px 14px var(--c-hazard-glow);
+}
+
+.btn-swipe {
+  background: linear-gradient(135deg, #06b6d4, #0284c7);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(6, 182, 212, 0.4);
 }
 
 /* Motor Telemetry Box */

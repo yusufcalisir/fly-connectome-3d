@@ -58,6 +58,8 @@
           <button class="stim-btn" data-preset="shadow">⚠️ Looming Shadow (Panic)</button>
           <button class="stim-btn" data-preset="spider">🕷️ Predatory Spider (Threat)</button>
           <button class="stim-btn" data-preset="neutral">🌿 Forest Foliage (Calm)</button>
+          <button id="upload-btn" class="stim-btn upload-stim-btn">📷 Upload Custom Photo</button>
+          <input type="file" id="photo-upload-input" accept="image/*" style="display: none;">
         </div>
       </div>
 
@@ -74,7 +76,14 @@
           <span class="btn-icon">🚨</span>
           <div class="btn-text">
             <strong>LOOM THREAT</strong>
-            <small>Trigger Giant Fiber Escape</small>
+            <small>Trigger Giant Fiber</small>
+          </div>
+        </button>
+        <button id="swipe-btn" class="btn btn-swipe">
+          <span class="btn-icon">👆</span>
+          <div class="btn-text">
+            <strong>LEG SWIPE</strong>
+            <small>Front-Leg Screen Touch</small>
           </div>
         </button>
       </div>
