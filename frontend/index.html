@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlyConnectome 3D - Neural Observation & Telemetry Cockpit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+  <!-- Three.js and OrbitControls from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body class="dark-theme">
+  <!-- Header / Navigation -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="pulse-indicator"></div>
+      <h1>FLY<span>CONNECTOME</span> 3D</h1>
+      <span class="badge">MaleCNS v1.0 Biophysics</span>
+    </div>
+    <div class="header-status">
+      <div class="stat-pill"><span class="label">ENGINE:</span> <span id="engine-status" class="value live">60 FPS LIVE</span></div>
+      <div class="stat-pill"><span class="label">SIM TIME:</span> <span id="sim-time" class="value mono">0.0 ms</span></div>
+      <div class="stat-pill"><span class="label">TOTAL SPIKES:</span> <span id="total-spikes" class="value mono">0</span></div>
+    </div>
+  </header>
+
+  <!-- Main Grid Layout -->
+  <main class="cockpit-grid">
+    <!-- LEFT PANEL: Stimulus Feed & Phone Control -->
+    <aside class="panel left-panel glass">
+      <div class="panel-header">
+        <h2>STIMULUS ARENA</h2>
+        <span class="tag">Virtual Phone Feed</span>
+      </div>
+
+      <!-- Photo Stimulus Carousel / Gallery -->
+      <div class="stimulus-card">
+        <div class="screen-preview-container">
+          <canvas id="virtual-phone-canvas" width="90" height="160"></canvas>
+          <div class="screen-overlay-badges">
+            <span id="stimulus-type-tag" class="overlay-tag appetitive">APPETITIVE</span>
+          </div>
+        </div>
+        <div class="stimulus-info">
+          <h3 id="current-photo-title">Sweet Ripe Watermelon</h3>
+          <p id="current-photo-desc">High-sugar olfactory & visual chromatic target.</p>
+        </div>
+      </div>
+
+      <!-- Category Selectors -->
+      <div class="stimulus-controls">
+        <label class="control-label">Select Stimulus Preset:</label>
+        <div class="button-matrix">
+          <button class="stim-btn active" data-preset="fruit">🍉 Sugar Fruit (Appetitive)</button>
+          <button class="stim-btn" data-preset="shadow">⚠️ Looming Shadow (Panic)</button>
+          <button class="stim-btn" data-preset="spider">🕷️ Predatory Spider (Threat)</button>
+          <button class="stim-btn" data-preset="neutral">🌿 Forest Foliage (Calm)</button>
+        </div>
+      </div>
+
+      <!-- Manual Action Bar -->
+      <div class="action-bar">
+        <button id="wirehead-btn" class="btn btn-wirehead">
+          <span class="btn-icon">⚡</span>
+          <div class="btn-text">
+            <strong>WIREHEAD</strong>
+            <small>Inject +20mV Dopamine</small>
+          </div>
+        </button>
+        <button id="threat-btn" class="btn btn-threat">
+          <span class="btn-icon">🚨</span>
+          <div class="btn-text">
+            <strong>LOOM THREAT</strong>
+            <small>Trigger Giant Fiber Escape</small>
+          </div>
+        </button>
+      </div>
+
+      <!-- Motor Readout Meters -->
+      <div class="motor-telemetry-box">
+        <h3>DESCENDING MOTOR OUTPUTS</h3>
+        <div class="meter-group">
+          <div class="meter-row">
+            <span>Steering (DNa02 L/R):</span>
+            <span id="steering-val" class="mono">0.00</span>
+          </div>
+          <div class="bidirectional-bar">
+            <div id="steering-indicator" class="pointer"></div>
+          </div>
+        </div>
+
+        <div class="meter-group">
+          <div class="meter-row">
+            <span>Forward Drive (DNp09):</span>
+            <span id="drive-val" class="mono">0%</span>
+          </div>
+          <div class="progress-track"><div id="drive-fill" class="progress-bar green"></div></div>
+        </div>
+
+        <div class="alert-badges">
+          <span id="badge-retreat" class="alert-pill">MDN MOONWALKER</span>
+          <span id="badge-jump" class="alert-pill">GIANT FIBER JUMP</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER VIEWPORT: 3D Three.js Observation Chamber -->
+    <section class="center-viewport">
+      <div id="three-container"></div>
+      <div class="viewport-hud">
+        <div class="hud-item compass-hud">
+          <canvas id="compass-canvas" width="90" height="90"></canvas>
+          <div class="compass-label">CENTRAL COMPLEX (EPG)<br><span id="heading-deg" class="mono">0.0°</span></div>
+        </div>
+      </div>
+      <div class="viewport-controls">
+        <button id="view-fly" class="view-toggle-btn active">Fly View</button>
+        <button id="view-phone" class="view-toggle-btn">Phone Angle</button>
+        <button id="view-brain" class="view-toggle-btn">Neural Synapses</button>
+      </div>
+    </section>
+
+    <!-- RIGHT PANEL: Hormonal Cockpit & Spike Raster -->
+    <aside class="panel right-panel glass">
+      <div class="panel-header">
+        <h2>NEUROCHEMICAL COCKPIT</h2>
+        <span class="tag">Kinetics</span>
+      </div>
+
+      <!-- Hormonal Meters -->
+      <div class="hormone-meters">
+        <!-- Dopamine -->
+        <div class="hormone-card da-card">
+          <div class="hormone-top">
+            <span class="h-name">DOPAMINE (PAM11)</span>
+            <span class="h-reading mono"><span id="da-hz">0.0</span> Hz | <span id="da-nm">5.0</span> nM</span>
+          </div>
+          <div class="progress-track"><div id="da-fill" class="progress-bar da-bar"></div></div>
+          <small class="h-hint">Appetitive reward, pleasure & associative plasticity</small>
+        </div>
+
+        <!-- Octopamine -->
+        <div class="hormone-card oa-card">
+          <div class="hormone-top">
+            <span class="h-name">OCTOPAMINE (TDC2)</span>
+            <span class="h-reading mono"><span id="oa-hz">0.0</span> Hz | <span id="oa-nm">2.0</span> nM</span>
+          </div>
+          <div class="progress-track"><div id="oa-fill" class="progress-bar oa-bar"></div></div>
+          <small class="h-hint">Insect adrenaline, acute stress & fight-or-flight</small>
+        </div>
+
+        <!-- Serotonin -->
+        <div class="hormone-card st-card">
+          <div class="hormone-top">
+            <span class="h-name">SEROTONIN (5-HT)</span>
+            <span class="h-reading mono"><span id="st-hz">0.0</span> Hz | <span id="st-nm">8.0</span> nM</span>
+          </div>
+          <div class="progress-track"><div id="st-fill" class="progress-bar st-bar"></div></div>
+          <small class="h-hint">Baseline calm, motor patience & satiety</small>
+        </div>
+      </div>
+
+      <!-- Real-Time Dopamine Chart -->
+      <div class="chart-section">
+        <div class="chart-header">
+          <h3>DOPAMINE WAVEFORM (Hz)</h3>
+          <span class="mono chart-scale">120 frames</span>
+        </div>
+        <canvas id="dopamine-chart" width="340" height="100"></canvas>
+      </div>
+
+      <!-- Landmark Spike Raster Plot -->
+      <div class="raster-section">
+        <div class="chart-header">
+          <h3>SPIKE RASTER STREAM (Matrix Waterfall)</h3>
+          <span class="mono chart-scale">64 landmarks</span>
+        </div>
+        <canvas id="raster-canvas" width="340" height="120"></canvas>
+      </div>
+
+      <!-- Plasticity Index -->
+      <div class="plasticity-box">
+        <div class="meter-row">
+          <span>Learned Association Drift (KC ──► MBON):</span>
+          <span id="plasticity-val" class="mono">+0.000</span>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <script src="/static/main.js"></script>
+</body>
+</html>
