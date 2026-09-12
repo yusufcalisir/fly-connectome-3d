@@ -112,7 +112,16 @@ jobs:
           path: |
             data/malecns_v1/malecns_v1_graph.npz
             data/malecns_v1/circuits_manifest.json
+            data/malecns_v1/annotations.feather
           key: malecns-v1-connectome-${{ hashFiles('src/connectome_engine/data/downloader.py', 'src/connectome_engine/data/compile_malecns.py') }}
+
+      - name: Download annotations if absent
+        run: |
+          mkdir -p data/malecns_v1
+          if [ ! -f "data/malecns_v1/annotations.feather" ]; then
+            echo "Downloading MaleCNS v1.0 annotations (~14MB)..."
+            curl -sSL "https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/body-annotations-male-cns-v1.0-minconf-0.5.feather" -o data/malecns_v1/annotations.feather || true
+          fi
 
       - name: Download and compile connectome if not cached
         if: steps.cache-connectome.outputs.cache-hit != 'true'

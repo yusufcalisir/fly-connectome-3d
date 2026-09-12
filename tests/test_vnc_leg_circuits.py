@@ -18,20 +18,29 @@ from connectome_engine.data.circuits import (
 
 
 @pytest.fixture(scope="module")
-def malecns_data():
-    """Load real Janelia MaleCNS v1.0 connectome circuits and raw annotations."""
+def malecns_circuits():
+    """Load real Janelia MaleCNS v1.0 connectome circuits and neuron IDs."""
     data_dir = Path(__file__).resolve().parents[1] / "data" / "malecns_v1"
     if not (data_dir / "malecns_v1_graph.npz").exists() or not (data_dir / "circuits_manifest.json").exists():
         pytest.skip("MaleCNS v1.0 dataset not found locally.")
 
     n_nodes, adj, circuits, neuron_ids = load_malecns_v1_connectome(data_dir)
-    ann_df = pd.read_feather(data_dir / "annotations.feather")
-    return circuits, neuron_ids, ann_df
+    return circuits, neuron_ids
 
 
-def test_vnc_leg_pools_disjoint_and_complete(malecns_data):
+@pytest.fixture(scope="module")
+def malecns_annotations():
+    """Load real Janelia MaleCNS v1.0 raw annotations dataframe if present."""
+    data_dir = Path(__file__).resolve().parents[1] / "data" / "malecns_v1"
+    ann_path = data_dir / "annotations.feather"
+    if not ann_path.exists():
+        pytest.skip(f"MaleCNS raw annotations not found at {ann_path}.")
+    return pd.read_feather(ann_path)
+
+
+def test_vnc_leg_pools_disjoint_and_complete(malecns_circuits):
     """Verify that the 6 VNC leg motor pools are mutually disjoint and contain exactly 381 biological neurons."""
-    circuits, neuron_ids, _ = malecns_data
+    circuits, _neuron_ids = malecns_circuits
 
     pools = [
         circuits.vnc_t1_left,
@@ -61,9 +70,10 @@ def test_vnc_leg_pools_disjoint_and_complete(malecns_data):
             assert len(overlap) == 0, f"Pools {i} and {j} overlap on nodes: {overlap}"
 
 
-def test_vnc_leg_pools_neuromere_and_subclass_consistency(malecns_data):
+def test_vnc_leg_pools_neuromere_and_subclass_consistency(malecns_circuits, malecns_annotations):
     """Verify that all extracted leg motor neurons belong to superclass 'vnc_motor' and correct thoracic neuromeres."""
-    circuits, neuron_ids, ann_df = malecns_data
+    circuits, neuron_ids = malecns_circuits
+    ann_df = malecns_annotations
 
     # Map graph indices to annotation records
     ann_aligned = ann_df.set_index("bodyId").reindex(neuron_ids)
