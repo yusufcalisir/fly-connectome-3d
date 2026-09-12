@@ -149,29 +149,15 @@ uv run python src/connectome_engine/data/compile_coordinates.py
 
 ### 3. Launching the Engine
 
-#### On Windows (Automated 1-Click Launcher):
-```cmd
-start.bat
-```
-`start.bat` provides:
-- Automated `uv` and Python environment verification.
-- Dataset integrity checks (`malecns_v1_graph.npz` and `soma_coordinates_141k.bin`).
-- Port conflict detection and process management.
-- **Smart Health-Check Polling**: Polls the server until 25.6M synapses are fully loaded into memory, opening the browser at the exact millisecond HTTP 200 is returned (preventing premature `ERR_CONNECTION_REFUSED` errors).
-
-#### Subcommand Options:
-```cmd
-start.bat test           :: Runs complete biological test suite
-start.bat compile        :: Recompiles connectome and soma coordinates
-start.bat --no-browser   :: Runs headless without launching browser tab
-start.bat --reload       :: Enables Uvicorn hot code reload
-```
-
-#### On Linux / macOS:
+Start the biocomputing server and telemetry engine using `uv`:
 ```bash
 uv run uvicorn connectome_engine.server.app:app --host 127.0.0.1 --port 8000
 ```
-Open your browser at `http://127.0.0.1:8000/`.
+
+Open your browser and navigate to:
+```
+http://127.0.0.1:8000/
+```
 
 ---
 
