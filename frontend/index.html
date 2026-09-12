@@ -18,12 +18,18 @@
     <div class="brand">
       <div class="pulse-indicator"></div>
       <h1>FLY<span>CONNECTOME</span> 3D</h1>
-      <span class="badge">MaleCNS v1.0 Biophysics</span>
+      <span class="badge" data-i18n="badge_biophysics">MaleCNS v1.0 Biophysics</span>
     </div>
     <div class="header-status">
-      <div class="stat-pill"><span class="label">ENGINE:</span> <span id="engine-status" class="value live">60 FPS LIVE</span></div>
-      <div class="stat-pill"><span class="label">SIM TIME:</span> <span id="sim-time" class="value mono">0.0 ms</span></div>
-      <div class="stat-pill"><span class="label">TOTAL SPIKES:</span> <span id="total-spikes" class="value mono">0</span></div>
+      <div class="stat-pill"><span class="label" data-i18n="header_engine">ENGINE:</span> <span id="engine-status" class="value live">60 FPS LIVE</span></div>
+      <div class="stat-pill"><span class="label" data-i18n="header_sim_time">SIM TIME:</span> <span id="sim-time" class="value mono">0.0 ms</span></div>
+      <div class="stat-pill"><span class="label" data-i18n="header_spikes">TOTAL SPIKES:</span> <span id="total-spikes" class="value mono">0</span></div>
+      <!-- Modern Language Switcher Pill -->
+      <div class="lang-switch-pill" title="Switch Language / Dil Değiştir">
+        <span class="lang-icon">🌐</span>
+        <button id="lang-btn-en" class="lang-pill-btn active" data-lang="en">EN</button>
+        <button id="lang-btn-tr" class="lang-pill-btn" data-lang="tr">TR</button>
+      </div>
     </div>
   </header>
 
@@ -32,8 +38,8 @@
     <!-- LEFT PANEL: Stimulus Feed & Phone Control -->
     <aside class="panel left-panel glass">
       <div class="panel-header">
-        <h2>STIMULUS ARENA</h2>
-        <span class="tag">Virtual Phone Feed</span>
+        <h2 data-i18n="panel_stimulus">STIMULUS ARENA</h2>
+        <span class="tag" data-i18n="tag_phone_feed">Virtual Phone Feed</span>
       </div>
 
       <!-- Photo Stimulus Carousel / Gallery -->
@@ -52,13 +58,13 @@
 
       <!-- Category Selectors -->
       <div class="stimulus-controls">
-        <label class="control-label">Select Stimulus Preset:</label>
+        <label class="control-label" data-i18n="label_presets">Select Stimulus Preset:</label>
         <div class="button-matrix">
-          <button class="stim-btn active" data-preset="fruit">🍉 Sugar Fruit (Appetitive)</button>
-          <button class="stim-btn" data-preset="shadow">⚠️ Looming Shadow (Panic)</button>
-          <button class="stim-btn" data-preset="spider">🕷️ Predatory Spider (Threat)</button>
-          <button class="stim-btn" data-preset="neutral">🌿 Forest Foliage (Calm)</button>
-          <button id="upload-btn" class="stim-btn upload-stim-btn">📷 Upload Custom Photo</button>
+          <button class="stim-btn active" data-preset="fruit" data-i18n="preset_fruit">🍉 Sugar Fruit (Appetitive)</button>
+          <button class="stim-btn" data-preset="shadow" data-i18n="preset_shadow">⚠️ Looming Shadow (Panic)</button>
+          <button class="stim-btn" data-preset="spider" data-i18n="preset_spider">🕷️ Predatory Spider (Threat)</button>
+          <button class="stim-btn" data-preset="neutral" data-i18n="preset_foliage">🌿 Forest Foliage (Calm)</button>
+          <button id="upload-btn" class="stim-btn upload-stim-btn" data-i18n="preset_upload">📷 Upload Custom Photo</button>
           <input type="file" id="photo-upload-input" accept="image/*" style="display: none;">
         </div>
       </div>
@@ -68,32 +74,32 @@
         <button id="wirehead-btn" class="btn btn-wirehead">
           <span class="btn-icon">⚡</span>
           <div class="btn-text">
-            <strong>WIREHEAD</strong>
-            <small>Inject +20mV Dopamine</small>
+            <strong data-i18n="btn_wirehead_title">WIREHEAD</strong>
+            <small data-i18n="btn_wirehead_sub">Inject +20mV Dopamine</small>
           </div>
         </button>
         <button id="threat-btn" class="btn btn-threat">
           <span class="btn-icon">🚨</span>
           <div class="btn-text">
-            <strong>LOOM THREAT</strong>
-            <small>Trigger Giant Fiber</small>
+            <strong data-i18n="btn_threat_title">LOOM THREAT</strong>
+            <small data-i18n="btn_threat_sub">Trigger Giant Fiber</small>
           </div>
         </button>
         <button id="swipe-btn" class="btn btn-swipe">
           <span class="btn-icon">👆</span>
           <div class="btn-text">
-            <strong>LEG SWIPE</strong>
-            <small>Front-Leg Screen Touch</small>
+            <strong data-i18n="btn_swipe_title">LEG SWIPE</strong>
+            <small data-i18n="btn_swipe_sub">Front-Leg Screen Touch</small>
           </div>
         </button>
       </div>
 
       <!-- Motor Readout Meters -->
       <div class="motor-telemetry-box">
-        <h3>DESCENDING MOTOR OUTPUTS</h3>
+        <h3 data-i18n="title_motor">DESCENDING MOTOR OUTPUTS</h3>
         <div class="meter-group">
           <div class="meter-row">
-            <span>Steering (DNa02 L/R):</span>
+            <span data-i18n="label_steering">Steering (DNa02 L/R):</span>
             <span id="steering-val" class="mono">0.00</span>
           </div>
           <div class="bidirectional-bar">
@@ -103,15 +109,15 @@
 
         <div class="meter-group">
           <div class="meter-row">
-            <span>Forward Drive (DNp09):</span>
+            <span data-i18n="label_drive">Forward Drive (DNp09):</span>
             <span id="drive-val" class="mono">0%</span>
           </div>
           <div class="progress-track"><div id="drive-fill" class="progress-bar green"></div></div>
         </div>
 
         <div class="alert-badges">
-          <span id="badge-retreat" class="alert-pill">MDN MOONWALKER</span>
-          <span id="badge-jump" class="alert-pill">GIANT FIBER JUMP</span>
+          <span id="badge-retreat" class="alert-pill" data-i18n="pill_retreat">MDN MOONWALKER</span>
+          <span id="badge-jump" class="alert-pill" data-i18n="pill_jump">GIANT FIBER JUMP</span>
         </div>
       </div>
     </aside>
@@ -122,21 +128,21 @@
       <div class="viewport-hud">
         <div class="hud-item compass-hud">
           <canvas id="compass-canvas" width="90" height="90"></canvas>
-          <div class="compass-label">CENTRAL COMPLEX (EPG)<br><span id="heading-deg" class="mono">0.0°</span></div>
+          <div class="compass-label"><span data-i18n="compass_title">CENTRAL COMPLEX (EPG)</span><br><span id="heading-deg" class="mono">0.0°</span></div>
         </div>
       </div>
       <div class="viewport-controls">
-        <button id="view-fly" class="view-toggle-btn active">Fly View</button>
-        <button id="view-phone" class="view-toggle-btn">Phone Angle</button>
-        <button id="view-brain" class="view-toggle-btn">Neural Synapses</button>
+        <button id="view-fly" class="view-toggle-btn active" data-i18n="view_fly">Fly View</button>
+        <button id="view-phone" class="view-toggle-btn" data-i18n="view_phone">Phone Angle</button>
+        <button id="view-brain" class="view-toggle-btn" data-i18n="view_brain">Neural Synapses</button>
       </div>
     </section>
 
     <!-- RIGHT PANEL: Hormonal Cockpit & Spike Raster -->
     <aside class="panel right-panel glass">
       <div class="panel-header">
-        <h2>NEUROCHEMICAL COCKPIT</h2>
-        <span class="tag">Kinetics</span>
+        <h2 data-i18n="panel_cockpit">NEUROCHEMICAL COCKPIT</h2>
+        <span class="tag" data-i18n="tag_kinetics">Kinetics</span>
       </div>
 
       <!-- Hormonal Meters -->
@@ -144,39 +150,39 @@
         <!-- Dopamine -->
         <div class="hormone-card da-card">
           <div class="hormone-top">
-            <span class="h-name">DOPAMINE (PAM11)</span>
+            <span class="h-name" data-i18n="h_da">DOPAMINE (PAM11)</span>
             <span class="h-reading mono"><span id="da-hz">0.0</span> Hz | <span id="da-nm">5.0</span> nM</span>
           </div>
           <div class="progress-track"><div id="da-fill" class="progress-bar da-bar"></div></div>
-          <small class="h-hint">Appetitive reward, pleasure & associative plasticity</small>
+          <small class="h-hint" data-i18n="h_da_hint">Appetitive reward, pleasure & associative plasticity</small>
         </div>
 
         <!-- Octopamine -->
         <div class="hormone-card oa-card">
           <div class="hormone-top">
-            <span class="h-name">OCTOPAMINE (TDC2)</span>
+            <span class="h-name" data-i18n="h_oa">OCTOPAMINE (TDC2)</span>
             <span class="h-reading mono"><span id="oa-hz">0.0</span> Hz | <span id="oa-nm">2.0</span> nM</span>
           </div>
           <div class="progress-track"><div id="oa-fill" class="progress-bar oa-bar"></div></div>
-          <small class="h-hint">Insect adrenaline, acute stress & fight-or-flight</small>
+          <small class="h-hint" data-i18n="h_oa_hint">Insect adrenaline, acute stress & fight-or-flight</small>
         </div>
 
         <!-- Serotonin -->
         <div class="hormone-card st-card">
           <div class="hormone-top">
-            <span class="h-name">SEROTONIN (5-HT)</span>
+            <span class="h-name" data-i18n="h_st">SEROTONIN (5-HT)</span>
             <span class="h-reading mono"><span id="st-hz">0.0</span> Hz | <span id="st-nm">8.0</span> nM</span>
           </div>
           <div class="progress-track"><div id="st-fill" class="progress-bar st-bar"></div></div>
-          <small class="h-hint">Baseline calm, motor patience & satiety</small>
+          <small class="h-hint" data-i18n="h_st_hint">Baseline calm, motor patience & satiety</small>
         </div>
       </div>
 
       <!-- Real-Time Dopamine Chart -->
       <div class="chart-section">
         <div class="chart-header">
-          <h3>DOPAMINE WAVEFORM (Hz)</h3>
-          <span class="mono chart-scale">120 frames</span>
+          <h3 data-i18n="chart_dopamine">DOPAMINE WAVEFORM (Hz)</h3>
+          <span class="mono chart-scale" data-i18n="chart_scale_frames">120 frames</span>
         </div>
         <canvas id="dopamine-chart" width="340" height="100"></canvas>
       </div>
@@ -184,8 +190,8 @@
       <!-- Landmark Spike Raster Plot -->
       <div class="raster-section">
         <div class="chart-header">
-          <h3>SPIKE RASTER STREAM (Matrix Waterfall)</h3>
-          <span class="mono chart-scale">64 landmarks</span>
+          <h3 data-i18n="chart_raster">SPIKE RASTER STREAM (Matrix Waterfall)</h3>
+          <span class="mono chart-scale" data-i18n="chart_scale_landmarks">64 landmarks</span>
         </div>
         <canvas id="raster-canvas" width="340" height="120"></canvas>
       </div>
@@ -193,7 +199,7 @@
       <!-- Plasticity Index -->
       <div class="plasticity-box">
         <div class="meter-row">
-          <span>Learned Association Drift (KC ──► MBON):</span>
+          <span data-i18n="label_plasticity">Learned Association Drift (KC ──► MBON):</span>
           <span id="plasticity-val" class="mono">+0.000</span>
         </div>
       </div>

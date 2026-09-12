@@ -17,11 +17,101 @@
  *    - Dynamic retinal light casting screen photons onto the fly's face
  *    - Angled 3/4 perspective allowing simultaneous view of screen image & fly
  * 4. 3D Neuropils (Optic Lobes, Mushroom Body, Central Complex, Giant Fiber Tract)
- * 5. Full Stimulus, Telemetry, and Kinematic engines
+ * 5. Internationalization (i18n): Sleek EN / TR language switcher
  */
 
 // ============================================================================
-// 0. PROCEDURAL TEXTURE GENERATORS (NO STATIC MOCK ASSETS)
+// 0. INTERNATIONALIZATION (i18n) DICTIONARY
+// ============================================================================
+
+const TRANSLATIONS = {
+  en: {
+    header_engine: 'ENGINE:',
+    header_sim_time: 'SIM TIME:',
+    header_spikes: 'TOTAL SPIKES:',
+    panel_stimulus: 'STIMULUS ARENA',
+    tag_phone_feed: 'Virtual Phone Feed',
+    label_presets: 'Select Stimulus Preset:',
+    preset_fruit: '🍉 Sugar Fruit (Appetitive)',
+    preset_shadow: '⚠️ Looming Shadow (Panic)',
+    preset_spider: '🕷️ Predatory Spider (Threat)',
+    preset_foliage: '🌿 Forest Foliage (Calm)',
+    preset_upload: '📷 Upload Custom Photo',
+    btn_wirehead_title: 'WIREHEAD',
+    btn_wirehead_sub: 'Inject +20mV Dopamine',
+    btn_threat_title: 'LOOM THREAT',
+    btn_threat_sub: 'Trigger Giant Fiber',
+    btn_swipe_title: 'LEG SWIPE',
+    btn_swipe_sub: 'Front-Leg Screen Touch',
+    title_motor: 'DESCENDING MOTOR OUTPUTS',
+    label_steering: 'Steering (DNa02 L/R):',
+    label_drive: 'Forward Drive (DNp09):',
+    pill_retreat: 'MDN MOONWALKER',
+    pill_jump: 'GIANT FIBER JUMP',
+    compass_title: 'CENTRAL COMPLEX (EPG)',
+    view_fly: 'Fly View',
+    view_phone: 'Phone Angle',
+    view_brain: 'Neural Synapses',
+    panel_cockpit: 'NEUROCHEMICAL COCKPIT',
+    tag_kinetics: 'Kinetics',
+    h_da: 'DOPAMINE (PAM11)',
+    h_da_hint: 'Appetitive reward, pleasure & associative plasticity',
+    h_oa: 'OCTOPAMINE (TDC2)',
+    h_oa_hint: 'Insect adrenaline, acute stress & fight-or-flight',
+    h_st: 'SEROTONIN (5-HT)',
+    h_st_hint: 'Baseline calm, motor patience & satiety',
+    chart_dopamine: 'DOPAMINE WAVEFORM (Hz)',
+    chart_raster: 'SPIKE RASTER STREAM (Matrix Waterfall)',
+    badge_biophysics: 'MaleCNS v1.0 Biophysics',
+    chart_scale_frames: '120 frames',
+    chart_scale_landmarks: '64 landmarks',
+  },
+  tr: {
+    header_engine: 'MOTOR:',
+    header_sim_time: 'SİM SÜRESİ:',
+    header_spikes: 'TOPLAM SPİKE:',
+    badge_biophysics: 'MaleCNS v1.0 Biyofizik',
+    panel_stimulus: 'UYARAN ARENASI',
+    tag_phone_feed: 'Sanal Telefon Yayını',
+    label_presets: 'Uyaran Şablonu Seçin:',
+    preset_fruit: '🍉 Şekerli Meyve (Ödül)',
+    preset_shadow: '⚠️ Yaklaşan Gölge (Panik)',
+    preset_spider: '🕷️ Avcı Örümcek (Tehdit)',
+    preset_foliage: '🌿 Orman Yeşilliği (Dingin)',
+    preset_upload: '📷 Özel Fotoğraf Yükle',
+    btn_wirehead_title: 'DOPAMİN ŞOKU',
+    btn_wirehead_sub: '+20mV Dopamin Enjekte Et',
+    btn_threat_title: 'AVCI TEHDİDİ',
+    btn_threat_sub: 'Giant Fiber Refleksi',
+    btn_swipe_title: 'BACAKLA KAYDIR',
+    btn_swipe_sub: 'Ön Bacakla Ekrana Dokun',
+    title_motor: 'İNEN MOTOR ÇIKTILARI',
+    label_steering: 'Dümenleme (DNa02 S/S):',
+    label_drive: 'İleri Yürüyüş (DNp09):',
+    pill_retreat: 'MDN GERİ YÜRÜYÜŞ',
+    pill_jump: 'GİANT FİBER SIÇRAMA',
+    compass_title: 'MERKEZİ KOMPLEKS (EPG)',
+    view_fly: 'Sinek Görünümü',
+    view_phone: 'Telefon Açısı',
+    view_brain: 'Sinirsel Sinapslar',
+    panel_cockpit: 'NÖROKİMYASAL KOKPİT',
+    tag_kinetics: 'Kinetik',
+    h_da: 'DOPAMİN (PAM11)',
+    h_da_hint: 'Ödül, haz ve ilişkisel plastisite',
+    h_oa: 'OKTOPAMİN (TDC2)',
+    h_oa_hint: 'Böcek adrenalini, ani stres ve kaçış',
+    h_st: 'SEROTONİN (5-HT)',
+    h_st_hint: 'Dinginlik, hareket sabrı ve tokluk',
+    chart_dopamine: 'DOPAMİN DALGA FORMU (Hz)',
+    chart_raster: 'SPİKE ŞELALESİ (Matris Akışı)',
+    label_plasticity: 'Öğrenilmiş Çağrışım Kayması (KC ──► MBON):',
+    chart_scale_frames: '120 kare',
+    chart_scale_landmarks: '64 referans',
+  },
+};
+
+// ============================================================================
+// 1. PROCEDURAL TEXTURE GENERATORS
 // ============================================================================
 
 function generateWingTexture() {
@@ -32,14 +122,12 @@ function generateWingTexture() {
 
   ctx.clearRect(0, 0, 512, 1024);
 
-  // Subtle translucent wing membrane gradient
   const grad = ctx.createLinearGradient(0, 0, 512, 1024);
   grad.addColorStop(0, 'rgba(215, 235, 255, 0.45)');
   grad.addColorStop(0.5, 'rgba(230, 245, 255, 0.35)');
   grad.addColorStop(1, 'rgba(200, 225, 250, 0.3)');
   ctx.fillStyle = grad;
 
-  // Wing outline
   ctx.beginPath();
   ctx.moveTo(256, 40);
   ctx.bezierCurveTo(460, 150, 490, 600, 360, 920);
@@ -47,46 +135,44 @@ function generateWingTexture() {
   ctx.bezierCurveTo(40, 600, 60, 220, 256, 40);
   ctx.fill();
 
-  // Wing border vein (Costa)
   ctx.strokeStyle = 'rgba(60, 40, 25, 0.85)';
   ctx.lineWidth = 7;
   ctx.stroke();
 
-  // Longitudinal Veins (Drosophila L1 - L5)
   ctx.strokeStyle = 'rgba(75, 50, 30, 0.75)';
   ctx.lineWidth = 4;
 
-  // L1 (Subcostal/Radial branch)
+  // L1
   ctx.beginPath();
   ctx.moveTo(256, 50);
   ctx.quadraticCurveTo(340, 250, 420, 450);
   ctx.stroke();
 
-  // L2 (R2+3)
+  // L2
   ctx.beginPath();
   ctx.moveTo(256, 50);
   ctx.quadraticCurveTo(320, 350, 380, 720);
   ctx.stroke();
 
-  // L3 (R4+5) - Main central stem
+  // L3 (Central stem)
   ctx.beginPath();
   ctx.moveTo(256, 50);
   ctx.quadraticCurveTo(280, 450, 300, 930);
   ctx.stroke();
 
-  // L4 (M1+2)
+  // L4
   ctx.beginPath();
   ctx.moveTo(256, 50);
   ctx.quadraticCurveTo(220, 400, 200, 900);
   ctx.stroke();
 
-  // L5 (CuA1)
+  // L5
   ctx.beginPath();
   ctx.moveTo(240, 80);
   ctx.quadraticCurveTo(140, 400, 130, 760);
   ctx.stroke();
 
-  // Crossveins (anterior & posterior crossveins)
+  // Crossveins
   ctx.lineWidth = 3;
   ctx.beginPath();
   ctx.moveTo(270, 420);
@@ -110,10 +196,9 @@ function generateOmmatidiaTexture() {
   canvas.height = 256;
   const ctx = canvas.getContext('2d');
 
-  ctx.fillStyle = '#808080'; // Neutral normal background
+  ctx.fillStyle = '#808080';
   ctx.fillRect(0, 0, 256, 256);
 
-  // Hexagonal facet grid
   const r = 8;
   const h = r * Math.sqrt(3);
   ctx.strokeStyle = '#202020';
@@ -152,34 +237,28 @@ function generateBreadboardTexture() {
   canvas.height = 512;
   const ctx = canvas.getContext('2d');
 
-  // Brushed steel background
   ctx.fillStyle = '#14171d';
   ctx.fillRect(0, 0, 512, 512);
 
-  // Brushed noise lines
   ctx.fillStyle = 'rgba(255, 255, 255, 0.025)';
   for (let i = 0; i < 600; i++) {
     const y = Math.random() * 512;
     ctx.fillRect(0, y, 512, 1);
   }
 
-  // M6 Tapped hole grid (25mm spacing representation)
   const step = 64;
   for (let y = step / 2; y < 512; y += step) {
     for (let x = step / 2; x < 512; x += step) {
-      // Outer bevel chamfer
       ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
       ctx.beginPath();
       ctx.arc(x, y, 9, 0, Math.PI * 2);
       ctx.fill();
 
-      // Threaded tapped hole interior
       ctx.fillStyle = '#06080b';
       ctx.beginPath();
       ctx.arc(x, y, 7, 0, Math.PI * 2);
       ctx.fill();
 
-      // Inner thread ring
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -196,7 +275,7 @@ function generateBreadboardTexture() {
 }
 
 // ============================================================================
-// 1. STIMULUS GENERATOR (VIRTUAL PHONE DISPLAY)
+// 2. STIMULUS GENERATOR (VIRTUAL PHONE DISPLAY)
 // ============================================================================
 
 class StimulusGenerator {
@@ -212,33 +291,33 @@ class StimulusGenerator {
 
     this.presetsInfo = {
       fruit: {
-        title: 'Sweet Ripe Watermelon',
-        desc: 'High-sugar olfactory & visual chromatic target.',
-        tag: 'APPETITIVE',
+        title: { en: 'Sweet Ripe Watermelon', tr: 'Tatlı Olgun Karpuz' },
+        desc: { en: 'High-sugar olfactory & visual chromatic target.', tr: 'Yüksek şekerli koku ve görsel kromatofor hedefi.' },
+        tag: { en: 'APPETITIVE', tr: 'ÖDÜL' },
         tagClass: 'appetitive',
       },
       shadow: {
-        title: 'Looming Predator Disc',
-        desc: 'Rapidly expanding visual shadow triggering LC4 threat circuits.',
-        tag: 'LOOM THREAT',
+        title: { en: 'Looming Predator Disc', tr: 'Yaklaşan Avcı Diski' },
+        desc: { en: 'Rapidly expanding visual shadow triggering LC4 threat circuits.', tr: 'LC4 tehdit devrelerini tetikleyen genişleyen gölge.' },
+        tag: { en: 'LOOM THREAT', tr: 'AVCI TEHDİDİ' },
         tagClass: 'threat',
       },
       spider: {
-        title: 'Predatory Spider',
-        desc: 'High-contrast predatory threat with arachnid appendages.',
-        tag: 'PREDATOR',
+        title: { en: 'Predatory Spider', tr: 'Avcı Örümcek' },
+        desc: { en: 'High-contrast predatory threat with arachnid appendages.', tr: 'Eklem bacaklı uzantılara sahip yüksek kontrastlı avcı.' },
+        tag: { en: 'PREDATOR', tr: 'AVCI' },
         tagClass: 'threat',
       },
       neutral: {
-        title: 'Forest Foliage Canopy',
-        desc: 'Ambient natural green leaves providing calm baseline input.',
-        tag: 'BASELINE',
+        title: { en: 'Forest Foliage Canopy', tr: 'Orman Yeşilliği Örtüsü' },
+        desc: { en: 'Ambient natural green leaves providing calm baseline input.', tr: 'Dingin taban çizgisi sağlayan doğal yeşil yapraklar.' },
+        tag: { en: 'BASELINE', tr: 'DİNGİN' },
         tagClass: '',
       },
       custom: {
-        title: 'Custom User Photo',
-        desc: 'User-provided visual stimulus mapped directly onto retina.',
-        tag: 'CUSTOM',
+        title: { en: 'Custom User Photo', tr: 'Özel Kullanıcı Fotoğrafı' },
+        desc: { en: 'User-provided visual stimulus mapped directly onto retina.', tr: 'Doğrudan retinaya yansıtılan kullanıcı görseli.' },
+        tag: { en: 'CUSTOM', tr: 'ÖZEL' },
         tagClass: '',
       },
     };
@@ -249,14 +328,35 @@ class StimulusGenerator {
       this.preset = preset;
       this.loomingProgress = 0;
       this.isLoomingActive = preset === 'shadow';
-
-      const info = this.presetsInfo[preset];
-      document.getElementById('current-photo-title').textContent = info.title;
-      document.getElementById('current-photo-desc').textContent = info.desc;
-      const tagEl = document.getElementById('stimulus-type-tag');
-      tagEl.textContent = info.tag;
-      tagEl.className = 'overlay-tag ' + info.tagClass;
+      this.updateCardInfo();
     }
+  }
+
+  updateCardInfo() {
+    const lang = window.currentLang || 'en';
+    const info = this.presetsInfo[this.preset];
+    if (!info) return;
+
+    if (this.preset === 'custom' && this.customImageValence) {
+      const v = this.customImageValence;
+      const tagText = typeof v.tag === 'object' ? v.tag[lang] : v.tag;
+      const descText = typeof v.desc === 'object' ? v.desc[lang] : v.desc;
+      document.getElementById('current-photo-desc').textContent = descText;
+      const tagEl = document.getElementById('stimulus-type-tag');
+      tagEl.textContent = tagText;
+      tagEl.className = 'overlay-tag ' + v.tagClass;
+      return;
+    }
+
+    const title = typeof info.title === 'object' ? info.title[lang] : info.title;
+    const desc = typeof info.desc === 'object' ? info.desc[lang] : info.desc;
+    const tag = typeof info.tag === 'object' ? info.tag[lang] : info.tag;
+
+    document.getElementById('current-photo-title').textContent = title;
+    document.getElementById('current-photo-desc').textContent = desc;
+    const tagEl = document.getElementById('stimulus-type-tag');
+    tagEl.textContent = tag;
+    tagEl.className = 'overlay-tag ' + info.tagClass;
   }
 
   loadCustomImage(imgElement, fileName = 'User Upload') {
@@ -267,11 +367,8 @@ class StimulusGenerator {
 
     this._analyzeSpectralValence(imgElement);
 
-    const tagEl = document.getElementById('stimulus-type-tag');
     document.getElementById('current-photo-title').textContent = fileName;
-    document.getElementById('current-photo-desc').textContent = this.customImageValence.desc;
-    tagEl.textContent = this.customImageValence.tag;
-    tagEl.className = 'overlay-tag ' + this.customImageValence.tagClass;
+    this.updateCardInfo();
   }
 
   _analyzeSpectralValence(img) {
@@ -304,21 +401,30 @@ class StimulusGenerator {
 
     if (meanR > 1.25 * meanG && meanR > 80) {
       this.customImageValence = {
-        tag: 'APPETITIVE CUE',
+        tag: { en: 'APPETITIVE CUE', tr: 'ÖDÜL İŞARETİ' },
         tagClass: 'appetitive',
-        desc: `Spectral: High red wavelength (R/G=${(meanR / Math.max(1, meanG)).toFixed(2)}). Triggers PAM11 reward pathway.`,
+        desc: {
+          en: `Spectral: High red wavelength (R/G=${(meanR / Math.max(1, meanG)).toFixed(2)}). Triggers PAM11 reward pathway.`,
+          tr: `Spektral: Yüksek kırmızı dalga boyu (K/Y=${(meanR / Math.max(1, meanG)).toFixed(2)}). PAM11 ödül yolunu uyarır.`,
+        },
       };
     } else if (meanLum < 45) {
       this.customImageValence = {
-        tag: 'THREAT / LOOM',
+        tag: { en: 'THREAT / LOOM', tr: 'TEHDİT / GÖLGE' },
         tagClass: 'threat',
-        desc: `Spectral: Low luminance (Y=${meanLum.toFixed(1)}). Triggers LC4 threat & Giant Fiber escape circuits.`,
+        desc: {
+          en: `Spectral: Low luminance (Y=${meanLum.toFixed(1)}). Triggers LC4 threat & Giant Fiber escape circuits.`,
+          tr: `Spektral: Düşük parlaklık (Y=${meanLum.toFixed(1)}). LC4 tehdit ve Giant Fiber kaçış devrelerini tetikler.`,
+        },
       };
     } else {
       this.customImageValence = {
-        tag: 'NATURAL CALM',
+        tag: { en: 'NATURAL CALM', tr: 'DOĞAL DİNGİNLİK' },
         tagClass: '',
-        desc: `Spectral: Balanced ambient spectrum (Y=${meanLum.toFixed(1)}). Promotes 5-HT serotonergic stability.`,
+        desc: {
+          en: `Spectral: Balanced ambient spectrum (Y=${meanLum.toFixed(1)}). Promotes 5-HT serotonergic stability.`,
+          tr: `Spektral: Dengeli ortam tayfı (Y=${meanLum.toFixed(1)}). 5-HT serotonin kararlılığını destekler.`,
+        },
       };
     }
   }
@@ -449,7 +555,8 @@ class StimulusGenerator {
       ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
       ctx.font = 'bold 10px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('! THREAT DETECTED !', w / 2, 22);
+      const lang = window.currentLang || 'en';
+      ctx.fillText(lang === 'tr' ? '! TEHDİT TESPİT EDİLDİ !' : '! THREAT DETECTED !', w / 2, 22);
     }
   }
 
@@ -567,7 +674,7 @@ class StimulusGenerator {
 }
 
 // ============================================================================
-// 2. THREE.JS PHOTOREALISTIC 3D ELECTROPHYSIOLOGY CHAMBER & RIG
+// 3. THREE.JS PHOTOREALISTIC 3D ELECTROPHYSIOLOGY CHAMBER & RIG
 // ============================================================================
 
 class ObservationChamber3D {
@@ -592,17 +699,14 @@ class ObservationChamber3D {
     this.phoneLight = null;
     this.phoneTexture = null;
 
-    // 3D Anatomical Neuropils
     this.neuropils = {};
 
-    // Kinematic states
     this.forwardDrive = 0.0;
     this.steeringDeflection = 0.0;
     this.jumpTriggered = false;
     this.jumpY = 0;
     this.jumpVy = 0;
 
-    // Front-leg screen swipe state
     this.isSwiping = false;
     this.swipeProgress = 0.0;
 
@@ -622,7 +726,6 @@ class ObservationChamber3D {
     this.scene.background = new THREE.Color(0x05070c);
     this.scene.fog = new THREE.FogExp2(0x05070c, 0.035);
 
-    // Initial 3/4 Laboratory perspective: view both fly & phone screen together
     this.camera = new THREE.PerspectiveCamera(42, w / h, 0.1, 100);
     this.camera.position.set(2.4, 1.9, 2.6);
 
@@ -645,11 +748,9 @@ class ObservationChamber3D {
       this.controls.target.set(0, 1.1, 0.5);
     }
 
-    // Atmospheric Laboratory Lighting
     const ambientLight = new THREE.AmbientLight(0x162035, 1.4);
     this.scene.add(ambientLight);
 
-    // Key spotlight simulating microscope fiber-optic illuminator
     this.microscopeLight = new THREE.SpotLight(0xffffff, 3.2);
     this.microscopeLight.position.set(1.5, 5.0, 1.8);
     this.microscopeLight.angle = 0.45;
@@ -659,19 +760,16 @@ class ObservationChamber3D {
     this.microscopeLight.shadow.mapSize.height = 2048;
     this.scene.add(this.microscopeLight);
 
-    // Cool cyan fill light from side
     const fillLight = new THREE.DirectionalLight(0x00f0ff, 1.2);
     fillLight.position.set(-3.5, 3.0, 2.5);
     this.scene.add(fillLight);
 
-    // Magenta rim light for dramatic anatomical silhouette
     const rimLight = new THREE.DirectionalLight(0xff0066, 1.0);
     rimLight.position.set(2.0, 2.5, -3.5);
     this.scene.add(rimLight);
   }
 
   _buildEnvironment() {
-    // 1. Stainless Steel Optical Breadboard Table
     const breadboardTex = generateBreadboardTexture();
     const tableGeo = new THREE.BoxGeometry(6.0, 0.4, 6.0);
     const tableMat = new THREE.MeshStandardMaterial({
@@ -684,13 +782,11 @@ class ObservationChamber3D {
     table.receiveShadow = true;
     this.scene.add(table);
 
-    // Stainless steel bevel border around table
     const borderMat = new THREE.MeshStandardMaterial({ color: 0x3a4250, metalness: 0.95, roughness: 0.15 });
     const border = new THREE.Mesh(new THREE.BoxGeometry(6.05, 0.05, 6.05), borderMat);
     border.position.y = 0.01;
     this.scene.add(border);
 
-    // 2. Air-Flotation Nozzle Cup (supports treadmill ball)
     const nozzleGroup = new THREE.Group();
     nozzleGroup.position.set(0, 0, 0);
 
@@ -700,13 +796,11 @@ class ObservationChamber3D {
     baseFlange.position.y = 0.075;
     nozzleGroup.add(baseFlange);
 
-    // Concave air cup
     const cupGeo = new THREE.CylinderGeometry(0.55, 0.45, 0.28, 32);
     const cup = new THREE.Mesh(cupGeo, metalMat);
     cup.position.y = 0.28;
     nozzleGroup.add(cup);
 
-    // Dual optical mouse motion sensors (detect ball pitch/yaw in real labs)
     const sensorGeo = new THREE.BoxGeometry(0.12, 0.12, 0.18);
     const sensorMat = new THREE.MeshStandardMaterial({ color: 0x0e1420, metalness: 0.5, roughness: 0.5 });
 
@@ -722,13 +816,11 @@ class ObservationChamber3D {
 
     this.scene.add(nozzleGroup);
 
-    // 3. Floating Air-Supported Treadmill Sphere (Classic Styrofoam Ball)
     const ballGeo = new THREE.SphereGeometry(0.55, 48, 48);
     const ballMat = new THREE.MeshStandardMaterial({
       color: 0x222a38,
       roughness: 0.75,
       metalness: 0.1,
-      bumpScale: 0.02,
     });
     this.treadmillBall = new THREE.Mesh(ballGeo, ballMat);
     this.treadmillBall.position.set(0, 0.55, 0);
@@ -736,16 +828,13 @@ class ObservationChamber3D {
     this.treadmillBall.receiveShadow = true;
     this.scene.add(this.treadmillBall);
 
-    // 4. Electrophysiology Micromanipulator & Glass Pipette Electrode
     const manipGroup = new THREE.Group();
     manipGroup.position.set(-1.1, 0.6, 0.2);
 
-    // Micromanipulator base & 3-axis vernier adjustment dials
     const manipBaseGeo = new THREE.BoxGeometry(0.35, 0.8, 0.35);
     const manipBase = new THREE.Mesh(manipBaseGeo, metalMat);
     manipGroup.add(manipBase);
 
-    // Articulated needle holder
     const armGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.75, 12);
     const arm = new THREE.Mesh(armGeo, metalMat);
     arm.position.set(0.32, 0.35, 0.15);
@@ -753,7 +842,6 @@ class ObservationChamber3D {
     arm.rotation.x = 0.2;
     manipGroup.add(arm);
 
-    // Glass Patch-Clamp Micropipette extending toward fly head
     const pipetteGeo = new THREE.CylinderGeometry(0.004, 0.015, 0.6, 12);
     const glassMat = new THREE.MeshPhysicalMaterial({
       color: 0xe0f7ff,
@@ -769,7 +857,6 @@ class ObservationChamber3D {
 
     this.scene.add(manipGroup);
 
-    // 5. Overhead Stereomicroscope Objective Turret with Ring Light
     const scopeGroup = new THREE.Group();
     scopeGroup.position.set(0, 3.2, 0.2);
 
@@ -777,7 +864,6 @@ class ObservationChamber3D {
     const barrel = new THREE.Mesh(barrelGeo, metalMat);
     scopeGroup.add(barrel);
 
-    // Fiber-optic ring illuminator
     const ringLightGeo = new THREE.TorusGeometry(0.42, 0.05, 16, 32);
     const ringLightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
     const ringLightMesh = new THREE.Mesh(ringLightGeo, ringLightMat);
@@ -787,7 +873,6 @@ class ObservationChamber3D {
 
     this.scene.add(scopeGroup);
 
-    // 6. Cybernetic Glass Enclosure with Anti-Reflective Coating
     const domeGeo = new THREE.SphereGeometry(3.6, 32, 24, 0, Math.PI * 2, 0, Math.PI / 2);
     const domeMat = new THREE.MeshPhysicalMaterial({
       color: 0x88bbff,
@@ -805,15 +890,13 @@ class ObservationChamber3D {
 
   _buildPhotorealisticFly() {
     this.flyGroup = new THREE.Group();
-    this.flyGroup.position.set(0, 1.18, 0); // Positioned atop air-flotation sphere
+    this.flyGroup.position.set(0, 1.18, 0);
 
-    // Textures
     const ommatidiaTex = generateOmmatidiaTexture();
     const wingTex = generateWingTexture();
 
-    // Advanced Drosophila Chitin Shader (Clearcoat, Anisotropic Sheen)
     const chitinMat = new THREE.MeshPhysicalMaterial({
-      color: 0x5a341a, // Authentic amber-ochre Drosophila cuticle
+      color: 0x5a341a,
       roughness: 0.32,
       metalness: 0.22,
       clearcoat: 0.8,
@@ -821,16 +904,8 @@ class ObservationChamber3D {
       reflectivity: 0.7,
     });
 
-    const abdomenMat = new THREE.MeshPhysicalMaterial({
-      color: 0x482914,
-      roughness: 0.4,
-      metalness: 0.15,
-      clearcoat: 0.5,
-    });
-
-    // Hexagonal Ommatidial Compound Eye Material
     const eyeMat = new THREE.MeshPhysicalMaterial({
-      color: 0x8a0418, // Deep ruby-red ommatidia
+      color: 0x8a0418,
       emissive: 0x220004,
       roughness: 0.18,
       metalness: 0.35,
@@ -840,7 +915,6 @@ class ObservationChamber3D {
       clearcoatRoughness: 0.1,
     });
 
-    // Anatomical Wing Physical Material
     const wingMat = new THREE.MeshPhysicalMaterial({
       map: wingTex,
       transparent: true,
@@ -853,17 +927,15 @@ class ObservationChamber3D {
       depthWrite: false,
     });
 
-    // 1. Thorax (Scutum & Scutellum)
+    // 1. Thorax
     const thoraxGroup = new THREE.Group();
 
-    // Main Scutum (dorsal hump)
     const scutumGeo = new THREE.SphereGeometry(0.36, 24, 20);
     scutumGeo.scale(0.85, 1.05, 1.35);
     const scutum = new THREE.Mesh(scutumGeo, chitinMat);
     scutum.castShadow = true;
     thoraxGroup.add(scutum);
 
-    // Posterior Scutellum (characteristic triangular posterior wedge)
     const scutellumGeo = new THREE.ConeGeometry(0.16, 0.22, 16);
     scutellumGeo.scale(1.2, 0.6, 1.4);
     const scutellum = new THREE.Mesh(scutellumGeo, chitinMat);
@@ -872,7 +944,6 @@ class ObservationChamber3D {
     scutellum.castShadow = true;
     thoraxGroup.add(scutellum);
 
-    // Thoracic Macrochaetae (Dorsal sensory bristles)
     const bristleMat = new THREE.MeshBasicMaterial({ color: 0x150d06 });
     const bristleCoords = [
       [-0.12, 0.34, 0.15],
@@ -897,7 +968,7 @@ class ObservationChamber3D {
 
     this.flyGroup.add(thoraxGroup);
 
-    // 2. Segmented Abdomen with Melanin Tergite Bands
+    // 2. Segmented Abdomen
     const abdGroup = new THREE.Group();
     abdGroup.position.set(0, -0.06, -0.78);
     abdGroup.rotation.x = -0.24;
@@ -911,7 +982,6 @@ class ObservationChamber3D {
       const segGeo = new THREE.CylinderGeometry(rad * 0.95, rad, 0.18, 20);
       segGeo.scale(0.85, 1.0, 1.25);
 
-      // Tergite color alternating with dark posterior melanin band
       const isStripe = s >= 2;
       const segMat = new THREE.MeshPhysicalMaterial({
         color: isStripe ? 0x221308 : 0x5a341a,
@@ -928,7 +998,7 @@ class ObservationChamber3D {
 
     this.flyGroup.add(abdGroup);
 
-    // 3. Articulated Head Capsule
+    // 3. Head Capsule
     this.head = new THREE.Group();
     this.head.position.set(0, 0.12, 0.58);
 
@@ -948,7 +1018,7 @@ class ObservationChamber3D {
     headMesh.castShadow = true;
     this.head.add(headMesh);
 
-    // 4. Hemispherical Hexagonal Compound Eyes
+    // 4. Compound Eyes
     const eyeGeo = new THREE.SphereGeometry(0.16, 24, 20);
     eyeGeo.scale(0.85, 1.35, 1.15);
 
@@ -964,24 +1034,21 @@ class ObservationChamber3D {
     rightEye.castShadow = true;
     this.head.add(rightEye);
 
-    // 5. Antennae with Feathered Aristae Branches
+    // 5. Antennae & Aristae
     for (const side of [-1, 1]) {
       const antGroup = new THREE.Group();
       antGroup.position.set(side * 0.08, 0.14, 0.22);
 
-      // Scape & Pedicel segments
       const pedicelGeo = new THREE.SphereGeometry(0.03, 8, 8);
       const pedicel = new THREE.Mesh(pedicelGeo, chitinMat);
       antGroup.add(pedicel);
 
-      // Funiculus (3rd antennal segment)
       const funGeo = new THREE.SphereGeometry(0.04, 10, 8);
       funGeo.scale(0.7, 1.2, 0.8);
       const funiculus = new THREE.Mesh(funGeo, chitinMat);
       funiculus.position.set(0, 0.04, 0.02);
       antGroup.add(funiculus);
 
-      // Branched Arista (plumose sensory feather)
       const aristaStemGeo = new THREE.CylinderGeometry(0.003, 0.005, 0.18, 6);
       aristaStemGeo.translate(0, 0.09, 0);
       const aristaStem = new THREE.Mesh(aristaStemGeo, bristleMat);
@@ -989,7 +1056,6 @@ class ObservationChamber3D {
       aristaStem.rotation.z = side * 0.4;
       antGroup.add(aristaStem);
 
-      // Feather lateral branchlets
       for (let f = 1; f <= 5; f++) {
         const branchGeo = new THREE.CylinderGeometry(0.001, 0.002, 0.05, 4);
         branchGeo.translate(0, 0.025, 0);
@@ -1002,7 +1068,7 @@ class ObservationChamber3D {
       this.head.add(antGroup);
     }
 
-    // 6. Proboscis (Feeding Rostrum & Labellum)
+    // 6. Proboscis
     const probGroup = new THREE.Group();
     probGroup.position.set(0, -0.24, 0.12);
 
@@ -1011,7 +1077,6 @@ class ObservationChamber3D {
     rostrum.rotation.x = 0.4;
     probGroup.add(rostrum);
 
-    // Labellum (sponging mouthpad)
     const labGeo = new THREE.SphereGeometry(0.06, 12, 10);
     labGeo.scale(1.3, 0.8, 1.0);
     const labellum = new THREE.Mesh(labGeo, chitinMat);
@@ -1020,7 +1085,7 @@ class ObservationChamber3D {
 
     this.head.add(probGroup);
 
-    // 7. Neural Sparks Point Cloud
+    // 7. Neural Sparks
     const sparkGeo = new THREE.BufferGeometry();
     const sparkCount = 64;
     const positions = new Float32Array(sparkCount * 3);
@@ -1050,7 +1115,7 @@ class ObservationChamber3D {
 
     this.flyGroup.add(this.head);
 
-    // 8. Wings with Vein Mapping
+    // 8. Wings
     const wingGeo = new THREE.PlaneGeometry(0.55, 1.45);
     wingGeo.translate(0, 0.72, 0);
 
@@ -1066,11 +1131,11 @@ class ObservationChamber3D {
     this.rightWing.castShadow = true;
     this.flyGroup.add(this.rightWing);
 
-    // 9. Six Articulated 5-Segment Legs (Coxa, Trochanter, Femur, Tibia, Tarsi)
+    // 9. Articulated Legs
     this.legs = [];
     const legConfigs = [
       { side: -1, z: 0.24, name: 'pro_L' },
-      { side: 1, z: 0.24, name: 'pro_R' }, // Front-Right for screen touch
+      { side: 1, z: 0.24, name: 'pro_R' },
       { side: -1, z: -0.02, name: 'meso_L' },
       { side: 1, z: -0.02, name: 'meso_R' },
       { side: -1, z: -0.32, name: 'meta_L' },
@@ -1082,13 +1147,11 @@ class ObservationChamber3D {
       const legRoot = new THREE.Group();
       legRoot.position.set(cfg.side * 0.28, -0.14, cfg.z);
 
-      // Coxa (basal segment)
       const coxaGeo = new THREE.CylinderGeometry(0.035, 0.028, 0.12, 8);
       const coxa = new THREE.Mesh(coxaGeo, chitinMat);
       coxa.rotation.z = cfg.side * 0.5;
       legRoot.add(coxa);
 
-      // Femur (muscular thigh segment)
       const femurGeo = new THREE.CylinderGeometry(0.028, 0.022, 0.42, 8);
       femurGeo.translate(0, -0.21, 0);
       const femur = new THREE.Mesh(femurGeo, chitinMat);
@@ -1097,7 +1160,6 @@ class ObservationChamber3D {
       femur.rotation.x = cfg.z > 0 ? 0.32 : -0.32;
       coxa.add(femur);
 
-      // Tibia (slender lower leg with micro-spurs)
       const tibiaGeo = new THREE.CylinderGeometry(0.02, 0.014, 0.48, 8);
       tibiaGeo.translate(0, -0.24, 0);
       const tibia = new THREE.Mesh(tibiaGeo, chitinMat);
@@ -1105,7 +1167,6 @@ class ObservationChamber3D {
       tibia.rotation.z = -cfg.side * 0.95;
       femur.add(tibia);
 
-      // 5-Segment Tarsus with terminal pretarsal claws
       const tarsusGeo = new THREE.CylinderGeometry(0.012, 0.008, 0.28, 6);
       tarsusGeo.translate(0, -0.14, 0);
       const tarsus = new THREE.Mesh(tarsusGeo, chitinMat);
@@ -1221,17 +1282,12 @@ class ObservationChamber3D {
   }
 
   _buildVirtualSmartphone() {
-    // 3D OLED Smartphone positioned in front of fly
-    // CRITICAL CORRECTION: The screen is rotated to directly face the fly (-Z orientation)
-    // and angled at ~160 deg yaw so the user in the 3/4 camera view can see both the screen & the fly!
     const phoneGroup = new THREE.Group();
     phoneGroup.position.set(0.25, 1.22, 1.25);
 
-    // Rotated to directly face fly's compound eyes at (0, 1.18, 0)
-    phoneGroup.rotation.y = Math.PI + 0.28; // Screen faces fly with slight 16-deg angle for user camera visibility
-    phoneGroup.rotation.x = 0.18; // Slight backward tilt like a real mounted desk display
+    phoneGroup.rotation.y = Math.PI + 0.28;
+    phoneGroup.rotation.x = 0.18;
 
-    // Curved Metallic Smartphone Chassis (Titanium edge)
     const bodyGeo = new THREE.BoxGeometry(0.86, 1.52, 0.045);
     const bodyMat = new THREE.MeshStandardMaterial({
       color: 0x181e28,
@@ -1242,13 +1298,11 @@ class ObservationChamber3D {
     phoneBody.castShadow = true;
     phoneGroup.add(phoneBody);
 
-    // Slim bezel border
     const bezelGeo = new THREE.BoxGeometry(0.82, 1.48, 0.048);
     const bezelMat = new THREE.MeshBasicMaterial({ color: 0x080a10 });
     const bezel = new THREE.Mesh(bezelGeo, bezelMat);
     phoneGroup.add(bezel);
 
-    // Screen mapped directly from HTML5 Canvas texture
     this.phoneTexture = new THREE.CanvasTexture(this.stimulusCanvas);
     this.phoneTexture.minFilter = THREE.LinearFilter;
     this.phoneTexture.magFilter = THREE.LinearFilter;
@@ -1259,22 +1313,19 @@ class ObservationChamber3D {
       toneMapped: false,
     });
     this.phoneScreenMesh = new THREE.Mesh(screenGeo, screenMat);
-    this.phoneScreenMesh.position.z = 0.026; // Front face of phone
+    this.phoneScreenMesh.position.z = 0.026;
     phoneGroup.add(this.phoneScreenMesh);
 
-    // Dynamic Retinal Projector Light: casts screen illumination directly into fly's ommatidia
     this.phoneLight = new THREE.SpotLight(0xff3366, 3.5, 3.0, 0.85, 0.4);
     this.phoneLight.position.set(0, 0, 0.1);
     this.phoneLight.target = this.flyGroup;
     phoneGroup.add(this.phoneLight);
 
-    // Camera island on back of phone
     const camIslandGeo = new THREE.BoxGeometry(0.28, 0.28, 0.02);
     const camIsland = new THREE.Mesh(camIslandGeo, bodyMat);
     camIsland.position.set(-0.24, 0.52, -0.03);
     phoneGroup.add(camIsland);
 
-    // Mechanical stand holding the phone
     const standMat = new THREE.MeshStandardMaterial({ color: 0x222a38, metalness: 0.85, roughness: 0.3 });
     const standStemGeo = new THREE.CylinderGeometry(0.04, 0.05, 1.2, 16);
     const standStem = new THREE.Mesh(standStemGeo, standMat);
@@ -1333,15 +1384,12 @@ class ObservationChamber3D {
     if (!this.camera || !this.controls) return;
 
     if (preset === 'fly') {
-      // Calibrated 3/4 Laboratory perspective: view both fly & phone screen simultaneously
       this.camera.position.set(2.4, 1.9, 2.6);
       this.controls.target.set(0.1, 1.15, 0.5);
     } else if (preset === 'phone') {
-      // Over-the-shoulder looking into the phone display
       this.camera.position.set(-0.2, 1.48, -0.65);
       this.controls.target.set(0.2, 1.22, 1.25);
     } else if (preset === 'brain') {
-      // Macro zoom inside the fly head capsule to inspect glowing neuropils
       this.camera.position.set(0.32, 1.35, 1.05);
       this.controls.target.set(0, 1.24, 0.58);
     }
@@ -1385,7 +1433,6 @@ class ObservationChamber3D {
       this.neuropils.centralComplex.rotation.z = headingRad;
     }
 
-    // Motivated touch interaction
     if (da > 22.0 && !this.isSwiping && Math.random() < 0.15) {
       this.triggerLegSwipe();
     }
@@ -1423,12 +1470,10 @@ class ObservationChamber3D {
       this.phoneTexture.needsUpdate = true;
     }
 
-    // Articulated legs stepping animation
     if (this.legs && this.legs.length) {
       const stepFreq = 4.0 + this.forwardDrive * 12.0;
       for (const leg of this.legs) {
         if (leg.name === 'pro_R' && this.isSwiping) {
-          // Front-Right Leg Reach and Screen Swipe Kinematics
           this.swipeProgress += dt * 2.2;
           const p = this.swipeProgress;
 
@@ -1436,7 +1481,7 @@ class ObservationChamber3D {
             const lift = Math.sin(p * Math.PI);
             leg.group.position.x = leg.defaultPosX + 0.16 * lift;
             leg.group.position.y = leg.defaultPosY + 0.32 * lift;
-            leg.group.position.z = leg.defaultPosZ + 0.62 * lift; // Reaches to phone screen glass
+            leg.group.position.z = leg.defaultPosZ + 0.62 * lift;
 
             leg.femur.rotation.x = -1.1 * lift;
             leg.tibia.rotation.z = -0.5 * lift;
@@ -1453,13 +1498,11 @@ class ObservationChamber3D {
       }
     }
 
-    // Rotate treadmill ball
     if (this.treadmillBall) {
       this.treadmillBall.rotation.x += this.forwardDrive * 0.08;
       this.treadmillBall.rotation.y += this.steeringDeflection * 0.04;
     }
 
-    // Wing flutter
     if (this.leftWing && this.rightWing) {
       if (this.jumpTriggered || this.forwardDrive > 0.6) {
         const flutter = Math.sin(time * 65) * 0.45;
@@ -1472,7 +1515,6 @@ class ObservationChamber3D {
       }
     }
 
-    // Giant Fiber Escape Leap
     if (this.jumpTriggered) {
       this.jumpY += this.jumpVy;
       this.jumpVy -= 0.009;
@@ -1488,7 +1530,6 @@ class ObservationChamber3D {
       this.flyGroup.position.z = 0;
     }
 
-    // Abdomen breathing contraction
     if (this.abdomenMeshes) {
       const abdPulse = 1.0 + Math.sin(time * 4.5) * 0.03;
       for (const seg of this.abdomenMeshes) {
@@ -1505,7 +1546,7 @@ class ObservationChamber3D {
 }
 
 // ============================================================================
-// 3. CENTRAL COMPLEX (EPG) COMPASS & NEUROCHEMICAL COCKPIT VISUALIZERS
+// 4. CENTRAL COMPLEX (EPG) COMPASS & NEUROCHEMICAL COCKPIT VISUALIZERS
 // ============================================================================
 
 class CockpitVisualizers {
@@ -1668,7 +1709,7 @@ class CockpitVisualizers {
 }
 
 // ============================================================================
-// 4. BIDIRECTIONAL TELEMETRY & ENGINE ORCHESTRATOR
+// 5. BIDIRECTIONAL TELEMETRY & ENGINE ORCHESTRATOR
 // ============================================================================
 
 class ConnectomeApp {
@@ -1680,10 +1721,65 @@ class ConnectomeApp {
     this.ws = null;
     this.isStreaming = false;
 
+    this._initLanguageSwitcher();
     this._initDomBindings();
     this._initCustomPhotoUpload();
     this._initWebSocket();
     this._startObservationLoop();
+  }
+
+  _initLanguageSwitcher() {
+    window.currentLang = localStorage.getItem('flyconnectome_lang') || 'en';
+    this._applyLanguage(window.currentLang);
+
+    const btnEn = document.getElementById('lang-btn-en');
+    const btnTr = document.getElementById('lang-btn-tr');
+
+    if (btnEn && btnTr) {
+      btnEn.addEventListener('click', () => {
+        this._setLanguage('en');
+      });
+      btnTr.addEventListener('click', () => {
+        this._setLanguage('tr');
+      });
+    }
+  }
+
+  _setLanguage(lang) {
+    window.currentLang = lang;
+    localStorage.setItem('flyconnectome_lang', lang);
+    this._applyLanguage(lang);
+  }
+
+  _applyLanguage(lang) {
+    const btnEn = document.getElementById('lang-btn-en');
+    const btnTr = document.getElementById('lang-btn-tr');
+    if (btnEn && btnTr) {
+      if (lang === 'tr') {
+        btnTr.classList.add('active');
+        btnEn.classList.remove('active');
+      } else {
+        btnEn.classList.add('active');
+        btnTr.classList.remove('active');
+      }
+    }
+
+    const dict = TRANSLATIONS[lang] || TRANSLATIONS.en;
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (dict[key]) {
+        el.textContent = dict[key];
+      }
+    });
+
+    if (this.stimulus) {
+      this.stimulus.updateCardInfo();
+    }
+
+    const statusEl = document.getElementById('engine-status');
+    if (statusEl) {
+      statusEl.textContent = lang === 'tr' ? '60 FPS CANLI' : '60 FPS LIVE';
+    }
   }
 
   _initDomBindings() {
@@ -1783,7 +1879,9 @@ class ConnectomeApp {
       this.ws.onopen = () => {
         console.log('[Connectome WS] Connected to biophysical engine');
         const statusEl = document.getElementById('engine-status');
-        if (statusEl) statusEl.textContent = '60 FPS LIVE';
+        if (statusEl) {
+          statusEl.textContent = window.currentLang === 'tr' ? '60 FPS CANLI' : '60 FPS LIVE';
+        }
       };
 
       this.ws.onmessage = event => {
