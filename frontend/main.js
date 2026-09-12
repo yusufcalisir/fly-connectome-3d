@@ -2137,6 +2137,7 @@ class ConnectomeApp {
           clearTimeout(this._wsReconnectTimer);
           this._wsReconnectTimer = null;
         }
+        this._isFrameInFlight = false;
         console.log('[Connectome WS] Connected to biophysical engine');
         const statusEl = document.getElementById('engine-status');
         if (statusEl) {
@@ -2145,6 +2146,8 @@ class ConnectomeApp {
       };
 
       this.ws.onmessage = event => {
+        // Acknowledge in-flight frame
+        this._isFrameInFlight = false;
         try {
           const snapshot = JSON.parse(event.data);
           // Ignore server keep-alive pings
@@ -2156,11 +2159,12 @@ class ConnectomeApp {
       };
 
       this.ws.onerror = err => {
-        console.warn('[Connectome WS] WebSocket error, fallback to REST observe:', err);
+        console.warn('[Connectome WS] WebSocket error:', err);
       };
 
-      this.ws.onclose = () => {
-        console.log('[Connectome WS] Disconnected. Reconnecting in 2s...');
+      this.ws.onclose = event => {
+        this._isFrameInFlight = false;
+        console.log(`[Connectome WS] Disconnected (code: ${event.code}, reason: "${event.reason || 'clean'}"). Reconnecting in 2s...`);
         if (!this._wsReconnectTimer) {
           this._wsReconnectTimer = setTimeout(() => {
             this._wsReconnectTimer = null;
@@ -2174,9 +2178,27 @@ class ConnectomeApp {
   }
 
   _startObservationLoop() {
+    this._isFrameInFlight = false;
+    this._lastFrameTime = 0;
+
     setInterval(() => {
       this.stimulus.render(0.05);
+
+      // Backpressure flow control:
+      // The biological connectome steps in ~130ms. If previous frame is still
+      // in-flight, skip sending this tick to prevent TCP buffer overflow.
+      const now = performance.now();
+      if (this._isFrameInFlight) {
+        if (now - this._lastFrameTime > 800) {
+          this._isFrameInFlight = false; // Safety timeout recovery
+        } else {
+          return; // Engine still calculating, wait for response
+        }
+      }
+
       const frameB64 = this.stimulus.getBase64Frame();
+      this._isFrameInFlight = true;
+      this._lastFrameTime = now;
 
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
         this.ws.send(
@@ -2196,8 +2218,13 @@ class ConnectomeApp {
           }),
         })
           .then(res => res.json())
-          .then(data => this._handleTelemetrySnapshot(data))
-          .catch(() => {});
+          .then(data => {
+            this._isFrameInFlight = false;
+            this._handleTelemetrySnapshot(data);
+          })
+          .catch(() => {
+            this._isFrameInFlight = false;
+          });
       }
     }, 50);
   }

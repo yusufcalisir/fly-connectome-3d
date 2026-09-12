@@ -229,6 +229,9 @@ async def websocket_telemetry(websocket: WebSocket):
                 # Client closed socket, refreshed tab, or socket died cleanly
                 break
 
+            if not isinstance(data, dict):
+                continue
+
             cmd = data.get("command")
 
             if cmd == "wirehead":
@@ -238,10 +241,9 @@ async def websocket_telemetry(websocket: WebSocket):
             elif cmd == "observe":
                 img_b64 = data.get("image_base64", "")
                 dur = float(data.get("duration_ms", 50.0))
-                # Use asyncio.Lock to prevent concurrent frame processing;
-                # drop the frame gracefully if the previous one is still running.
-                if img_b64 and _FRAME_LOCK is not None and not _FRAME_LOCK.locked():
-                    async with _FRAME_LOCK:
+                if img_b64:
+                    lock = _FRAME_LOCK if _FRAME_LOCK is not None else nullcontext()
+                    async with lock:
                         try:
                             snapshot = await asyncio.to_thread(_process_frame, img_b64, dur)
                             for ws in list(CONNECTED_SOCKETS):
