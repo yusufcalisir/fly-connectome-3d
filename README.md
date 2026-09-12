@@ -58,8 +58,10 @@ Instead of artificial representations or heuristic movement cycles, sensory inpu
 ### 3. 🧭 Bilateral Hemispheric Asymmetry & Closed-Loop Phototaxis
 - **Bilateral Retinotopy**: Strict separation of left (`somaSide == 'L'`) and right (`somaSide == 'R'`) visual hemifields.
 - **Optomotor Steering**: Calculates instantaneous retinal asymmetry:
-  
-  $$\text{Asymmetry} = \frac{\bar{I}_{\text{Right}} - \bar{I}_{\text{Left}}}{\bar{I}_{\text{Right}} + \bar{I}_{\text{Left}}}$$
+
+$$
+\text{Asymmetry} = \frac{\bar{I}_{\text{Right}} - \bar{I}_{\text{Left}}}{\bar{I}_{\text{Right}} + \bar{I}_{\text{Left}}}
+$$
 
 - **Descending Tract Modulation**: Illuminating the left visual field excites left-dominant optical pathways and triggers asymmetric firing in bilateral descending steering neurons ($DNa02$), causing the outer right legs to step faster and wider to orient the fly toward the light source.
 
