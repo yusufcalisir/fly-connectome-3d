@@ -3387,6 +3387,7 @@ class ConnectomeApp {
     if (excEl) excEl.textContent = excSpk.toLocaleString();
     if (inhEl) inhEl.textContent = inhSpk.toLocaleString();
 
+    const eiFillEl = document.getElementById('ei-fill');
     if (eiFillEl) {
       eiFillEl.style.width = `${Math.min(100, Math.max(0, eiRatio * 100))}%`;
       if (eiRatio > 0.80) {
