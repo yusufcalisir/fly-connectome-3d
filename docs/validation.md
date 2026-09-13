@@ -106,10 +106,16 @@ This document records empirical verification milestones, exact measurements, and
   2. `dopamine_conc_nm` (telemetry `dopamine_nm`): Simulated continuous extracellular dopamine concentration (in $\text{nM}$, nanomoles per liter).
 - **Kinetic Model Verification**:
   - `dopamine_hz` reflects instantaneous and smoothed spiking frequency:
-    $$\text{inst\_da\_hz} = \frac{\text{pam11\_spikes}}{15 \times \Delta t_{\text{sec}}}, \quad \text{smoothed\_da\_hz} = 0.7 \cdot \text{prev} + 0.3 \cdot \text{inst\_da\_hz}$$
+
+    $$f_{\text{inst}} = \frac{S_{\text{PAM11}}}{15 \times \Delta t_{\text{sec}}}, \quad f_{\text{smoothed}} = 0.7 \cdot f_{\text{prev}} + 0.3 \cdot f_{\text{inst}}$$
+
+    where $S_{\text{PAM11}}$ is the collective spike count across the 15 $PAM11$ neurons (`pam11_spikes`), $f_{\text{inst}}$ is instantaneous firing rate (`inst_da_hz`), $f_{\text{smoothed}}$ is exponentially smoothed rate (`smoothed_da_hz`), and $\Delta t_{\text{sec}}$ is step duration in seconds.
+
   - `dopamine_conc_nm` is modeled via a continuous differential release and reuptake equation:
-    $$[\text{DA}]_{t+\Delta t} = [\text{DA}]_{\text{baseline}} + ([\text{DA}]_t - [\text{DA}]_{\text{baseline}}) \cdot e^{-\Delta t / \tau_{\text{decay}}} + (\text{pam11\_spikes} \times k_{\text{synth}})$$
-    with baseline $[\text{DA}]_{\text{baseline}} = 5.0\text{ nM}$, decay time constant $\tau_{\text{decay}} = 2000\text{ ms}$, and synthesis constant $k_{\text{synth}} = 0.05\text{ nM/spike}$.
+
+    $$[\text{DA}]_{t+\Delta t} = [\text{DA}]_{\text{baseline}} + \left([\text{DA}]_t - [\text{DA}]_{\text{baseline}}\right) \cdot e^{-\Delta t / \tau_{\text{decay}}} + (S_{\text{PAM11}} \cdot k_{\text{synth}})$$
+
+    with baseline $[\text{DA}]_{\text{baseline}} = 5.0\text{ nM}$, decay time constant $\tau_{\text{decay}} = 2000\text{ ms}$, and synthesis constant $k_{\text{synth}} = 0.05\text{ nM/spike}$ ($S_{\text{PAM11}}$ = `pam11_spikes`).
 - **Empirical Validation**:
   - Quiescent resting baseline: `dopamine_hz = 0.0 Hz`, `dopamine_conc_nm = 5.0 nM`.
   - Stimulated condition (PAM11 current injection): `dopamine_hz` spikes dynamically; `dopamine_conc_nm` rises above $5.0\text{ nM}$.
@@ -178,8 +184,8 @@ This document records empirical verification milestones, exact measurements, and
 - **Underlying Weight Array Integrity Check**: The 25,582,938-edge sparse CSR synaptic weight matrix in `LIFKernel` is static and was never mutated by `plasticity_index` ($\sum w = 29,269,178.0$, 0 NaNs, 0 Infs). The scalar is a macroscopic phenomenological telemetry index of associative potentiation between Kenyon Cells ($KC$) and Mushroom Body Output Neurons ($MBON$).
 - **Mechanism Implementation**:
   1. **Homeostatic Saturation Ceiling** ($P_{\text{max}} = 2.00$): Implemented soft-headroom gain scaling $(1 - P_t / P_{\text{max}})$. Under sustained pairing, marginal potentiation diminishes smoothly as the index approaches the biological doubling ceiling of $2.00$, preventing unbounded divergence.
-  2. **Passive Exponential Decay (Active Forgetting)** ($\tau_{\text{plasticity\_decay}} = 10,000\text{ ms}$): In the absence of continued stimulation, the index decays exponentially toward zero via $e^{-\Delta t / \tau_{\text{decay}}}$, relaxing back to baseline ($P \rightarrow 0.0$).
-- **Engineering Choice & Parameter Calibration Note**: $\tau_{\text{ms}} = 10,000$ and $P_{\text{max}} = 2.0$ are engineering choices to keep the metric bounded and observable within a single session; they are not derived from a specific measured biological time constant. Real biological memory forgetting curves in *Drosophila* behavioral experiments operate across minutes to hours (e.g., 5 min to 24 hr in active forgetting protocols), not interactive 50 ms simulation chunks.
+  2. **Passive Exponential Decay (Active Forgetting)** ($\tau_{\text{decay}} = 10{,}000\text{ ms}$, parameter `plasticity_decay_tau_ms`): In the absence of continued stimulation, the index decays exponentially toward zero via $e^{-\Delta t / \tau_{\text{decay}}}$, relaxing back to baseline ($P \rightarrow 0.0$).
+- **Engineering Choice & Parameter Calibration Note**: $\tau_{\text{decay}} = 10{,}000\text{ ms}$ and $P_{\text{max}} = 2.0$ are engineering choices to keep the metric bounded and observable within a single session; they are not derived from a specific measured biological time constant. Real biological memory forgetting curves in *Drosophila* behavioral experiments operate across minutes to hours (e.g., 5 min to 24 hr in active forgetting protocols), not interactive 50 ms simulation chunks.
 - **20-Stimulus Stress Test (MaleCNS v1.0 Connectome)**:
   Measured across 20 consecutive 50 ms visual presentations with active dopamine drive, followed by 10 quiescent relaxation steps:
 
@@ -208,9 +214,9 @@ This document records empirical verification milestones, exact measurements, and
 
 - **Quiescent Decay Phase (Post-Stimulation Relaxation)**:
   - $t = 500\text{ ms}$: `1.8243`
-  - $t = 1,500\text{ ms}$: `1.6507`
-  - $t = 3,000\text{ ms}$: `1.4208`
-  - $t = 5,000\text{ ms}$ ($0.5\tau$): `1.1632` ($1.9179 \times e^{-0.5} = 1.1632$)
+  - $t = 1{,}500\text{ ms}$: `1.6507`
+  - $t = 3{,}000\text{ ms}$: `1.4208`
+  - $t = 5{,}000\text{ ms}$ ($0.5\tau$): `1.1632` ($1.9179 \times e^{-0.5} = 1.1632$)
   - Verified by unit test suite `tests/test_plasticity_bounds.py` (3 passing tests).
 
 > **Boundary Statement**:
