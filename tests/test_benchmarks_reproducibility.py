@@ -5,10 +5,10 @@ from pathlib import Path
 
 import pytest
 
-ROOT_DIR = Path(__file__).resolve().parents[1]
-
 from connectome_engine.benchmarks import run_benchmarks
 from connectome_engine.config import DATA_DIR
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
 
 
 def _parse_readme_benchmarks() -> dict[str, dict]:
