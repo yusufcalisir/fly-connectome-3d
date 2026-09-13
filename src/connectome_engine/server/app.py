@@ -170,7 +170,12 @@ def _process_frame(image_base64: str, duration_ms: float = 50.0) -> Dict[str, An
 # ---------------------------------------------------------------------------
 @app.post("/api/wirehead")
 async def trigger_wirehead(req: WireheadRequest):
-    """Trigger immediate artificial dopamine surge (+20 mV default)."""
+    """Trigger immediate artificial dopamine surge (+20 mV default).
+
+    Boundary note: This is a numerical current-injection stimulation check (+20 mV into
+    the 15 PAM11 dopamine neurons), not evidence of reward, pleasure, or learned preference.
+    No living fly is involved, and preference/addiction have not been established.
+    """
     STATE_MANAGER.trigger_wirehead(req.current_mv)
     return {"status": "ok", "message": f"Injected {req.current_mv} mV dopamine pulse"}
 
@@ -298,7 +303,7 @@ async def websocket_telemetry(websocket: WebSocket):
             elif cmd == "wirehead":
                 boost = float(data.get("current_mv", 20.0))
                 STATE_MANAGER.trigger_wirehead(boost)
-                print(f"[Neural Surge] [*] Wirehead reward pulse: +{boost:.1f} mV", flush=True)
+                print(f"[Neural Surge] [*] Wirehead stimulation pulse: +{boost:.1f} mV", flush=True)
 
             elif cmd == "stimulus_preset":
                 preset = data.get("preset", "unknown")

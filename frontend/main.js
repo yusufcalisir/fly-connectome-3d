@@ -62,7 +62,7 @@ const TRANSLATIONS = {
     panel_cockpit: 'NEUROCHEMICAL COCKPIT',
     tag_kinetics: 'Kinetics',
     h_da: 'DOPAMINE (PAM11)',
-    h_da_hint: 'Appetitive reward, pleasure & associative plasticity',
+    h_da_hint: 'Dopaminergic firing, extracellular synthesis & associative plasticity',
     h_oa: 'OCTOPAMINE (TDC2)',
     h_oa_hint: 'Insect adrenaline, acute stress & fight-or-flight',
     h_st: 'SEROTONIN (5-HT)',
@@ -157,7 +157,7 @@ const TRANSLATIONS = {
     panel_cockpit: 'NÖROKİMYASAL KOKPİT',
     tag_kinetics: 'Kinetik',
     h_da: 'DOPAMİN (PAM11)',
-    h_da_hint: 'Ödül, haz ve ilişkisel plastisite',
+    h_da_hint: 'Dopaminerjik ateşleme, ekstrasellüler sentez ve ilişkisel plastisite',
     h_oa: 'OKTOPAMİN (TDC2)',
     h_oa_hint: 'Böcek adrenalini, ani stres ve kaçış',
     h_st: 'SEROTONİN (5-HT)',
@@ -527,8 +527,8 @@ class StimulusGenerator {
         tag: { en: 'APPETITIVE CUE', tr: 'ÖDÜL İŞARETİ' },
         tagClass: 'appetitive',
         desc: {
-          en: `Spectral: High red wavelength (R/G=${(meanR / Math.max(1, meanG)).toFixed(2)}). Triggers PAM11 reward pathway.`,
-          tr: `Spektral: Yüksek kırmızı dalga boyu (K/Y=${(meanR / Math.max(1, meanG)).toFixed(2)}). PAM11 ödül yolunu uyarır.`,
+          en: `Spectral: High red wavelength (R/G=${(meanR / Math.max(1, meanG)).toFixed(2)}). Triggers PAM11 dopaminergic pathway.`,
+          tr: `Spektral: Yüksek kırmızı dalga boyu (K/Y=${(meanR / Math.max(1, meanG)).toFixed(2)}). PAM11 dopaminerjik yolunu uyarır.`,
         },
       };
     } else if (meanLum < 45) {

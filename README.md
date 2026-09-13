@@ -192,7 +192,7 @@ The simulation maps specific, identifiable functional circuits from the Janelia 
 | :--- | :--- | :--- | :--- |
 | **Photoreceptors** | $R_1 - R_6$, $R_8$ | Retina / Optic Cartridge | Bilateral luminance and chromatic inputs (Modeled as spiking LIF display adapters; biological photoreceptors are graded non-spiking cells) |
 | **Looming Detectors** | $LC_4$ | Lobula Complex | Visual threat detection & rapid expansion |
-| **Dopaminergic System** | $PAM11$ | Mushroom Body / SMP | Appetitive reward & plastic association. Generates firing rate `dopamine_hz` ($\text{Hz}$) driving continuous synthesis of extracellular `dopamine_conc_nm` ($\text{nM}$). |
+| **Dopaminergic System** | $PAM11$ | Mushroom Body / SMP | Dopamine-gated associative plasticity modulation. Generates firing rate `dopamine_hz` ($\text{Hz}$) driving continuous synthesis of extracellular `dopamine_conc_nm` ($\text{nM}$) (numerical stimulation check, not evidence of pleasure or preference). |
 | **Octopaminergic System** | $TDC2$ | Central Neuropil | Acute arousal, flight response, and motor vigor |
 | **Serotonergic System** | $5\text{-HT}$ clusters | Dorsal Central Brain | Baseline calm, motor persistence, and satiety |
 | **Compass Neurons** | $EPG$ ring | Central Complex ($EB/PB$) | Azimuthal head direction compass heading |
@@ -200,13 +200,19 @@ The simulation maps specific, identifiable functional circuits from the Janelia 
 | **Forward Descending** | $DNp09$ | Brain $\rightarrow$ Thoracic VNC | Forward locomotion rate & CPG frequency drive |
 | **Reverse Descending** | $MDN$ | Brain $\rightarrow$ Thoracic VNC | Moonwalker reverse stepping & CPG phase inversion |
 | **Escape Descending** | $GF$ (Giant Fiber) | Brain $\rightarrow$ Thoracic VNC | Escape jump reflex & rapid wing elevation (visual looming trigger only — mechanosensory GF pathways not modeled) |
-| **Front Leg Motor Pools** | $T1_L / T1_R$ (`fl`) | Prothoracic Neuromere $T_1$ | 135 motor neurons driving $L_1 / R_1$ leg kinematics |
-| **Middle Leg Motor Pools**| $T2_L / T2_R$ (`ml`) | Mesothoracic Neuromere $T_2$ | 116 motor neurons driving $L_2 / R_2$ leg kinematics |
-| **Hind Leg Motor Pools**  | $T3_L / T3_R$ (`hl`) | Metathoracic Neuromere $T_3$ | 130 motor neurons driving $L_3 / R_3$ leg kinematics |
+| **Front Leg Motor Pools** | $T1_L / T1_R$ (`fl`) | Prothoracic Neuromere $T_1$ | 135 motor neurons driving $L_1 / R_1$ leg kinematics* |
+| **Middle Leg Motor Pools**| $T2_L / T2_R$ (`ml`) | Mesothoracic Neuromere $T_2$ | 116 motor neurons driving $L_2 / R_2$ leg kinematics* |
+| **Hind Leg Motor Pools**  | $T3_L / T3_R$ (`hl`) | Metathoracic Neuromere $T_3$ | 130 motor neurons driving $L_3 / R_3$ leg kinematics* |
+
+> *\*Leg Motor Neuron Count & Literature Reconciliation*: In classical *Drosophila* electrophysiology and lineage studies (e.g. Azevedo & Tuthill et al., 2020 *eLife*, DOI: [10.7554/eLife.56754](https://doi.org/10.7554/eLife.56754)), ~53 motor neurons per leg were reported, but that count was restricted exclusively to the 14 intrinsic muscles within the leg segments. In the full electron microscopy reconstruction of the adult nerve cord, Cheong et al., 2024 (*eLife*, DOI: [10.7554/eLife.96084](https://doi.org/10.7554/eLife.96084)) showed that leg motor control also involves another 5 thoracic muscles that insert into the leg, reporting: *"Overall, in the MANC dataset, we find 392 leg MNs (142 in T1, 119 in T2, 131 in T3)... These leg muscles are estimated to be innervated by around 70 MNs in each leg, that originate from ~15 hemilineages"*. This project's count of 381 leg motor neurons ($T_1$: 135 [68L+67R], $T_2$: 116 [58L+58R], $T_3$: 130 [66L+64R]; averaging 63.5/leg) is filtered directly from Janelia's MaleCNS v1.0 `superclass == 'vnc_motor'` and `subclass in ['fl', 'ml', 'hl']`. The 2.8% delta (381 vs 392) is attributable to borderline "extra motor" (`xm`, 6 cells) and unclassified thoracic efferents in Janelia's v1.0 release table that lack explicit `fl`/`ml`/`hl` subclass tags. See [`docs/validation.md`](file:///d:/brain/docs/validation.md#L272) (Section 10).
 
 > [!NOTE]
 > **Photoreceptor Modeling Limitation (Display Adapter vs. Retinal Physiology)**:
 > In biological *Drosophila*, outer photoreceptors ($R_1-R_6$), inner photoreceptors ($R_7, R_8$), and first-order lamina monopolar cells are **graded-potential systems** that do **not** fire action potentials. Modeling them as spiking Leaky Integrate-and-Fire (LIF) units receiving depolarizing current from RGB pixels is an explicit **display/signal adapter** to feed visual observations into the uniform spiking connectome engine, rather than validated retinal electrophysiology. This is a common, pragmatic simplification in large-scale connectome simulations (also adopted by comparable MaleCNS projects like *stonkfly* and *fly-wirehead*), not a discovered biological mechanism.
+
+> [!NOTE]
+> **Dopamine & Wirehead Limitation (Numerical Stimulation vs. Subjective Preference)**:
+> In biological *Drosophila*, PAM-cluster dopaminergic neurons innervate the mushroom body and convey reinforcement signals during associative olfactory and visual learning. In this simulation, the `/api/wirehead` endpoint (which injects $+20\text{ mV}$ depolarizing current into the 15 modeled $PAM11$ neurons) and the neurochemical gauges compute numerical firing rates, synthesized extracellular concentration, and dopamine-gated weight drift. Following the boundary standard of *fly-wirehead*, **these are numerical stimulation checks, not evidence of pleasure, reward experience, or learned preference** — no living fly is involved, and subjective experience, hedonic valence, or addiction have not been established.
 
 ---
 
@@ -225,7 +231,7 @@ The observation cockpit presents real-time electrophysiology and behavioral read
 3. **Neurochemical Gauges & Oscilloscopes**:
    - Continuous Dopamine ($PAM11$), Octopamine ($TDC2$), and Serotonin ($5\text{-HT}$) molar concentrations.
    - **Dopamine Firing Rate vs. Concentration Distinction**:
-     - `dopamine_hz`: Measures the electrophysiological action potential firing rate of the 15 $PAM11$ dopaminergic neurons (in $\text{Hz}$, spikes per second per neuron), smoothed with an exponential filter.
+     - `dopamine_hz`: Measures the electrophysiological action potential firing rate of the 15 $PAM11$ dopaminergic neurons (in $\text{Hz}$, spikes per second per neuron), smoothed with an exponential filter. This reflects numerical spike frequency, not subjective pleasure or appetitive experience.
      - `dopamine_conc_nm` (telemetry `dopamine_nm`): Measures the simulated continuous extracellular dopamine concentration (in $\text{nM}$, nanomoles per liter), dynamically synthesized upon action potentials and cleared exponentially toward baseline ($5.0\text{ nM}$) via simulated dopamine active transporter (DAT) reuptake ($\tau_{\text{decay}} = 2000\text{ ms}$). These represent distinct physical quantities (electrophysiological firing rate vs. chemical molar concentration) and are not interchangeable.
    - Dale's Law E/I balance ratio and associative plasticity index.
    - Real-time dopamine waveform and spike raster waterfall plots.
@@ -343,7 +349,7 @@ The cockpit features a one-click language toggle (English $\leftrightarrow$ Tür
 | :--- | :---: | :--- |
 | `/api/telemetry` | `GET` | Fetches latest telemetry state and rolling historical buffer. |
 | `/api/observe` | `POST` | Ingests base64-encoded image frame for visual photo-transduction. |
-| `/api/wirehead` | `POST` | Injects depolarizing current (+20 mV) into dopaminergic $PAM11$ cluster. |
+| `/api/wirehead` | `POST` | Numerical current-injection stimulation check (+20 mV) into dopaminergic $PAM11$ cluster (not evidence of pleasure or learned preference). |
 | `/api/connectome/soma-coordinates` | `GET` | Streams binary buffer of 141.8K real soma coordinates (`.bin`). |
 | `/api/connectome/soma-metadata` | `GET` | Returns anatomical bounding boxes, scaling factors, and circuit partitions. |
 

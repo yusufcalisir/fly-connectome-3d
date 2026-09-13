@@ -102,7 +102,7 @@ This document records empirical verification milestones, exact measurements, and
 ## 5. Neuromodulator Telemetry: Firing Rate (`dopamine_hz`) vs. Chemical Concentration (`dopamine_conc_nm`) — 2026-09-13
 
 - **Identified Issue**: The telemetry packet and dashboard contain two related dopamine metrics that could be easily conflated without explicit dimensional documentation:
-  1. `dopamine_hz`: Action potential firing rate of the 15 $PAM11$ dopaminergic reward neurons (in $\text{Hz}$, spikes per second per neuron).
+  1. `dopamine_hz`: Action potential firing rate of the 15 $PAM11$ dopaminergic neurons (in $\text{Hz}$, spikes per second per neuron).
   2. `dopamine_conc_nm` (telemetry `dopamine_nm`): Simulated continuous extracellular dopamine concentration (in $\text{nM}$, nanomoles per liter).
 - **Kinetic Model Verification**:
   - `dopamine_hz` reflects instantaneous and smoothed spiking frequency:
@@ -172,7 +172,125 @@ This document records empirical verification milestones, exact measurements, and
 
 ---
 
-## 7. Validation Maintenance Protocol
+## 7. Synaptic Plasticity Saturation & Exponential Decay Verification — 2026-09-13
+
+- **Identified Issue**: Under repeated stimulus presentations with active dopamine drive, `plasticity_index` (`HormoneDynamicsEngine.learned_weight_drift`) exhibited unbounded linear growth without saturation or decay (+0.345 per 50 ms step, reaching 7.0930 at step 20). When stimulation ceased, the index froze permanently without active forgetting or relaxation toward baseline.
+- **Underlying Weight Array Integrity Check**: The 25,582,938-edge sparse CSR synaptic weight matrix in `LIFKernel` is static and was never mutated by `plasticity_index` ($\sum w = 29,269,178.0$, 0 NaNs, 0 Infs). The scalar is a macroscopic phenomenological telemetry index of associative potentiation between Kenyon Cells ($KC$) and Mushroom Body Output Neurons ($MBON$).
+- **Mechanism Implementation**:
+  1. **Homeostatic Saturation Ceiling** ($P_{\text{max}} = 2.00$): Implemented soft-headroom gain scaling $(1 - P_t / P_{\text{max}})$. Under sustained pairing, marginal potentiation diminishes smoothly as the index approaches the biological doubling ceiling of $2.00$, preventing unbounded divergence.
+  2. **Passive Exponential Decay (Active Forgetting)** ($\tau_{\text{plasticity\_decay}} = 10,000\text{ ms}$): In the absence of continued stimulation, the index decays exponentially toward zero via $e^{-\Delta t / \tau_{\text{decay}}}$, relaxing back to baseline ($P \rightarrow 0.0$).
+- **Engineering Choice & Parameter Calibration Note**: $\tau_{\text{ms}} = 10,000$ and $P_{\text{max}} = 2.0$ are engineering choices to keep the metric bounded and observable within a single session; they are not derived from a specific measured biological time constant. Real biological memory forgetting curves in *Drosophila* behavioral experiments operate across minutes to hours (e.g., 5 min to 24 hr in active forgetting protocols), not interactive 50 ms simulation chunks.
+- **20-Stimulus Stress Test (MaleCNS v1.0 Connectome)**:
+  Measured across 20 consecutive 50 ms visual presentations with active dopamine drive, followed by 10 quiescent relaxation steps:
+
+| Step | Unbounded Baseline (Before) | Homeostatic Saturation (After) | Status | Firing Rate ($Hz$) |
+| :---: | :---: | :---: | :---: | :---: |
+| **1** | 0.4122 | **0.4122** | Initial potentiation | 14.83 |
+| **2** | 0.8014 | **0.7195** | Diminishing gain | 21.07 |
+| **3** | 1.1755 | **0.9561** | Diminishing gain | 21.57 |
+| **4** | 1.5395 | **1.1422** | Diminishing gain | 21.78 |
+| **5** | 1.8970 | **1.2909** | Diminishing gain | 21.47 |
+| **6** | 2.2502 | **1.4108** | Diminishing gain | 21.43 |
+| **7** | 2.6005 | **1.5082** | Diminishing gain | 21.70 |
+| **8** | 2.9489 | **1.5877** | Diminishing gain | 21.27 |
+| **9** | 3.2961 | **1.6527** | Diminishing gain | 21.40 |
+| **10** | 3.6424 | **1.7060** | Diminishing gain | 21.26 |
+| **11** | 3.9882 | **1.7498** | Asymptotic approach | 21.32 |
+| **12** | 4.3337 | **1.7858** | Asymptotic approach | 20.77 |
+| **13** | 4.6789 | **1.8154** | Asymptotic approach | 21.49 |
+| **14** | 5.0239 | **1.8398** | Asymptotic approach | 21.63 |
+| **15** | 5.3689 | **1.8598** | Asymptotic approach | 21.70 |
+| **16** | 5.7138 | **1.8763** | Asymptotic approach | 21.48 |
+| **17** | 6.0586 | **1.8899** | Asymptotic approach | 21.57 |
+| **18** | 6.4035 | **1.9011** | Asymptotic approach | 21.47 |
+| **19** | 6.7483 | **1.9103** | Asymptotic approach | 21.02 |
+| **20** | 7.0930 | **1.9179** | Bounded ($\le 2.00$) | 21.30 |
+
+- **Quiescent Decay Phase (Post-Stimulation Relaxation)**:
+  - $t = 500\text{ ms}$: `1.8243`
+  - $t = 1,500\text{ ms}$: `1.6507`
+  - $t = 3,000\text{ ms}$: `1.4208`
+  - $t = 5,000\text{ ms}$ ($0.5\tau$): `1.1632` ($1.9179 \times e^{-0.5} = 1.1632$)
+  - Verified by unit test suite `tests/test_plasticity_bounds.py` (3 passing tests).
+
+> **Boundary Statement**:
+> *This is evidence of a mathematically bounded, homeostatically saturated, and exponentially decaying macroscopic associative plasticity index in the neuromodulatory engine. It is **NOT** evidence of synapse-specific spike-timing-dependent plasticity (STDP), biophysically resolved dendritic compartmentalization, or individual synaptic conductance rewiring across the 25.6M connectome edges.*
+
+---
+
+## 8. Dopaminergic Modulation & Wirehead Boundary Clarification — 2026-09-13
+
+- **Context & Motivation**: In *Drosophila* neurobiology, PAM-cluster dopaminergic neurons project to specific compartments of the mushroom body to modulate synaptic plasticity during associative olfactory and visual conditioning. In computational models and the `/api/wirehead` interactive endpoint, depolarizing current ($+20\text{ mV}$) is injected into the 15 identified $PAM11$ neurons, increasing simulated dopamine firing rate (`dopamine_hz`), extracellular concentration (`dopamine_conc_nm`), and Kenyon Cell $\to$ MBON associative drift (`learned_knowledge_index`).
+- **Clarification & Scoping Audit**:
+  - Language implying subjective states ("pleasure", "appetitive enjoyment", "addiction") was audited across documentation, REST API docstrings, telemetry descriptions, and frontend tooltips.
+  - All readouts are explicitly scoped to the physiological quantities modeled:
+    1. `dopamine_hz`: Electrophysiological action potential firing rate of the 15 $PAM11$ neurons (Hz).
+    2. `dopamine_conc_nm`: Synthesized volume-averaged extracellular dopamine concentration under 1st-order DAT clearance ODE kinetics (nM).
+    3. `learned_knowledge_index`: Cumulative dopamine-gated weight drift between Kenyon Cells and mushroom body output neurons.
+  - The `/api/wirehead` endpoint is documented as a numerical current-injection stimulation check. No living organism is involved, and behavioral preference, subjective valence, or addiction have not been established.
+
+> **Boundary Statement**:
+> *These are numerical stimulation checks, ODE concentration models, and dopamine-gated weight modulations. They are **NOT** evidence of pleasure, subjective reward, hedonic valence, or learned preference.*
+
+---
+
+## 9. MaleCNS v1.0 Data Provenance & Cryptographic Integrity Verification — 2026-09-13
+
+- **Distribution Source**: Howard Hughes Medical Institute / Janelia Research Campus (FlyEM Team) public Google Cloud Storage bucket (`storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/`), documented on the canonical dataset page `male-cns.janelia.org/download`.
+- **GCS Bucket XML Listing & Verbatim ETags**:
+  - `body-annotations-male-cns-v1.0-minconf-0.5.feather`:
+    - Size: `14483314` bytes
+    - Verbatim XML `<ETag>`: `"50a7718770c57220f160ba4f431ab89e"`
+    - GCS Header: `x-goog-hash: md5=UKdxh3DFciDxYLpPQxq4ng==`
+  - `body-neurotransmitters-male-cns-v1.0.feather`:
+    - Size: `43282834` bytes
+    - Verbatim XML `<ETag>`: `"3d842b12fe5c49eefade528d7dd24a1f"`
+    - GCS Header: `x-goog-hash: md5=PYQrEv5cSe763lKNfdJKHw==`
+  - `connectome-weights-male-cns-v1.0-minconf-0.5.feather`:
+    - Size: `1051241946` bytes
+    - Verbatim XML `<ETag>`: `"f30e9dcca25cfd021bf1e7b3d975599e"`
+    - GCS Header: `x-goog-hash: md5=8w6dzKJc/QIb8eez2XVZng==`
+- **Hash Algorithm Reconciliation & Verification**:
+  - **ETag Structure**: The ETags returned by GCS are standard 32-character hexadecimal strings representing the 128-bit **MD5** digest of the object (single-part non-composite upload). They are not composite `hash-N` multipart digests. Base64 decoding of `x-goog-hash: md5` confirms exact hex equivalence with the XML `<ETag>`.
+  - **Algorithm Distinction**: Directly comparing a local SHA-256 hash to a GCS MD5 ETag is mathematically invalid.
+  - **Local vs. Remote Hash Match**: Computing the exact MD5 hash of the downloaded local files confirms an identical match to Janelia's GCS ETags:
+    - `annotations.feather`: Local MD5 `50a7718770c57220f160ba4f431ab89e` $\equiv$ Remote ETag `"50a7718770c57220f160ba4f431ab89e"`.
+    - `neurotransmitters.feather`: Local MD5 `3d842b12fe5c49eefade528d7dd24a1f` $\equiv$ Remote ETag `"3d842b12fe5c49eefade528d7dd24a1f"`.
+    - `edges.feather`: Local MD5 `f30e9dcca25cfd021bf1e7b3d975599e` $\equiv$ Remote ETag `"f30e9dcca25cfd021bf1e7b3d975599e"`.
+  - **Byte Sizes**: Exact 1-to-1 byte match across all three tables (14,483,314; 43,282,834; 1,051,241,946 bytes).
+
+> **Boundary Statement**:
+> *This is evidence of exact byte-level file provenance and cryptographic MD5 integrity against Janelia's official MaleCNS v1.0 Google Cloud Storage distribution bucket. It is **NOT** evidence of automated runtime checksum validation in `downloader.py` (which currently trusts downloaded file streams upon fetch) or EM segmentation perfection.*
+
+---
+
+## 10. Leg Motor Neuron Reconciliation: Connectome Reconstruction vs. Classical Electrophysiology — 2026-09-13
+
+- **Context & Investigated Question**: The project claims 381 leg motor neurons across the three thoracic neuromeres ($T_1$: 135, $T_2$: 116, $T_3$: 130). Classical literature on *Drosophila* leg motor control (e.g. Azevedo & Tuthill et al., 2020 *eLife*, DOI: [10.7554/eLife.56754](https://doi.org/10.7554/eLife.56754)) cited ~53 motor neurons per leg. How do these numbers reconcile with Janelia's MaleCNS v1.0 and whole-VNC EM connectome publications?
+- **Anatomical Scope Discrepancy Resolved**:
+  - The ~53 motor neurons per leg figure from Azevedo & Tuthill (2020) (citing Baek & Mann 2009; Brierley et al. 2012; Maniates-Selvin et al. 2020; Soler et al. 2004) counted **only the motor neurons innervating the 14 intrinsic muscles** confined within leg segments (coxa, trochanter, femur, tibia, tarsus).
+  - In modern whole-VNC electron microscopy reconstruction, Cheong et al. 2024 (*eLife*, DOI: [10.7554/eLife.96084](https://doi.org/10.7554/eLife.96084)) analyzed the complete motor output system and demonstrated that each limb is additionally controlled by **5 extrinsic thoracic muscles that insert into the leg** (tergotrochanteral jump muscle, sternal rotators, pleural promotors/remotors):
+    > *"Each leg contains 14 muscles confined within the proximal leg segments, and another five in the thorax that insert in the leg (Azevedo et al., 2024; Brierley et al., 2012). These leg muscles are estimated to be innervated by around 70 MNs in each leg, that originate from ~15 hemilineages... Overall, in the MANC dataset, we find 392 leg MNs (142 in T1, 119 in T2, 131 in T3)."*
+- **Reconciliation Table**:
+
+| Neuromere Segment | Cheong et al. 2024 (MANC) | MaleCNS v1.0 (`fl`/`ml`/`hl`) | Left Side ($L$) | Right Side ($R$) | Per-Leg Average | Delta vs MANC |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **$T_1$ (Front Legs)** | 142 | **135** | 68 | 67 | 67.5 | -7 |
+| **$T_2$ (Middle Legs)** | 119 | **116** | 58 | 58 | 58.0 | -3 |
+| **$T_3$ (Hind Legs)** | 131 | **130** | 66 | 64 | 65.0 | -1 |
+| **Total** | **392** | **381** | **192** | **189** | **63.5** | **-11 (-2.8%)** |
+
+- **Origin of the 2.8% Delta (-11 neurons)**:
+  - In [compile_malecns.py](file:///d:/brain/src/connectome_engine/data/compile_malecns.py), filtering relies strictly on Janelia's official annotation hierarchy: `superclass == 'vnc_motor'` and `subclass in ['fl', 'ml', 'hl']`.
+  - All 381 neurons exit via canonical peripheral leg nerves (`ProLN`, `ProAN`, `VProN`, `DProN`, `MesoLN`, `MetaLN`, and `AbN1`).
+  - The 11-neuron difference reflects borderline extra motor neurons (`xm`, 6 neurons across T1/T2: `MNxm01`, `MNxm02`, `MNxm03`) and 5 unclassified thoracic efferents in Janelia's v1.0 release table that lack explicit `fl`/`ml`/`hl` subclass tags.
+
+> **Boundary Statement**:
+> *This is evidence that the 381 leg motor neurons modeled in this project represent verified anatomical reconstructions from Janelia MaleCNS v1.0, and that the count aligns with full EM connectomic reconstructions (~70 MNs/leg including thoracic extrinsic leg muscles) rather than older intrinsic-only (53 MNs/leg) estimates. It is **NOT** evidence that all muscle insertions or neuromuscular junction biomechanics are modeled with individual muscle-fiber resolution.*
+
+---
+
+## 11. Validation Maintenance Protocol
 
 All contributors and agent sessions must adhere to the following protocol when introducing significant biophysical, algorithmic, or architectural modifications:
 

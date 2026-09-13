@@ -13,7 +13,7 @@ class HormoneTelemetry:
 
     Distinction note:
     - dopamine_hz: Electrophysiological action potential firing rate of PAM11
-      dopaminergic reward neurons (in Hz, action potentials per second per neuron).
+      dopaminergic neurons (in Hz, action potentials per second per neuron).
     - dopamine_conc_nm: Simulated continuous extracellular chemical concentration
       (in nM, nanomolar), increased upon PAM11 spiking and cleared via DAT reuptake.
     """
@@ -107,11 +107,35 @@ class HormoneDynamicsEngine:
             else 0.5
         )
 
-        # 5. Dopamine-Modulated Synaptic Plasticity (STDP)
-        # If Kenyon cells are active while Dopamine is high, associative memory increases
+        # 5. Dopamine-Modulated Synaptic Plasticity (Phenomenological Associative Drift)
+        # Note: tau_ms=10000 and plasticity_max=2.0 are engineering choices to keep the
+        # metric bounded and observable within a single session; they are not derived
+        # from a specific measured biological time constant.
+        #
+        # Simplification Note: This is a phenomenological scalar telemetry index of net
+        # associative potentiation between Kenyon Cells and Mushroom Body Output Neurons
+        # (MBON), NOT a validated synapse-by-synapse STDP or BCM rule modifying individual
+        # connectome edges. Real biological behavioral memory decay in Drosophila operates
+        # across minutes to hours, not interactive millisecond simulation chunks.
+        #
+        # (a) Passive decay / active forgetting: Relaxes exponentially toward 0.0 baseline
+        decay_tau = getattr(self.cfg, "plasticity_decay_tau_ms", 10000.0)
+        plasticity_decay = np.exp(-duration_ms / decay_tau)
+        self.learned_weight_drift *= plasticity_decay
+
+        # (b) Dopamine-reinforced potentiation with homeostatic soft-saturation ceiling
+        p_max = getattr(self.cfg, "plasticity_max", 2.00)
         if self.da_conc > (self.cfg.da_baseline_nm * 1.5) and kc_spikes > 0:
-            plasticity_delta = 0.001 * (kc_spikes / 100.0) * (self.da_conc / self.cfg.da_baseline_nm)
-            self.learned_weight_drift += plasticity_delta
+            headroom = max(0.0, 1.0 - (self.learned_weight_drift / p_max))
+            plasticity_delta = (
+                0.001
+                * (kc_spikes / 100.0)
+                * (self.da_conc / self.cfg.da_baseline_nm)
+                * headroom
+            )
+            self.learned_weight_drift = min(
+                p_max, self.learned_weight_drift + plasticity_delta
+            )
 
         return HormoneTelemetry(
             dopamine_hz=float(self.smoothed_da_hz),
@@ -125,6 +149,11 @@ class HormoneDynamicsEngine:
         )
 
     def trigger_wirehead_surge(self, current_mv: float = 20.0):
-        """Simulate direct artificial electrode stimulation of dopamine circuits."""
+        """Simulate direct artificial electrode stimulation of dopamine circuits.
+
+        Boundary note: This is a numerical current-injection stimulation check (+20 mV into PAM11),
+        not evidence of reward, pleasure, or learned preference. No living fly is involved, and
+        preference/addiction have not been established.
+        """
         self.da_conc += current_mv * 2.5
         self.smoothed_da_hz += current_mv * 1.8

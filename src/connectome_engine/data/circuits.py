@@ -19,15 +19,15 @@ class IndexedCircuits:
     looming_threat_lc4: np.ndarray    # Lobula columnar LC4/LPLC2 looming neurons
 
     # Neuromodulators
-    pam11_dopamine_reward: np.ndarray   # 15 cells in PAM cluster (Reward/Appetitive)
-    ppl101_dopamine_aversive: np.ndarray# 2 cells in PPL cluster (Punishment/Aversive)
+    pam11_dopamine_reward: np.ndarray   # 15 cells in PAM cluster (PAM11 dopaminergic cluster; reinforcement/plasticity gating)
+    ppl101_dopamine_aversive: np.ndarray# 2 cells in PPL cluster (PPL101 dopaminergic cluster; aversive gating)
     octopamine_stress: np.ndarray       # TDC2 / VUM cluster (Insect Adrenaline / Stress)
     serotonin_calm: np.ndarray          # 5-HT serotonergic clusters (Satiety / Calm)
 
     # Learning Compartments
     kenyon_cells: np.ndarray            # ~5,000 KC cells in Mushroom Body
-    mbon07_reward_output: np.ndarray    # MBON07 (alpha1) appetitive output
-    mbon11_aversive_output: np.ndarray  # MBON11 (gamma1pedc) aversive output
+    mbon07_reward_output: np.ndarray    # MBON07 (alpha1) mushroom body output neurons
+    mbon11_aversive_output: np.ndarray  # MBON11 (gamma1pedc) mushroom body output neurons
 
     # Navigation & Central Complex
     epg_compass_neurons: np.ndarray     # Ellipsoid body heading compass (Ring Attractor)

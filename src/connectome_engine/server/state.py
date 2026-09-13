@@ -24,7 +24,7 @@ class ServerStateManager:
             "total_spikes": 0,
             "mean_firing_rate_hz": 0.0,
             # Neurochemical Distinction:
-            # - dopamine_hz: Electrophysiological firing rate of PAM11 reward neurons (Hz).
+            # - dopamine_hz: Electrophysiological firing rate of PAM11 dopamine neurons (Hz).
             # - dopamine_conc_nm: Simulated continuous extracellular concentration (nM).
             "dopamine_hz": 0.0,
             "dopamine_conc_nm": 5.0,
@@ -174,7 +174,7 @@ class ServerStateManager:
             )
 
     def trigger_wirehead(self, current_mv: float = 20.0):
-        """Register immediate manual wireheading stimulus."""
+        """Register immediate manual wireheading stimulus (numerical PAM11 current injection; not evidence of pleasure/preference)."""
         with self.lock:
             self.pending_wirehead_boost_mv = current_mv
 

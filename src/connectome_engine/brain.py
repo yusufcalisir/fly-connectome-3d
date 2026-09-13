@@ -22,7 +22,7 @@ class CompleteObservationTelemetry:
     mean_firing_rate_hz: float
 
     # Neurochemical Hormones
-    # NOTE: dopamine_hz is the firing rate (Hz) of PAM11 dopaminergic reward cells;
+    # NOTE: dopamine_hz is the firing rate (Hz) of PAM11 dopaminergic cells;
     # dopamine_conc_nm is the simulated extracellular concentration (nM) subject to synthesis & DAT clearance.
     dopamine_hz: float
     dopamine_conc_nm: float
@@ -192,7 +192,7 @@ class ConnectomeBrain:
                 self.snn.v_rest * 0.60 + self.snn.v[non_ref] * 0.40
             )
 
-        # Manual Wireheading stimulation if triggered
+        # Manual Wireheading stimulation check if triggered (+20 mV into PAM11; numerical check, not evidence of pleasure or preference)
         if manual_dopamine_boost_mv > 0.0 and len(self.circuits.pam11_dopamine_reward) > 0:
             self.snn.inject_current(
                 self.circuits.pam11_dopamine_reward,

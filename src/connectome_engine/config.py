@@ -41,7 +41,7 @@ class BiophysicalConstants:
 class HormoneKineticsConstants:
     """Kinetics for neuromodulators and plasticity."""
 
-    # Dopamine (Reward / Appetitive)
+    # Dopamine (PAM11 reinforcement / plasticity gating)
     da_synthesis_rate: float = 0.85    # nM per PAM11 spike
     da_decay_tau_ms: float = 120.0     # Transporter clearance decay constant (ms)
     da_baseline_nm: float = 5.0        # Tonic baseline concentration (nM)
@@ -55,6 +55,10 @@ class HormoneKineticsConstants:
     serotonin_synthesis_rate: float = 0.60
     serotonin_decay_tau_ms: float = 250.0
     serotonin_baseline_nm: float = 8.0
+
+    # Synaptic Plasticity (KC -> MBON Associative Drift)
+    plasticity_max: float = 2.00                 # Homeostatic ceiling (max cumulative drift index)
+    plasticity_decay_tau_ms: float = 10000.0     # Passive decay / active forgetting time constant (ms)
 
 
 CONFIG = BiophysicalConstants()
