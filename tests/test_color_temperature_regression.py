@@ -2,7 +2,6 @@
 and accurately matches known photometric reference standards via McCamy's formula."""
 
 import numpy as np
-import pytest
 
 from connectome_engine.simulation.visual_transduction import (
     VisualTransductionEngine,
@@ -91,31 +90,31 @@ def test_color_temperature_planckian_duv_and_validity():
     engine = VisualTransductionEngine(num_r1_r6=50, num_r8=20, num_looming_lc4=10)
 
     # 1. Authentic Planckian/Daylight colors: |Duv| <= 0.05 -> cct_valid = True
-    cct_w, duv_w, valid_w = compute_mccamy_cct(1.0, 1.0, 1.0, return_metrics=True)
+    _cct_w, duv_w, valid_w = compute_mccamy_cct(1.0, 1.0, 1.0, return_metrics=True)
     assert valid_w is True, f"Pure White should be valid, got valid={valid_w}, Duv={duv_w}"
     assert abs(duv_w) <= 0.01, f"Pure White Duv should be near zero, got {duv_w}"
 
-    cct_inc, duv_inc, valid_inc = compute_mccamy_cct(1.0, 180 / 255, 107 / 255, return_metrics=True)
+    _cct_inc, duv_inc, valid_inc = compute_mccamy_cct(1.0, 180 / 255, 107 / 255, return_metrics=True)
     assert valid_inc is True, f"Incandescent should be valid, got valid={valid_inc}, Duv={duv_inc}"
     assert abs(duv_inc) <= 0.02, f"Incandescent Duv should be near zero, got {duv_inc}"
 
-    cct_sky, duv_sky, valid_sky = compute_mccamy_cct(135 / 255, 206 / 255, 235 / 255, return_metrics=True)
+    _cct_sky, duv_sky, valid_sky = compute_mccamy_cct(135 / 255, 206 / 255, 235 / 255, return_metrics=True)
     assert valid_sky is True, f"Sky Blue should be valid, got valid={valid_sky}, Duv={duv_sky}"
     assert abs(duv_sky) <= 0.05, f"Sky Blue Duv should be <= 0.05, got {duv_sky}"
 
     # 2. Pure saturated monochromatic / gamut corner colors: |Duv| > 0.05 -> cct_valid = False
     # Pure Blue (#0000E6, RGB 0, 0, 230): extreme blue corner far below Planckian locus
-    cct_b, duv_b, valid_b = compute_mccamy_cct(0.0, 0.0, 230 / 255, return_metrics=True)
+    _cct_b, duv_b, valid_b = compute_mccamy_cct(0.0, 0.0, 230 / 255, return_metrics=True)
     assert valid_b is False, f"Pure Blue should be marked invalid (|Duv| > 0.05), got valid={valid_b}"
     assert duv_b < -0.20, f"Pure Blue should have large negative Duv (below locus), got {duv_b}"
 
     # Pure Red (#C80000, RGB 200, 0, 0): saturated red
-    cct_r, duv_r, valid_r = compute_mccamy_cct(200 / 255, 0.0, 0.0, return_metrics=True)
+    _cct_r, duv_r, valid_r = compute_mccamy_cct(200 / 255, 0.0, 0.0, return_metrics=True)
     assert valid_r is False, f"Pure Red should be marked invalid (|Duv| > 0.05), got valid={valid_r}"
     assert abs(duv_r) > 0.10, f"Pure Red should have large Duv, got {duv_r}"
 
     # Pure Green (#00E600, RGB 0, 230, 0): saturated green (high above locus)
-    cct_g, duv_g, valid_g = compute_mccamy_cct(0.0, 230 / 255, 0.0, return_metrics=True)
+    _cct_g, duv_g, valid_g = compute_mccamy_cct(0.0, 230 / 255, 0.0, return_metrics=True)
     assert valid_g is False, f"Pure Green should be marked invalid (|Duv| > 0.05), got valid={valid_g}"
     assert duv_g > 0.05, f"Pure Green should have positive Duv > 0.05 (above locus), got {duv_g}"
 

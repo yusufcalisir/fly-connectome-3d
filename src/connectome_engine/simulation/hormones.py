@@ -9,7 +9,14 @@ from ..config import HORMONE_CONFIG, HormoneKineticsConstants
 
 @dataclass
 class HormoneTelemetry:
-    """Current circulating neurochemical concentrations and firing rates."""
+    """Current circulating neurochemical concentrations and firing rates.
+
+    Distinction note:
+    - dopamine_hz: Electrophysiological action potential firing rate of PAM11
+      dopaminergic reward neurons (in Hz, action potentials per second per neuron).
+    - dopamine_conc_nm: Simulated continuous extracellular chemical concentration
+      (in nM, nanomolar), increased upon PAM11 spiking and cleared via DAT reuptake.
+    """
 
     dopamine_hz: float
     dopamine_conc_nm: float
@@ -62,6 +69,9 @@ class HormoneDynamicsEngine:
         duration_sec = max(1e-5, duration_ms / 1000.0)
 
         # 1. Dopamine Dynamics
+        # - inst_da_hz / smoothed_da_hz: Electrophysiological firing rate of the PAM11 neuron cluster (Hz).
+        # - da_conc: Simulated extracellular neurochemical concentration (nM), with synthesis upon spikes
+        #   and exponential DAT transporter clearance toward baseline (da_baseline_nm).
         inst_da_hz = (pam11_spikes / (max(1, num_pam11) * duration_sec))
         self.smoothed_da_hz = 0.7 * self.smoothed_da_hz + 0.3 * inst_da_hz
         da_decay = np.exp(-duration_ms / self.cfg.da_decay_tau_ms)

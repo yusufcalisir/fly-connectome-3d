@@ -1,5 +1,7 @@
 # <div align="center">🧠 FlyConnectome 3D</div>
 
+> **Biological Fidelity Statement**: The synaptic connectome wiring and 3D soma coordinates reflect authentic electron-microscopy reconstruction data (**Janelia MaleCNS v1.0**), but all electrophysiological dynamics, neuromodulatory kinetics, and behavioral motor mappings are simplified computational approximations. See [docs/validation.md](docs/validation.md) for empirical validation logs, raw metrics, and mechanism boundary checks.
+
 <div align="center">
   <h3>Interactive 3D <i>Drosophila</i> Connectome Simulation & Electrophysiology Cockpit</h3>
   <p>
@@ -9,6 +11,7 @@
 
   [![Python 3.12](https://img.shields.io/badge/Python-3.12%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
   [![Connectome](https://img.shields.io/badge/Connectome-Janelia_MaleCNS_v1.0-FF6F00?style=for-the-badge&logo=target&logoColor=white)](https://flywire.ai/)
+  [![Validation](https://img.shields.io/badge/Validation-Empirical_Logs-blue?style=for-the-badge&logo=markdown&logoColor=white)](docs/validation.md)
   [![Tests](https://img.shields.io/badge/Tests-87%2F87_Passing-00C853?style=for-the-badge&logo=pytest&logoColor=white)](#-testing--development)
   [![CI](https://img.shields.io/github/actions/workflow/status/yusufcalisir/fly-connectome-3d/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI)](https://github.com/yusufcalisir/fly-connectome-3d/actions)
   [![Three.js](https://img.shields.io/badge/Frontend-Three.js_r128-000000?style=for-the-badge&logo=three.js&logoColor=white)](https://threejs.org/)
@@ -18,6 +21,7 @@
 
   <p align="center">
     <a href="#-quickstart">⚡ Quickstart</a> •
+    <a href="docs/validation.md">📋 Validation</a> •
     <a href="#-core-biophysical-integrations">🔬 Integrations</a> •
     <a href="#-system-architecture">📐 Architecture</a> •
     <a href="#-3d-neural-visualization--dual-viewport-architecture">🌌 3D Architecture</a> •
@@ -187,7 +191,7 @@ The simulation maps specific, identifiable functional circuits from the Janelia 
 | :--- | :--- | :--- | :--- |
 | **Photoreceptors** | $R_1 - R_6$, $R_8$ | Retina / Optic Cartridge | Bilateral luminance and chromatic inputs |
 | **Looming Detectors** | $LC_4$ | Lobula Complex | Visual threat detection & rapid expansion |
-| **Dopaminergic System** | $PAM11$ | Mushroom Body / SMP | Appetitive reward, pleasure, and plastic association |
+| **Dopaminergic System** | $PAM11$ | Mushroom Body / SMP | Appetitive reward & plastic association. Generates firing rate `dopamine_hz` ($\text{Hz}$) driving continuous synthesis of extracellular `dopamine_conc_nm` ($\text{nM}$). |
 | **Octopaminergic System** | $TDC2$ | Central Neuropil | Acute arousal, flight response, and motor vigor |
 | **Serotonergic System** | $5\text{-HT}$ clusters | Dorsal Central Brain | Baseline calm, motor persistence, and satiety |
 | **Compass Neurons** | $EPG$ ring | Central Complex ($EB/PB$) | Azimuthal head direction compass heading |
@@ -215,6 +219,9 @@ The observation cockpit presents real-time electrophysiology and behavioral read
    - **6-Leg Firing Gauges**: Live $Hz$ meters for $L_1, R_1, L_2, R_2, L_3, R_3$.
 3. **Neurochemical Gauges & Oscilloscopes**:
    - Continuous Dopamine ($PAM11$), Octopamine ($TDC2$), and Serotonin ($5\text{-HT}$) molar concentrations.
+   - **Dopamine Firing Rate vs. Concentration Distinction**:
+     - `dopamine_hz`: Measures the electrophysiological action potential firing rate of the 15 $PAM11$ dopaminergic neurons (in $\text{Hz}$, spikes per second per neuron), smoothed with an exponential filter.
+     - `dopamine_conc_nm` (telemetry `dopamine_nm`): Measures the simulated continuous extracellular dopamine concentration (in $\text{nM}$, nanomoles per liter), dynamically synthesized upon action potentials and cleared exponentially toward baseline ($5.0\text{ nM}$) via simulated dopamine active transporter (DAT) reuptake ($\tau_{\text{decay}} = 2000\text{ ms}$). These represent distinct physical quantities (electrophysiological firing rate vs. chemical molar concentration) and are not interchangeable.
    - Dale's Law E/I balance ratio and associative plasticity index.
    - Real-time dopamine waveform and spike raster waterfall plots.
 4. **Interactive Camera Perspectives**:

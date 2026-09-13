@@ -22,6 +22,8 @@ class CompleteObservationTelemetry:
     mean_firing_rate_hz: float
 
     # Neurochemical Hormones
+    # NOTE: dopamine_hz is the firing rate (Hz) of PAM11 dopaminergic reward cells;
+    # dopamine_conc_nm is the simulated extracellular concentration (nM) subject to synthesis & DAT clearance.
     dopamine_hz: float
     dopamine_conc_nm: float
     octopamine_hz: float

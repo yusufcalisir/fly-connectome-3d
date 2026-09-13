@@ -4,8 +4,8 @@ import numpy as np
 import pytest
 
 from connectome_engine.brain import ConnectomeBrain
-from connectome_engine.data.circuits import IndexedCircuits, load_malecns_v1_connectome
 from connectome_engine.config import DATA_DIR
+from connectome_engine.data.circuits import load_malecns_v1_connectome
 from connectome_engine.simulation.motor_decoder import MotorBehavioralDecoder
 
 
@@ -46,7 +46,7 @@ def test_giant_fiber_looming_and_reset_sequence():
     if not graph_path.exists():
         pytest.skip("MaleCNS v1.0 graph not found, skipping full connectome test.")
 
-    n_nodes, adj, circuits, neuron_ids = load_malecns_v1_connectome(DATA_DIR)
+    n_nodes, adj, circuits, _neuron_ids = load_malecns_v1_connectome(DATA_DIR)
     brain = ConnectomeBrain(n_nodes, adj, circuits)
 
     white = np.full((160, 90, 4), 255, dtype=np.uint8)

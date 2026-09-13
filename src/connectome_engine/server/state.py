@@ -23,6 +23,9 @@ class ServerStateManager:
             "sim_time_ms": 0.0,
             "total_spikes": 0,
             "mean_firing_rate_hz": 0.0,
+            # Neurochemical Distinction:
+            # - dopamine_hz: Electrophysiological firing rate of PAM11 reward neurons (Hz).
+            # - dopamine_conc_nm: Simulated continuous extracellular concentration (nM).
             "dopamine_hz": 0.0,
             "dopamine_conc_nm": 5.0,
             "octopamine_hz": 0.0,
@@ -122,6 +125,7 @@ class ServerStateManager:
                     "hemispheric_asymmetry": data.get("hemispheric_asymmetry", 0.0),
                 },
                 "hormones": {
+                    # Simulated continuous chemical concentrations (nM)
                     "dopamine_nm": data["dopamine_conc_nm"],
                     "octopamine_nm": data["octopamine_conc_nm"],
                     "serotonin_nm": data["serotonin_conc_nm"],
@@ -140,6 +144,7 @@ class ServerStateManager:
                     "total_spikes": data["total_spikes"],
                     "excitatory_spikes": data.get("excitatory_spikes", 0),
                     "inhibitory_spikes": data.get("inhibitory_spikes", 0),
+                    # Electrophysiological firing rates (Hz, action potentials per second per neuron)
                     "dopamine_hz": data["dopamine_hz"],
                     "octopamine_hz": data["octopamine_hz"],
                     "serotonin_hz": data["serotonin_hz"],
