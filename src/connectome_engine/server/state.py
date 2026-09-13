@@ -39,6 +39,8 @@ class ServerStateManager:
             "compass_heading_deg": 0.0,
             "mean_luminance": 0.5,
             "color_temperature_k": 5500.0,
+            "cct_duv": 0.0,
+            "cct_valid": True,
             "looming_threat_detected": False,
             "left_luminance": 0.5,
             "right_luminance": 0.5,
@@ -50,6 +52,8 @@ class ServerStateManager:
             "visual": {
                 "mean_luminance": 0.5,
                 "color_temperature_k": 5500.0,
+                "cct_duv": 0.0,
+                "cct_valid": True,
                 "looming_threat_detected": False,
                 "left_luminance": 0.5,
                 "right_luminance": 0.5,
@@ -110,6 +114,8 @@ class ServerStateManager:
                 "visual": {
                     "mean_luminance": data["mean_luminance"],
                     "color_temperature_k": data["color_temperature_k"],
+                    "cct_duv": data.get("cct_duv", 0.0),
+                    "cct_valid": data.get("cct_valid", True),
                     "looming_threat_detected": data["looming_threat_detected"],
                     "left_luminance": data.get("left_luminance", 0.0),
                     "right_luminance": data.get("right_luminance", 0.0),

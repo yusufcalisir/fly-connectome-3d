@@ -1,7 +1,7 @@
 """Official MaleCNS v1.0 (166,700 Neurons, 25.6M Synapses) Graph Compiler.
 
 Compiles the downloaded Janelia MaleCNS v1.0 feather files into a high-performance
-sparse CSR graph and exact biological circuit index map.
+sparse CSR graph and mapped circuit index map.
 """
 
 import json

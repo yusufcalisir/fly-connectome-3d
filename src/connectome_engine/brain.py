@@ -45,7 +45,11 @@ class CompleteObservationTelemetry:
     looming_threat_detected: bool
 
     # Raster activity for top landmark neurons (indices of active cells in chunk)
-    active_landmarks: list
+    active_landmarks: list = field(default_factory=list)
+
+    # Chromatic Photometry Metrics
+    cct_duv: float = 0.0
+    cct_valid: bool = True
 
     # Biological E/I spike partition (Dale's Principle)
     excitatory_spikes: int = 0
@@ -239,6 +243,7 @@ class ConnectomeBrain:
             mdn_reverse_spikes=mdn_spk,
             giant_fiber_spikes=gf_spk,
             visual_asymmetry=vis_telemetry.hemispheric_asymmetry,
+            looming_threat=vis_telemetry.looming_threat_detected,
         )
 
         # 6. VNC Leg Motor Pools & Hexapod Tripod CPG
@@ -321,6 +326,8 @@ class ConnectomeBrain:
             compass_heading_deg=motor_telemetry.compass_heading_deg,
             mean_luminance=vis_telemetry.mean_luminance,
             color_temperature_k=vis_telemetry.color_temperature_k,
+            cct_duv=vis_telemetry.cct_duv,
+            cct_valid=vis_telemetry.cct_valid,
             looming_threat_detected=vis_telemetry.looming_threat_detected,
             active_landmarks=active_landmarks,
             active_neurons=spiking_arr.tolist(),

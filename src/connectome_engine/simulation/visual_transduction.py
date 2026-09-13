@@ -58,6 +58,82 @@ class VisualTransductionTelemetry:
     r8_left_currents: np.ndarray = field(default_factory=lambda: np.empty(0, dtype=np.float32))
     r8_right_currents: np.ndarray = field(default_factory=lambda: np.empty(0, dtype=np.float32))
 
+    # Chromatic Photometry & Planckian Locus Distance
+    cct_duv: float = 0.0
+    cct_valid: bool = True
+
+
+def compute_mccamy_cct(
+    r: float, g: float, b: float, return_metrics: bool = False
+) -> float | tuple[float, float, bool]:
+    """Calculate Correlated Color Temperature (CCT) in Kelvin via McCamy's approximation,
+    along with distance to the Planckian locus (Duv in CIE 1960 UCS).
+
+    Transforms sRGB -> linear RGB -> CIE 1931 XYZ (D65 illuminant reference) ->
+    xy chromaticity coordinates -> McCamy CCT polynomial:
+        CCT = 449.0 * n^3 + 3525.0 * n^2 + 6823.3 * n + 5520.33
+    where n = (x - 0.3320) / (0.1858 - y).
+
+    Also evaluates the Planckian blackbody locus (u_bb, v_bb) via Krystek's formulation
+    at temperature T = CCT, and computes the signed orthogonal distance Duv:
+        Duv = sign(v - v_bb) * sqrt((u - u_bb)^2 + (v - v_bb)^2)
+    Per ANSI C78.377 and CIE standards, CCT is physically meaningful/correlated only when
+    |Duv| <= 0.05. For highly saturated colors far from the blackbody locus (e.g. Pure Blue #0000E6,
+    where |Duv| ~ 0.30), cct_valid is False.
+    """
+    def to_linear(c: float) -> float:
+        c_clamped = max(0.0, min(1.0, float(c)))
+        return c_clamped / 12.92 if c_clamped <= 0.04045 else ((c_clamped + 0.055) / 1.055) ** 2.4
+
+    r_lin = to_linear(r)
+    g_lin = to_linear(g)
+    b_lin = to_linear(b)
+
+    # IEC 61966-2-1 standard sRGB to CIE 1931 XYZ matrix (D65 reference white)
+    X = 0.4124564 * r_lin + 0.3575761 * g_lin + 0.1804375 * b_lin
+    Y = 0.2126729 * r_lin + 0.7151522 * g_lin + 0.0721750 * b_lin
+    Z = 0.0193339 * r_lin + 0.1191920 * g_lin + 0.9503041 * b_lin
+
+    total = X + Y + Z
+    if total < 1e-7:
+        if return_metrics:
+            return 6500.0, 0.0, True  # Neutral D65 daylight baseline in total darkness
+        return 6500.0
+
+    x = X / total
+    y = Y / total
+
+    # CIE 1960 UCS coordinates: u = 4x / (-2x + 12y + 3), v = 6y / (-2x + 12y + 3)
+    denom_uv = -2.0 * x + 12.0 * y + 3.0
+    if abs(denom_uv) < 1e-7:
+        denom_uv = 1e-7
+    u = 4.0 * x / denom_uv
+    v = 6.0 * y / denom_uv
+
+    # McCamy's approximation formula
+    # Epicenter coordinates: xe = 0.3320, ye = 0.1858
+    denom = 0.1858 - y
+    if abs(denom) < 1e-7:
+        denom = 1e-7 if denom >= 0.0 else -1e-7
+
+    n = (x - 0.3320) / denom
+    raw_cct = 449.0 * (n ** 3) + 3525.0 * (n ** 2) + 6823.3 * n + 5520.33
+    cct = float(np.clip(raw_cct, 1000.0, 40000.0))
+
+    # Krystek's formulation for Planckian locus coordinates in CIE 1960 UCS at T = cct
+    T = cct
+    u_bb = (0.860117757 + 1.54118254e-4 * T + 1.28641212e-7 * T**2) / (1.0 + 8.42420235e-4 * T + 7.08145163e-7 * T**2)
+    v_bb = (0.317398726 + 4.22806245e-5 * T + 4.20481691e-8 * T**2) / (1.0 - 2.89741816e-5 * T + 1.61456053e-7 * T**2)
+
+    # Signed distance Duv (positive above Planckian locus towards green, negative below towards magenta/blue)
+    dist = float(np.sqrt((u - u_bb) ** 2 + (v - v_bb) ** 2))
+    duv = dist if (v >= v_bb) else -dist
+    is_valid = bool(abs(duv) <= 0.05)
+
+    if return_metrics:
+        return cct, duv, is_valid
+    return cct
+
 
 class VisualTransductionEngine:
     """Projects screen frames to the biological fly retina and computes looming threat dynamics.
@@ -191,12 +267,23 @@ class VisualTransductionEngine:
         # Mean visual statistics
         mean_lum = float(np.mean(lum))
         mean_r = float(np.mean(rgb[:, :, 0]))
-        mean_b = float(np.mean(rgb[:, :, 2])) + 1e-5
-        color_temp_k = float(3000.0 + (mean_b / (mean_r + 1e-5)) * 3500.0)
+        mean_g = float(np.mean(rgb[:, :, 1]))
+        mean_b = float(np.mean(rgb[:, :, 2]))
+
+        if mean_lum < 1e-4:
+            color_temp_k = 6500.0  # Neutral daylight baseline in total darkness
+            cct_duv = 0.0
+            cct_valid = True
+        else:
+            color_temp_k, cct_duv, cct_valid = compute_mccamy_cct(
+                mean_r, mean_g, mean_b, return_metrics=True
+            )
 
         return VisualTransductionTelemetry(
             mean_luminance=mean_lum,
             color_temperature_k=color_temp_k,
+            cct_duv=cct_duv,
+            cct_valid=cct_valid,
             looming_threat_detected=threat_detected,
             looming_expansion_rate=expansion_rate,
             r1_r6_currents=r1_r6_currents,

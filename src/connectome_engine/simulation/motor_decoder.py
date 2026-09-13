@@ -36,6 +36,7 @@ class MotorBehavioralDecoder:
         epg_active_index: int = 0,
         total_epg_nodes: int = 16,
         visual_asymmetry: float = 0.0,
+        looming_threat: bool = False,
     ) -> MotorTelemetry:
         """Decode descending neuron signals for a 50 ms simulation window."""
         # 1. Bilateral Steering (DNa02) + Sensory Optomotor Asymmetry
@@ -52,8 +53,19 @@ class MotorBehavioralDecoder:
         retreat = mdn_reverse_spikes > 1
 
         # 4. Giant Fiber Emergency Panic Jump
-        # Looming tehdit veya acı anında patlayan dev aksonlar
-        jump = giant_fiber_spikes > 0
+        # SIMULATION SCOPE & DESIGN SIMPLIFICATION NOTE:
+        # This implementation models ONLY the visual looming escape trigger
+        # (jump = giant_fiber_spikes > 0 and looming_threat).
+        # In biological Drosophila melanogaster, the Giant Fiber (GF) system is a multimodal
+        # escape hub that also integrates mechanosensory afferents (antennae Johnston's organ
+        # vibrations, tactile bristle deflections, and sudden wind puffs). These mechanosensory
+        # modalities are NOT modeled in this visual-only connectome simulation.
+        # Consequently, requiring an active visual looming threat for jump execution is a
+        # deliberate design and simulation scope simplification to prevent spontaneous
+        # recurrent connectome background spikes in GF neurons from triggering unprompted
+        # ballistic leaps during static/quiescent conditions, rather than a claim about
+        # the complete biological behavior of the fly in the wild.
+        jump = (giant_fiber_spikes > 0) and looming_threat
 
         # 5. Compass Heading (Central Complex Ellipsoid Body EPG ring attractor)
         if total_epg_nodes > 0:

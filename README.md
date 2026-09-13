@@ -3,13 +3,13 @@
 <div align="center">
   <h3>Interactive 3D <i>Drosophila</i> Connectome Simulation & Electrophysiology Cockpit</h3>
   <p>
-    Biophysically grounded spiking neural network simulation, 141K real 3D EM soma coordinates,
+    Biophysically inspired spiking neural network simulation, 141K real 3D EM soma coordinates,
     and thoracic motor kinematics driven by the adult <b>Janelia MaleCNS v1.0</b> connectome.
   </p>
 
   [![Python 3.12](https://img.shields.io/badge/Python-3.12%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
   [![Connectome](https://img.shields.io/badge/Connectome-Janelia_MaleCNS_v1.0-FF6F00?style=for-the-badge&logo=target&logoColor=white)](https://flywire.ai/)
-  [![Tests](https://img.shields.io/badge/Tests-80%2F80_Passing-00C853?style=for-the-badge&logo=pytest&logoColor=white)](#-testing--development)
+  [![Tests](https://img.shields.io/badge/Tests-87%2F87_Passing-00C853?style=for-the-badge&logo=pytest&logoColor=white)](#-testing--development)
   [![CI](https://img.shields.io/github/actions/workflow/status/yusufcalisir/fly-connectome-3d/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI)](https://github.com/yusufcalisir/fly-connectome-3d/actions)
   [![Three.js](https://img.shields.io/badge/Frontend-Three.js_r128-000000?style=for-the-badge&logo=three.js&logoColor=white)](https://threejs.org/)
   [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
@@ -42,15 +42,15 @@ Instead of artificial representations or heuristic movement cycles, sensory inpu
 ## 🔬 Core Biophysical Integrations
 
 ### 1. 🧪 Neurotransmitter Polarity & Dale's Principle (E/I Balance)
-- **Dale's Principle**: Biological classification of 166.7K neurons by primary neurotransmitter predictions.
+- **Dale's Principle**: Polarity classification of 166.7K neurons by predicted primary neurotransmitters:
   - **Acetylcholine (ACh)**: Excitatory current injection ($w > 0$, depolarizing EPSPs).
   - **GABA, Glutamate, Histamine**: Inhibitory current injection ($w < 0$, hyperpolarizing IPSPs).
-- **Physiological Clamping**: Realistic potassium reversal potential clamp ($V_{\text{clamp}} = -85.0\text{ mV}$) prevents runaway hyper-excitation and unphysiological hyperpolarization, fostering natural rhythmic balance and sparse network firing.
+- **Physiological Clamping**: Modeled potassium reversal potential clamp ($V_{\text{clamp}} = -85.0\text{ mV}$) prevents runaway hyper-excitation and unphysiological hyperpolarization, fostering stable rhythmic balance and sparse network firing.
 
 ### 2. 🌌 141.8K Real 3D Soma Coordinates & Synaptic Wave Propagation
-- **EM Morphology Mapping**: Exact $[X, Y, Z]$ soma coordinates for **141,781 real neurons** extracted from MaleCNS v1.0 serial-section electron microscopy, isotropically normalized into Three.js anatomical space.
+- **EM Morphology Mapping**: 3D $[X, Y, Z]$ soma coordinates for **141,781 reconstructed neurons** extracted from MaleCNS v1.0 serial-section electron microscopy, isotropically normalized into Three.js anatomical space.
 - **High-Performance Binary Point Cloud**: Packed into a 2.55 MB binary buffer (`soma_coordinates_141k.bin`) with custom GPU point shaders.
-- **Synaptic Latency Waves**: Activity cascades through anatomical compartments with realistic synaptic conduction delays:
+- **Synaptic Latency Waves**: Activity cascades through anatomical compartments with modeled synaptic conduction delays:
   - $\Delta t = 0\text{ ms}$: Retinotopic input cartridges (Optic Lobe)
   - $\Delta t = 18\text{ ms}$: Associative neuropils (Mushroom Body & Central Brain)
   - $\Delta t = 36\text{ ms}$: Descending motor command pathways ($DNa02$, Giant Fiber)
@@ -67,7 +67,7 @@ $$
 - **Descending Tract Modulation**: Illuminating the left visual field excites left-dominant optical pathways and triggers asymmetric firing in bilateral descending steering neurons ($DNa02$), causing the outer right legs to step faster and wider to orient the fly toward the light source.
 
 ### 4. 🦿 VNC Thoracic Leg Motor Pools & Alternating Tripod Kinematics
-- **381 Biological Leg Motor Neurons**: Extracted from MaleCNS v1.0 neuromeres ($T_1$ prothoracic, $T_2$ mesothoracic, $T_3$ metathoracic):
+- **381 Mapped Leg Motor Neurons**: Extracted from MaleCNS v1.0 neuromeres ($T_1$ prothoracic, $T_2$ mesothoracic, $T_3$ metathoracic):
   - **$T1_L$ / $T1_R$ (Front Legs $L_1 / R_1$)**: 68 / 67 motor neurons
   - **$T2_L$ / $T2_R$ (Middle Legs $L_2 / R_2$)**: 58 / 58 motor neurons
   - **$T3_L$ / $T3_R$ (Hind Legs $L_3 / R_3$)**: 66 / 64 motor neurons
@@ -170,10 +170,12 @@ The table below summarizes simulated network responses across calibrated sensory
 
 | Visual Stimulus | Luminance ($Y$) | Dominant Spectrum | Network Spikes | Firing Rate | Looming Trigger | Circuit Dynamics & Kinematic Outcome |
 | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Pure White** (`#FFFFFF`) | 1.000 | Broad spectrum (6,500 K) | ~20,700 | 2.48 Hz | ❌ Inactive | Broad-spectrum $R_1-R_6$ excitation; optic lobe wave propagation; steady tripod walking. |
-| **Pure Red** (`#C80000`) | 0.235 | Long wavelength (~3,000 K) | 0 | 0.00 Hz | ❌ Inactive | Sub-threshold current injection ($V < V_{\text{thresh}}$); network remains quiescent with potassium reversal clamping. |
-| **Pure Blue** (`#0000E6`) | 0.103 | Short wavelength (UV / Blue) | ~6,680 | 0.80 Hz | ❌ Inactive | Selective excitation of inner $R_8$ photoreceptors; moderate forward drive. |
-| **Rapid Dark / Looming** (`#000000`) | 0.000 | Contrast drop | ~11,000 | 1.32 Hz | ✅ Active | Contrast collapse ($\Delta Y > 0.15$); $LC_4$ activation; Giant Fiber ($GF$) jump escape triggered. |
+| **Pure White** (`#FFFFFF`) | 1.000 | Broad spectrum (~6,504 K, valid Planckian CCT) | 25,578 | 3.07 Hz | ❌ Inactive | Broad-spectrum $R_1-R_6$ excitation; optic lobe wave propagation; steady tripod walking. |
+| **Pure Red** (`#C80000`) | 0.235 | Long wavelength (N/A — saturated color, not a blackbody-correlated temperature) | 3,377 | 0.41 Hz | ❌ Inactive | Moderate outer photoreceptor drive; localized sub-threshold & baseline activation. |
+| **Pure Blue** (`#0000E6`) | 0.103 | Short wavelength (N/A — saturated color, not a blackbody-correlated temperature) | 2,658 | 0.32 Hz | ❌ Inactive | Selective excitation of inner $R_8$ photoreceptors; chromatic pathway recruitment. |
+| **Rapid Dark / Looming** (`#000000`) | 0.000 | Contrast drop (Darkness baseline 6,500 K) | 130,028 | 15.60 Hz | ✅ Active | Contrast collapse ($\Delta Y > 0.15$); $LC_4$ burst injection; Giant Fiber ($GF$) jump escape triggered. |
+
+> *\*Generated by `scripts/generate_benchmarks.py` — run it yourself to reproduce.*
 
 ---
 
@@ -192,7 +194,7 @@ The simulation maps specific, identifiable functional circuits from the Janelia 
 | **Steering Descending** | $DNa02_L / DNa02_R$ | Brain $\rightarrow$ Thoracic VNC | Asymmetric outer leg step amplitude modulation |
 | **Forward Descending** | $DNp09$ | Brain $\rightarrow$ Thoracic VNC | Forward locomotion rate & CPG frequency drive |
 | **Reverse Descending** | $MDN$ | Brain $\rightarrow$ Thoracic VNC | Moonwalker reverse stepping & CPG phase inversion |
-| **Escape Descending** | $GF$ (Giant Fiber) | Brain $\rightarrow$ Thoracic VNC | Escape jump reflex & rapid wing elevation |
+| **Escape Descending** | $GF$ (Giant Fiber) | Brain $\rightarrow$ Thoracic VNC | Escape jump reflex & rapid wing elevation (visual looming trigger only — mechanosensory GF pathways not modeled) |
 | **Front Leg Motor Pools** | $T1_L / T1_R$ (`fl`) | Prothoracic Neuromere $T_1$ | 135 motor neurons driving $L_1 / R_1$ leg kinematics |
 | **Middle Leg Motor Pools**| $T2_L / T2_R$ (`ml`) | Mesothoracic Neuromere $T_2$ | 116 motor neurons driving $L_2 / R_2$ leg kinematics |
 | **Hind Leg Motor Pools**  | $T3_L / T3_R$ (`hl`) | Metathoracic Neuromere $T_3$ | 130 motor neurons driving $L_3 / R_3$ leg kinematics |
@@ -259,7 +261,7 @@ FlyConnectome 3D implements a synchronized **dual Three.js WebGL viewport archit
   - Dynamic retinal casting: The display casts physical light onto the compound eyes, driving the bilateral retinotopic arrays.
 - **Cranial Synaptic Latency Wave Propagation**:
   - The 141.8K EM somas embedded inside the cranial capsule are rendered via GPU point shaders (`THREE.Points`).
-  - Active action potentials propagate in 4 distinct biological latency waves ($0\text{ ms}$ retina $\rightarrow$ $18\text{ ms}$ mushroom body $\rightarrow$ $36\text{ ms}$ central complex/descending $\rightarrow$ $54\text{ ms}$ thoracic VNC), creating visual rippling wavefronts through the head.
+  - Active action potentials propagate in 4 distinct compartment latency waves ($0\text{ ms}$ retina $\rightarrow$ $18\text{ ms}$ mushroom body $\rightarrow$ $36\text{ ms}$ central complex/descending $\rightarrow$ $54\text{ ms}$ thoracic VNC), creating visual rippling wavefronts through the head.
 - **Multi-Camera Director**:
   - **Fly View**: Macro perspective on the spherical treadmill and hexapod leg articulation.
   - **Phone Angle**: First-person retinal perspective from the stimulus screen toward the fly.
@@ -274,7 +276,7 @@ Located in the bottom-right panel of the cockpit, this dedicated viewport provid
   - Positioned at an elevated dorsal angle ($\theta_{\text{pitch}} = -0.45\text{ rad}$, $\theta_{\text{roll}} = -0.10\text{ rad}$) matching standard neuroanatomical orientation (revealing bilateral optic lobes, central brain dome, and ventral nerve cord).
   - Continuously auto-rotates around the vertical axis (`rotation.y += 0.0048`), providing a complete 360-degree holographic inspection.
 - **Bioluminescent Circuit Color Coding**:
-  Somas are color-coded by verified biological neuropil circuits:
+  Somas are color-coded by mapped neuropil circuits:
   - **Optic Lobes ($R_1-R_8$, Lamina/Medulla)**: Electric Cyan (`#00f0ff`, `rgb(0, 224, 255)`)
   - **Central Brain Neuropil**: Deep Electric Blue (`#38bdf8`, `rgb(38, 166, 242)`)
   - **Mushroom Body (Kenyon Cells)**: Honey Amber (`#f59e0b`, `rgb(255, 166, 38)`)
@@ -284,7 +286,7 @@ Located in the bottom-right panel of the cockpit, this dedicated viewport provid
 - **GPU Additive Blending & Dynamic Action Potential Flares**:
   - Built with custom GLSL vertex and fragment shaders using `THREE.AdditiveBlending`.
   - **Resting state**: Ethereal, semi-transparent points ($\alpha = 0.35$ with soft radial gaussian falloff).
-  - **Spiking state**: When the biophysical engine fires action potentials, active somas expand up to **4.5× in point size**, ignite in pure **radiant white-cyan bloom** ($\alpha = 1.0$), and smoothly decay over $\approx 150\text{ ms}$ with realistic biological latency. Dense firing clusters fuse into glowing energy hubs.
+  - **Spiking state**: When the biophysical engine fires action potentials, active somas expand up to **4.5× in point size**, ignite in pure **radiant white-cyan bloom** ($\alpha = 1.0$), and smoothly decay over $\approx 150\text{ ms}$ with modeled decay dynamics. Dense firing clusters fuse into glowing energy hubs.
 - **Interactive 3D Touch & Mouse Drag**:
   - Users can click and drag (or touch-drag on mobile/tablets) to freely pitch, yaw, and inspect the connectome from any angle in 3D space.
   - Releasing the pointer smoothly restores the graceful auto-rotation.
@@ -328,7 +330,7 @@ The cockpit features a one-click language toggle (English $\leftrightarrow$ Tür
 | Route | Method | Description |
 | :--- | :---: | :--- |
 | `/api/telemetry` | `GET` | Fetches latest telemetry state and rolling historical buffer. |
-| `/api/observe` | `POST` | Ingests base64-encoded image frame for biological transduction. |
+| `/api/observe` | `POST` | Ingests base64-encoded image frame for visual photo-transduction. |
 | `/api/wirehead` | `POST` | Injects depolarizing current (+20 mV) into dopaminergic $PAM11$ cluster. |
 | `/api/connectome/soma-coordinates` | `GET` | Streams binary buffer of 141.8K real soma coordinates (`.bin`). |
 | `/api/connectome/soma-metadata` | `GET` | Returns anatomical bounding boxes, scaling factors, and circuit partitions. |
@@ -337,7 +339,7 @@ The cockpit features a one-click language toggle (English $\leftrightarrow$ Tür
 
 ## ✅ Testing & Development
 
-The test suite includes **80 automated tests across 22 test files**, covering biological circuits, biophysical equations, launcher scripts, and frontend contracts:
+The test suite includes **87 automated tests across 23 test files**, covering mapped circuits, biophysical equations, launcher scripts, and frontend contracts:
 
 ```bash
 # Run complete test suite
