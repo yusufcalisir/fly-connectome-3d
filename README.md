@@ -12,7 +12,7 @@
   [![Python 3.12](https://img.shields.io/badge/Python-3.12%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
   [![Connectome](https://img.shields.io/badge/Connectome-Janelia_MaleCNS_v1.0-FF6F00?style=for-the-badge&logo=target&logoColor=white)](https://flywire.ai/)
   [![Validation](https://img.shields.io/badge/Validation-Empirical_Logs-blue?style=for-the-badge&logo=markdown&logoColor=white)](docs/validation.md)
-  [![Tests](https://img.shields.io/badge/Tests-87%2F87_Passing-00C853?style=for-the-badge&logo=pytest&logoColor=white)](#-testing--development)
+  [![Tests](https://img.shields.io/badge/Tests-90%2F90_Passing-00C853?style=for-the-badge&logo=pytest&logoColor=white)](#-testing--development)
   [![CI](https://img.shields.io/github/actions/workflow/status/yusufcalisir/fly-connectome-3d/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI)](https://github.com/yusufcalisir/fly-connectome-3d/actions)
   [![Three.js](https://img.shields.io/badge/Frontend-Three.js_r128-000000?style=for-the-badge&logo=three.js&logoColor=white)](https://threejs.org/)
   [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
@@ -369,7 +369,7 @@ uv run ruff check src/ tests/
 
 ### GitHub Actions CI Workflow
 Every push to `main` and pull request is verified across 5 parallel CI jobs:
-1. **`unit-tests`**: 75 tests covering biophysics, phototaxis, frontend contracts, and launcher scripts.
+1. **`unit-tests`**: 81 tests covering biophysics, phototaxis, frontend contracts, and launcher scripts.
 2. **`performance-regression`**: Benchmarks the vectorized LIF kernel sub-500ms execution.
 3. **`real-connectome`**: Validates the 166.7K topology, 25.6M synapses, and 381 VNC motor neurons.
 4. **`server-integration`**: Validates FastAPI REST endpoints and WebSocket telemetry transmission.
