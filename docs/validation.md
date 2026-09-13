@@ -121,7 +121,58 @@ This document records empirical verification milestones, exact measurements, and
 
 ---
 
-## 6. Validation Maintenance Protocol
+## 6. Neurotransmitter Polarity Assignment & E/I Balance Verification — 2026-09-13
+
+- **Dataset Provenance**: Janelia Research Campus MaleCNS v1.0 (`neurotransmitters.feather`, `annotations.feather`, `synapses.feather`).
+- **Population Scope**: All 166,700 retained neurons and 25,582,938 directed synaptic connections in the compiled connectome graph (`malecns_v1_graph.npz`).
+- **Identified Questions**:
+  1. How much of the whole-brain neurotransmitter polarity assignment relies on an unlabeled fallback default (`else: +1.0`) versus empirical predictions?
+  2. What is the true out-of-sample machine learning accuracy versus ground truth?
+  3. Does the observed 100% agreement of `consensus_nt` with `ground_truth` represent independent cross-validation or a construction formula?
+
+### Empirical Distribution by Neurotransmitter Category
+
+| Neurotransmitter Category | Assigned Sign | Neuron Count | % Neurons | Synaptic Edges | % Edges | Synaptic Weight | % Weight |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Acetylcholine** ($ACh$) | $+1.0$ (Excitatory) | 103,720 | 62.22% | 14,745,137 | 57.64% | 71,847,949 | 57.86% |
+| **Glutamate** ($Glu$) | $-1.0$ (Inhibitory) | 29,302 | 17.58% | 4,798,718 | 18.76% | 23,266,488 | 18.74% |
+| **GABA** | $-1.0$ (Inhibitory) | 22,069 | 13.24% | 4,925,557 | 19.25% | 23,732,965 | 19.11% |
+| **Histamine** | $-1.0$ (Inhibitory) | 7,891 | 4.73% | 89,723 | 0.35% | 454,767 | 0.37% |
+| **Unclear / Ambiguous** | $+1.0$ (Default) | 2,999 | 1.80% | 588,262 | 2.30% | 2,829,380 | 2.28% |
+| **Missing in NT Table** | $+1.0$ (Default) | 178 | 0.11% | 0 | 0.00% | 0 | 0.00% |
+| **Dopamine** | $+1.0$ (Modulatory) | 392 | 0.24% | 241,694 | 0.94% | 1,180,684 | 0.95% |
+| **Octopamine** | $+1.0$ (Modulatory) | 101 | 0.06% | 148,519 | 0.58% | 639,521 | 0.51% |
+| **Serotonin** | $+1.0$ (Modulatory) | 48 | 0.03% | 45,328 | 0.18% | 225,858 | 0.18% |
+| **Total Retained Network** | — | **166,700** | **100.00%** | **25,582,938** | **100.00%** | **124,177,612** | **100.00%** |
+
+### Polarity Aggregation & E/I Balance
+
+- **Excitatory (+1.0)**: **107,438 neurons (64.45%)** | **15,768,940 edges (61.64%)** | **76,723,392 weight (61.78%)**
+- **Inhibitory (-1.0)**: **59,262 neurons (35.55%)** | **9,813,998 edges (38.36%)** | **47,454,220 weight (38.22%)**
+- **Broad Consistency**: This distribution is broadly consistent with typical insect CNS excitatory-dominant proportions without fabricating unverified external literature percentage ranges.
+
+### ML Accuracy vs. Ground Truth & Pipeline Construction
+
+- **Ground Truth Coverage**: 85,484 of the 166,700 neurons (51.28%) have verified biological ground truth annotations in MaleCNS v1.0.
+- **Tautology / Formula by Construction**: In Janelia's pipeline, `consensus_nt` is computed as `ground_truth if not null else predicted_nt`. As a result, `consensus_nt == ground_truth` is 85,484 / 85,484 (100.00%) **by definition / override**, not an independent cross-validation.
+- **True Independent ML Accuracy**: Directly comparing Janelia's machine-learning classifier (`predicted_nt`) against verified biological annotations (`ground_truth`) across all 85,484 ground truth neurons:
+  - **Matches (`predicted_nt == ground_truth`)**: **75,747 / 85,484 = 88.61% accuracy**
+  - **Mismatches (`predicted_nt != ground_truth`)**: 9,737 / 85,484 = 11.39% mismatch
+- **Default Fallback Impact & Sensitivity Analysis**:
+  - Exactly **3,177 neurons (1.91%)** hit the default-excitatory branch (2,999 with ambiguous calls like `acetylcholine / glutamate` or `unclear`, plus 178 unannotated neurons with 0 synaptic connections).
+  - These default neurons represent only **2.30% of synaptic connections** (588,262 / 25,582,938) and **2.28% of synaptic weight** (2,829,380 / 124,177,612).
+  - Under a worst-case counterfactual bound where 100% of these 3,177 ambiguous neurons are treated as inhibitory instead of excitatory:
+    - Excitatory neurons: 104,261 (62.54%)
+    - Inhibitory neurons: 62,439 (37.46%)
+    - Maximum E/I shift: $\pm 1.91\%$ at the neuron level, $\pm 2.30\%$ at the edge level.
+  - The fallback default has a negligible influence on whole-brain excitation/inhibition balance.
+
+> **Boundary Statement**:
+> *This is evidence of the quantitative breakdown, ML prediction accuracy (88.61%), and minimal sensitivity ($\le 1.91\%$) of the default fallback in the MaleCNS v1.0 neurotransmitter polarity assignment. It is **NOT** evidence of dynamic multi-transmitter co-transmission, postsynaptic receptor subtype variation (e.g. excitatory vs. inhibitory glutamate receptor distributions at individual synapses), or metabolic neurotransmitter turnover in living tissue.*
+
+---
+
+## 7. Validation Maintenance Protocol
 
 All contributors and agent sessions must adhere to the following protocol when introducing significant biophysical, algorithmic, or architectural modifications:
 

@@ -79,8 +79,18 @@ def map_transmitter_signs(transmitters: pd.Series) -> tuple[np.ndarray, np.ndarr
     - Glutamate: Inhibitory in insect nervous systems (-1.0 via GluCl channels)
     - Histamine: Inhibitory (-1.0 in insect visual system)
     - Modulators (Dopamine, Serotonin, Octopamine) or unknown: Defaults to +1.0
+
+    Empirical Dataset Analysis (Janelia MaleCNS v1.0, 166,700 neurons):
+    - 98.09% (163,523) of neurons possess confident biological neurotransmitter calls.
+    - Only 1.91% of neurons (3,177: 2,999 ambiguous + 178 unannotated) hit the
+      default-excitatory (+1.0) branch, representing only 2.30% of synaptic edges.
+    - Ground truth annotations cover 51.28% (85,484) of neurons; on these, Janelia ML
+      predictions match ground truth with 88.61% accuracy (75,747 / 85,484).
+    - See `docs/validation.md` (Section 6) for full empirical counts and sensitivity analysis.
     """
     cleaned = transmitters.fillna("").str.lower().to_numpy()
+    # Initialized to +1.0 (default excitatory); only 1.91% of neurons (3,177 / 166,700)
+    # rely on this default fallback. See docs/validation.md Section 6.
     signs = np.ones(len(cleaned), dtype=np.float32)
 
     signs[cleaned == "acetylcholine"] = 1.0

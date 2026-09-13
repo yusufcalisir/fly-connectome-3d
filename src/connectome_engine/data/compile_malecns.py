@@ -35,6 +35,17 @@ def transmitter_signs(neurotransmitters: pd.Series) -> np.ndarray:
     - Glutamate: Inhibitory in insect motor/CNS via GluCl channels (-1.0)
     - Histamine: Inhibitory in insect visual system (-1.0)
     - Others / unpredicted: Defaults to excitatory (+1.0)
+
+    Empirical Dataset Analysis (Janelia MaleCNS v1.0, 166,700 neurons):
+    - 98.09% (163,523) of neurons have confident biological neurotransmitter calls
+      (ACh 62.22%, Glu 17.58%, GABA 13.24%, Histamine 4.73%, Monoamines 0.33%).
+    - Only 1.91% (3,177 neurons: 2,999 unclear/ambiguous + 178 missing) hit the
+      default-excitatory (+1.0) branch, accounting for only 2.30% of total
+      synaptic edges (588,262 / 25,582,938).
+    - Under a worst-case sensitivity bound (assuming all 3,177 default neurons are
+      inhibitory), the network E/I ratio only shifts by 1.91% (64.45% E -> 62.54% E).
+    - See `docs/validation.md` (Section 6) for the complete empirical table and
+      ML prediction accuracy (88.61% vs. ground truth).
     """
     cleaned = neurotransmitters.fillna("").str.lower().to_numpy()
     signs = np.ones(len(cleaned), dtype=np.float32)
@@ -44,6 +55,8 @@ def transmitter_signs(neurotransmitters: pd.Series) -> np.ndarray:
         elif "acetylcholine" in t or "ach" in t:
             signs[i] = 1.0
         else:
+            # Default fallback (+1.0): hit by only 1.91% of neurons (3,177 / 166,700)
+            # representing 2.30% of synaptic edges. See docs/validation.md Section 6.
             signs[i] = 1.0
     return signs
 
