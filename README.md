@@ -39,7 +39,7 @@
 
 **FlyConnectome 3D** is an open computational biology and neurokinematics platform modeling the central nervous system of the fruit fly (*Drosophila melanogaster*). The simulation bridges electron-microscopy synaptic wiring diagrams from the **Janelia Research Campus MaleCNS v1.0** dataset (~166.7K neurons, ~25.6M synapses) with a vectorized Leaky Integrate-and-Fire (LIF) biophysical engine and a high-performance 3D observation cockpit.
 
-Instead of artificial representations or heuristic movement cycles, sensory inputs on a virtual smartphone display stimulate bilateral photoreceptor arrays, propagate through excitatory and inhibitory neurotransmitter pathways (Dale's principle), engage descending motor tracts ($DNa02, DNp09, MDN, GF$), and directly drive **381 ventral nerve cord (VNC) leg motor neurons** to generate canonical alternating tripod locomotion on a spherical treadmill.
+Instead of artificial representations or heuristic movement cycles, sensory inputs on a virtual smartphone display stimulate bilateral photoreceptor arrays (modeled as spiking input adapters for the connectome graph), propagate through excitatory and inhibitory neurotransmitter pathways (Dale's principle), engage descending motor tracts ($DNa02, DNp09, MDN, GF$), and directly drive **381 ventral nerve cord (VNC) leg motor neurons** to generate canonical alternating tripod locomotion on a spherical treadmill.
 
 ---
 
@@ -189,7 +189,7 @@ The simulation maps specific, identifiable functional circuits from the Janelia 
 
 | Circuit Population | Anatomic / Genetic ID | Neuromere / Brain Area | Functional Role in Simulation |
 | :--- | :--- | :--- | :--- |
-| **Photoreceptors** | $R_1 - R_6$, $R_8$ | Retina / Optic Cartridge | Bilateral luminance and chromatic inputs |
+| **Photoreceptors** | $R_1 - R_6$, $R_8$ | Retina / Optic Cartridge | Bilateral luminance and chromatic inputs (Modeled as spiking LIF display adapters; biological photoreceptors are graded non-spiking cells) |
 | **Looming Detectors** | $LC_4$ | Lobula Complex | Visual threat detection & rapid expansion |
 | **Dopaminergic System** | $PAM11$ | Mushroom Body / SMP | Appetitive reward & plastic association. Generates firing rate `dopamine_hz` ($\text{Hz}$) driving continuous synthesis of extracellular `dopamine_conc_nm` ($\text{nM}$). |
 | **Octopaminergic System** | $TDC2$ | Central Neuropil | Acute arousal, flight response, and motor vigor |
@@ -202,6 +202,10 @@ The simulation maps specific, identifiable functional circuits from the Janelia 
 | **Front Leg Motor Pools** | $T1_L / T1_R$ (`fl`) | Prothoracic Neuromere $T_1$ | 135 motor neurons driving $L_1 / R_1$ leg kinematics |
 | **Middle Leg Motor Pools**| $T2_L / T2_R$ (`ml`) | Mesothoracic Neuromere $T_2$ | 116 motor neurons driving $L_2 / R_2$ leg kinematics |
 | **Hind Leg Motor Pools**  | $T3_L / T3_R$ (`hl`) | Metathoracic Neuromere $T_3$ | 130 motor neurons driving $L_3 / R_3$ leg kinematics |
+
+> [!NOTE]
+> **Photoreceptor Modeling Limitation (Display Adapter vs. Retinal Physiology)**:
+> In biological *Drosophila*, outer photoreceptors ($R_1-R_6$), inner photoreceptors ($R_7, R_8$), and first-order lamina monopolar cells are **graded-potential systems** that do **not** fire action potentials. Modeling them as spiking Leaky Integrate-and-Fire (LIF) units receiving depolarizing current from RGB pixels is an explicit **display/signal adapter** to feed visual observations into the uniform spiking connectome engine, rather than validated retinal electrophysiology. This is a common, pragmatic simplification in large-scale connectome simulations (also adopted by comparable MaleCNS projects like *stonkfly* and *fly-wirehead*), not a discovered biological mechanism.
 
 ---
 

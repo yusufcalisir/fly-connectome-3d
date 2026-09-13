@@ -133,6 +133,9 @@ class ConnectomeBrain:
         self.snn.clear_injected_currents()
 
         # Bilateral R1-R6 Outer Photoreceptors (Hemispheric Retinotopic Partitioning)
+        # NOTE: Biological Drosophila photoreceptors are graded-potential systems that do not fire
+        # action potentials. They are simulated here as spiking LIF units with injected currents
+        # strictly as an input display adapter to interface with the spiking connectome engine.
         if len(self.circuits.r1_r6_left) > 0 and len(vis_telemetry.r1_r6_left_currents) > 0:
             self.snn.inject_current(
                 self.circuits.r1_r6_left,

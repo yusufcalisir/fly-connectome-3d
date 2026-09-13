@@ -11,6 +11,7 @@ This document records empirical verification milestones, exact measurements, and
 - **Dataset Provenance**: Janelia Research Campus **MaleCNS v1.0** serial-section transmission electron microscopy (ssTEM) dataset.
 - **Graph Dimensions**: 166,700 reconstructed neurons and 25,582,938 directed synaptic connections.
 - **Soma Morphology**: 141,781 3D $[X, Y, Z]$ soma coordinates extracted, normalized into Three.js anatomical space, and serialized into `soma_coordinates_141k.bin` (2.55 MB binary array).
+- **Photoreceptor Display Adapter**: 3,335 mapped $R_1-R_6$ outer and 811 mapped $R_8$ inner inputs are modeled as spiking LIF units with depolarizing current injection to interface with the spiking graph engine. In biological *Drosophila*, photoreceptors and laminar monopolar cells are graded-potential systems that do not fire action potentials; this is an explicit display adapter, not validated retinal electrophysiology.
 - **Dale's Principle E/I Polarity**: All 166,700 cells classified by predicted neurotransmitter:
   - Acetylcholine ($ACh$): Excitatory ($w > 0$, depolarizing EPSPs).
   - GABA, Glutamate, Histamine: Inhibitory ($w < 0$, hyperpolarizing IPSPs).
@@ -18,7 +19,7 @@ This document records empirical verification milestones, exact measurements, and
 - **Automated Verification**: 87 passing automated tests across unit, biophysical integration, and full-graph connectivity suites.
 
 > **Boundary Statement**:
-> *This is evidence of structural graph integrity, 3D coordinate normalization, and numerical stability in the vectorized Leaky Integrate-and-Fire (LIF) kernel. It is **NOT** evidence of biological intracellular voltage dynamics, dendritic compartmentalization, or complete whole-organism functional fidelity.*
+> *This is evidence of structural graph integrity, 3D coordinate normalization, and numerical stability in the vectorized Leaky Integrate-and-Fire (LIF) kernel. It is **NOT** evidence of biological intracellular voltage dynamics, dendritic compartmentalization, true graded retinal/laminar physiology, or complete whole-organism functional fidelity.*
 
 ---
 

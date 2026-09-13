@@ -143,6 +143,11 @@ class VisualTransductionEngine:
       Deterministically mapped to Left Eye [0, mid_x) and Right Eye [mid_x, width).
     - R8: Inner photoreceptors, chromatic & ultraviolet sensitivity (rhodopsins Rh5/Rh6).
     - LC4 & LPLC2: Lobula columnar neurons that respond specifically to dark expanding edges (looming predators).
+
+    Photoreceptor Modeling Note:
+    In real flies, R1-R6 and R8 photoreceptors are graded-potential, non-spiking cells.
+    Here they are simulated as spiking LIF units receiving current injections strictly as an
+    input display adapter to interface with the spiking connectome engine.
     """
 
     def __init__(
@@ -222,6 +227,20 @@ class VisualTransductionEngine:
         right_lum = float(np.mean(lum[:, mid_x:]))
         asym_denom = left_lum + right_lum + 1e-5
         hemispheric_asymmetry = float(np.clip((right_lum - left_lum) / asym_denom, -1.0, 1.0))
+
+        # ----------------------------------------------------------------------------------
+        # BIOPHYSICAL LIMITATION NOTE (Photoreceptor Modeling as Display Adapter):
+        # In biological Drosophila, photoreceptors (R1-R6, R7, R8) and lamina monopolar cells
+        # are graded-potential systems; they do NOT fire action potentials (spikes).
+        #
+        # Modeling them as spiking Leaky Integrate-and-Fire (LIF) units receiving depolarizing
+        # current from RGB pixels is an explicit display/signal adapter designed solely to
+        # integrate visual inputs into the uniform spiking connectome engine.
+        #
+        # This is an explicit display adapter, not validated retinal electrophysiology — a common
+        # simplification in large-scale connectome simulations (also adopted by comparable
+        # projects like stonkfly and fly-wirehead), not a discovered biological fact.
+        # ----------------------------------------------------------------------------------
 
         # 1. R1-R6 outer photoreceptor currents (proportional to luminance + contrast)
         # Scale 7.0 ensures mean-luminance pixels (~0.22) exceed the LIF threshold of 1.5 pA

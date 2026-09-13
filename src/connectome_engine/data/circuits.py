@@ -13,7 +13,7 @@ import scipy.sparse as sp
 class IndexedCircuits:
     """Indexed neuron subsets by biological function and neurotransmitter."""
 
-    # Sensory: Vision
+    # Sensory: Vision (Modeled as spiking LIF display adapters; real Drosophila photoreceptors are graded non-spiking)
     r1_r6_photoreceptors: np.ndarray  # Luminance outer lattice (3,335 cells)
     r8_photoreceptors: np.ndarray     # Chromatic inner lattice (811 cells)
     looming_threat_lc4: np.ndarray    # Lobula columnar LC4/LPLC2 looming neurons
