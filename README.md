@@ -357,14 +357,14 @@ The cockpit features a one-click language toggle (English $\leftrightarrow$ Tür
 
 ## ✅ Testing & Development
 
-The test suite includes **87 automated tests across 23 test files**, covering mapped circuits, biophysical equations, launcher scripts, and frontend contracts:
+The test suite includes **90 automated tests across 25 test files**, covering mapped circuits, biophysical equations, launcher scripts, and frontend contracts:
 
 ```bash
 # Run complete test suite
 uv run pytest tests/ -v
 
 # Run static analysis and style checks
-uv run ruff check src/ tests/
+uv run ruff check src/ tests/ --select=E,W,F,I --ignore=E501
 ```
 
 ### GitHub Actions CI Workflow

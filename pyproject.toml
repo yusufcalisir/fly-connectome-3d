@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "3D Biocomputing Fly Connectome Telemetry & Observation Engine"
 readme = "README.md"
 license = {text = "MIT"}
+authors = [{name = "Yusuf Çalışır"}]
 requires-python = ">=3.11,<3.13"
 dependencies = [
     "numpy>=2.1.0",

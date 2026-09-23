@@ -63,7 +63,10 @@ uv run python src/connectome_engine/data/downloader.py
 # 5. Compile the connectome graph
 uv run python src/connectome_engine/data/compile_malecns.py
 
-# 6. Run the server
+# 6. Compile 141K 3D soma coordinates binary buffer
+uv run python src/connectome_engine/data/compile_coordinates.py
+
+# 7. Run the server
 uv run python -m connectome_engine.server
 ```
 
