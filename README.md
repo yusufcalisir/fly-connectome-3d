@@ -29,7 +29,8 @@
     <a href="#-neural-circuits-modeled">🧬 Circuits</a> •
     <a href="#-web-cockpit--telemetry">🎮 Cockpit</a> •
     <a href="#-api-reference">📡 API</a> •
-    <a href="#-testing--development">✅ Tests</a>
+    <a href="#-testing--development">✅ Tests</a> •
+    <a href="CONTRIBUTING.md">🤝 Contributing</a>
   </p>
 </div>
 
@@ -383,6 +384,12 @@ Every push to `main` and pull request is verified across 5 parallel CI jobs:
 - **FlyWire & Princeton University**: Community whole-brain connectomic proofreading and annotation tools.
 - **Three.js**: WebGL 3D rendering library.
 - **FastAPI & Uvicorn**: Asynchronous backend and real-time telemetry streaming framework.
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please read our [**Contributing Guide**](CONTRIBUTING.md) for details on code style, empirical honesty standards, dataset setup, and testing protocols.
 
 ---
 
